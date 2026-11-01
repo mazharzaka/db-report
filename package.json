@@ -1,0 +1,26 @@
+{
+  "name": "dream-park-caravan-revenues-2026",
+  "version": "1.0.0",
+  "description": "Standalone Executive Dashboard and API for Dream Park Caravan Revenues 2026",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "service:install": "node install_service.js",
+    "service:uninstall": "node uninstall_service.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "exceljs": "^4.4.0",
+    "express": "^4.21.2",
+    "msnodesqlv8": "^5.3.0",
+    "mssql": "^11.0.1",
+    "node-windows": "^0.1.14"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "private": true
+}

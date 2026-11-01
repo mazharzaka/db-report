@@ -1,0 +1,51 @@
+# Dependencies
+node_modules/
+*/node_modules/
+frontend/node_modules/
+
+# Environment Variables & Virtual Environments
+.env
+.env.*
+!.env.example
+v.env
+*.env
+.venv/
+venv/
+env/
+ENV/
+
+# Next.js Build Outputs & Cache
+.next/
+.next-build/
+frontend/.next/
+frontend/.next-build/
+frontend/out/
+
+# Production Deployment Archives & Artifacts
+dist/
+dist-deploy/
+caravan-report-deploy/
+caravan-report-deploy.zip
+*.zip
+
+# Logs & Debugging Traces
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+node_trace.*.log
+
+# Scratch & Temporary Scripts
+scratch-check-db.js
+test-analytics.js
+scratch/
+
+# OS & IDE Metadata
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+*.swo

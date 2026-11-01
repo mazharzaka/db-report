@@ -1,0 +1,29 @@
+<service>
+	<id>dreampark_caravan_report.exe</id>
+	<name>DreamPark_Caravan_Report</name>
+	<description>Dream Park ERP - Caravan Revenues &amp; Sales Reporting Background Service (Standalone)</description>
+	<executable>C:\Program Files\nodejs\node.exe</executable>
+	<logmode>rotate</logmode>
+	<argument>--harmony</argument>
+	<argument>D:\projects\Smart Tech Article Summarizer\caravan-revenues-app\node_modules\node-windows\lib\wrapper.js</argument>
+	<argument>--file</argument>
+	<argument>D:\projects\Smart Tech Article Summarizer\caravan-revenues-app\server.js</argument>
+	<argument>--log</argument>
+	<argument>DreamPark_Caravan_Report wrapper</argument>
+	<argument>--grow</argument>
+	<argument>0.5</argument>
+	<argument>--wait</argument>
+	<argument>2</argument>
+	<argument>--maxrestarts</argument>
+	<argument>10</argument>
+	<argument>--abortonerror</argument>
+	<argument>n</argument>
+	<argument>--stopparentfirst</argument>
+	<argument>undefined</argument>
+	<argument>--maxretries</argument>
+	<argument>10</argument>
+	<stoptimeout>30sec</stoptimeout>
+	<env name="NODE_ENV" value="production"/>
+	<env name="PORT" value="5000"/>
+	<workingdirectory>D:\projects\Smart Tech Article Summarizer\caravan-revenues-app</workingdirectory>
+</service>

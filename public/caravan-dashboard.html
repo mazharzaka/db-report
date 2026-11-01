@@ -1,0 +1,1872 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" class="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="لوحة المؤشرات المالية والتحليلية لإيرادات كرفانات دريم بارك 2026 - نظام ERP">
+    <title>إيرادات الكرفانات 2026 | Dream Park ERP Financial Dashboard</title>
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        cfo: {
+                            page: '#0B0F19',
+                            card: '#111827',
+                            cardHighlight: '#162238',
+                            border: '#1F2937',
+                            borderHighlight: '#334155',
+                            text: '#F1F5F9',
+                            muted: '#94A3B8',
+                            green: '#10B981',
+                            blue: '#3B82F6',
+                            yellow: '#F59E0B',
+                            red: '#EF4444'
+                        }
+                    },
+                    fontFamily: {
+                        cairo: ['Cairo', 'sans-serif'],
+                        plex: ['"IBM Plex Sans"', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Local Self-Hosted Fonts (100% Offline) -->
+    <style>
+        @font-face {
+            font-family: 'Cairo';
+            font-style: normal;
+            font-weight: 400;
+            font-display: swap;
+            src: local('Cairo'), url('/fonts/cairo-arabic-400-normal.woff2') format('woff2');
+        }
+        @font-face {
+            font-family: 'Cairo';
+            font-style: normal;
+            font-weight: 600;
+            font-display: swap;
+            src: local('Cairo SemiBold'), url('/fonts/cairo-arabic-600-normal.woff2') format('woff2');
+        }
+        @font-face {
+            font-family: 'Cairo';
+            font-style: normal;
+            font-weight: 700;
+            font-display: swap;
+            src: local('Cairo Bold'), url('/fonts/cairo-arabic-700-normal.woff2') format('woff2');
+        }
+    </style>
+
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- ExcelJS CDN for Executive Accounting-Grade Excel Export -->
+    <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
+
+    <style>
+        :root {
+            --bg-body: #0B0F19;
+            --card-bg: #111827;
+            --card-highlight: #162238;
+            --border-color: #1F2937;
+            --border-highlight: #334155;
+            --text-main: #F1F5F9;
+            --text-muted: #94A3B8;
+            --header-bg: #111827;
+            --table-head-bg: #0F172A;
+            --input-bg: #0B0F19;
+        }
+
+        html.light {
+            --bg-body: #F8FAFC;
+            --card-bg: #FFFFFF;
+            --card-highlight: #F1F5F9;
+            --border-color: #E2E8F0;
+            --border-highlight: #CBD5E1;
+            --text-main: #0F172A;
+            --text-muted: #64748B;
+            --header-bg: #FFFFFF;
+            --table-head-bg: #F1F5F9;
+            --input-bg: #FFFFFF;
+        }
+
+        body {
+            font-family: 'Cairo', -apple-system, sans-serif;
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            transition: background-color 0.2s ease, color 0.2s ease;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* High-precision tabular figures for financial auditing */
+        .num-font {
+            font-family: 'IBM Plex Sans', -apple-system, sans-serif;
+            font-variant-numeric: tabular-nums;
+            font-feature-settings: "tnum";
+            letter-spacing: -0.01em;
+        }
+
+        /* Solid Executive Card Styling */
+        .financial-card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            transition: background-color 0.2s ease, border-color 0.2s ease;
+        }
+
+        /* Custom subtle scrollbars */
+        ::-webkit-scrollbar {
+            width: 5px;
+            height: 5px;
+        }
+        ::-webkit-scrollbar-track {
+            background: var(--bg-body);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--border-highlight);
+        }
+
+        /* Date picker calendar icon styling */
+        input[type="date"]::-webkit-calendar-picker-indicator {
+            filter: invert(0.8);
+            cursor: pointer;
+        }
+        html.light input[type="date"]::-webkit-calendar-picker-indicator {
+            filter: invert(0.2);
+        }
+
+        /* Print media styles strictly formatted as an executive financial report */
+        @media print {
+            body {
+                background: #FFFFFF !important;
+                color: #0F172A !important;
+                font-size: 11pt;
+            }
+
+            .no-print {
+                display: none !important;
+            }
+
+            .print-only {
+                display: block !important;
+            }
+
+            .financial-card {
+                background: #FFFFFF !important;
+                border: 1px solid #CBD5E1 !important;
+                color: #0F172A !important;
+                box-shadow: none !important;
+            }
+
+            .print-table {
+                width: 100% !important;
+                border-collapse: collapse !important;
+            }
+
+            .print-table th,
+            .print-table td {
+                border: 1px solid #94A3B8 !important;
+                color: #0F172A !important;
+                padding: 4px 6px !important;
+            }
+
+            .print-table thead {
+                display: table-header-group;
+                background-color: #F1F5F9 !important;
+            }
+        }
+
+        .print-only {
+            display: none;
+        }
+    </style>
+</head>
+
+<body class="min-h-screen flex flex-col selection:bg-blue-600 selection:text-white">
+
+    <!-- Print-Only Executive Financial Report Header (Feature 5) -->
+    <div class="print-only p-6 border-b-2 border-slate-900 bg-white text-slate-900 mb-4">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center gap-4">
+                <img src="/assets/logo.png" alt="Dreampark" class="h-14 w-auto object-contain" onerror="this.src='/logo.png'">
+                <div>
+                    <h1 class="text-xl font-bold text-slate-900">مجموعة دريم بارك والزوو - الإدارة المالية</h1>
+                    <p class="text-xs text-slate-600 font-semibold">تقرير إيرادات ومطابقة مبيعات قطاع الكرفانات والمنافذ (ERP Type 4)</p>
+                </div>
+            </div>
+            <div class="text-left text-xs text-slate-800 space-y-1 num-font" dir="ltr">
+                <div><strong>الفترة:</strong> <span id="printDateRange">--</span></div>
+                <div><strong>تاريخ الاستخراج:</strong> <span id="printGeneratedDate">--</span></div>
+                <div><strong>نمط العرض:</strong> <span id="printGranularity">--</span></div>
+                <div><strong>المنافذ:</strong> <span id="printOutletsInfo">--</span></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Top Executive Header Bar (Feature 4 & 5) -->
+    <header class="border-b border-[var(--border-color)] bg-[var(--header-bg)] sticky top-0 z-50 no-print transition-colors">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-3">
+
+            <!-- Brand & Official Identity -->
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-lg bg-[var(--input-bg)] border border-[var(--border-color)] flex items-center justify-center p-1">
+                    <img src="/assets/logo.png" alt="Dream Park Logo" class="max-h-full max-w-full object-contain"
+                        onerror="this.style.display='none'; document.getElementById('logoFallback').style.display='block';">
+                    <span id="logoFallback" class="hidden text-xs font-bold text-blue-500">DP</span>
+                </div>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <span class="text-[11px] font-bold text-blue-500 px-1.5 py-0.5 rounded bg-blue-500/10 border border-blue-500/20">
+                            ERP Financial
+                        </span>
+                        <span class="text-xs text-[var(--text-muted)]">قطاع الكرفانات والمنافذ (Type 4)</span>
+                    </div>
+                    <h1 class="text-base sm:text-lg font-bold text-[var(--text-main)] tracking-tight">
+                        إيرادات ومبيعات الكرفانات 2026
+                    </h1>
+                </div>
+            </div>
+
+            <!-- Header Action Controls & Theme Toggle -->
+            <div class="flex items-center gap-2">
+                <!-- Theme Switcher (Feature 4) -->
+                <button id="btnThemeToggle" type="button"
+                    class="p-2 text-xs font-semibold rounded-lg bg-[var(--card-bg)] hover:bg-[var(--border-color)] text-[var(--text-main)] border border-[var(--border-color)] transition flex items-center gap-1.5 cursor-pointer"
+                    title="تبديل الثيم (داكن / فاتح)">
+                    <svg id="themeIconSun" class="w-4 h-4 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                    </svg>
+                    <svg id="themeIconMoon" class="w-4 h-4 text-blue-400 hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                    </svg>
+                    <span id="themeLabelText" class="hidden sm:inline text-xs">الثيم الفاتح</span>
+                </button>
+
+                <!-- Column Customization Button (Feature 3) -->
+                <div class="relative z-30">
+                    <button id="btnColumnSettings" type="button"
+                        class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-[var(--card-bg)] hover:bg-[var(--border-color)] text-[var(--text-main)] border border-[var(--border-color)] transition flex items-center gap-1.5 cursor-pointer">
+                        <svg class="w-4 h-4 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+                        </svg>
+                        <span>تخصيص الأعمدة</span>
+                    </button>
+
+                    <!-- Columns Popover Menu -->
+                    <div id="columnSettingsPanel"
+                        class="hidden absolute start-0 mt-1.5 z-50 bg-[var(--card-bg)] border border-[var(--border-color)] rounded-lg shadow-2xl p-3 w-64 space-y-2 text-xs">
+                        <div class="flex items-center justify-between pb-2 border-b border-[var(--border-color)]">
+                            <span class="font-bold text-[var(--text-main)]">إظهار / إخفاء الأعمدة</span>
+                            <button id="btnResetColumns" type="button" class="text-[11px] text-blue-500 hover:underline">استعادة الافتراضي</button>
+                        </div>
+                        <div id="columnCheckboxesContainer" class="space-y-1 max-h-60 overflow-y-auto">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Formatted Accounting Excel Export (Feature 1 - ExcelJS) -->
+                <button id="btnExportExcel" type="button"
+                    class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white transition flex items-center gap-1.5 cursor-pointer"
+                    title="تصدير ملف إكسيل مالي معتمد (ExcelJS)">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    <span>تصدير Excel</span>
+                </button>
+
+                <!-- Print Button -->
+                <button id="btnPrint" type="button"
+                    class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-[var(--card-bg)] hover:bg-[var(--border-color)] text-[var(--text-main)] border border-[var(--border-color)] transition flex items-center gap-1.5 cursor-pointer"
+                    title="طباعة التقرير المالي الرسمي">
+                    <svg class="w-4 h-4 text-[var(--text-muted)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                    </svg>
+                    <span>طباعة</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Workspace -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-5 space-y-5">
+
+        <!-- Unified Financial Filter Bar -->
+        <section class="financial-card rounded-lg p-4 space-y-3 no-print">
+
+            <!-- Row 1: Pickers, Branches & Action Button in Single Desktop Row -->
+            <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
+
+                <!-- Date Range Pickers (5 cols) -->
+                <div class="md:col-span-5 flex items-center gap-2">
+                    <div class="flex-1">
+                        <label for="startDateInput" class="block text-xs font-medium text-[var(--text-muted)] mb-1">
+                            من تاريخ:
+                        </label>
+                        <input type="date" id="startDateInput" value="2026-01-01"
+                            class="w-full bg-[var(--input-bg)] border border-[var(--border-color)] text-[var(--text-main)] text-xs rounded-md px-2.5 py-2 focus:border-blue-500 focus:outline-none num-font">
+                    </div>
+                    <div class="flex-1">
+                        <label for="endDateInput" class="block text-xs font-medium text-[var(--text-muted)] mb-1">
+                            إلى تاريخ:
+                        </label>
+                        <input type="date" id="endDateInput" value="2026-10-25"
+                            class="w-full bg-[var(--input-bg)] border border-[var(--border-color)] text-[var(--text-main)] text-xs rounded-md px-2.5 py-2 focus:border-blue-500 focus:outline-none num-font">
+                    </div>
+                </div>
+
+                <!-- Branch Multi-Select Dropdown (4 cols) -->
+                <div class="md:col-span-4 relative z-40">
+                    <div class="flex items-center justify-between mb-1">
+                        <label class="text-xs font-medium text-[var(--text-muted)]">منافذ الكرفانات:</label>
+                        <span id="branchSelectionBadge" class="text-[11px] font-semibold text-blue-500 num-font">--</span>
+                    </div>
+
+                    <!-- Dropdown Trigger -->
+                    <button id="branchDropdownBtn" type="button"
+                        class="w-full bg-[var(--input-bg)] border border-[var(--border-color)] hover:border-[var(--border-highlight)] text-[var(--text-main)] text-xs rounded-md px-3 py-2 flex items-center justify-between transition cursor-pointer text-right outline-none">
+                        <span id="branchDropdownLabel" class="truncate font-medium text-[var(--text-main)]">جاري تحميل المنافذ...</span>
+                        <svg id="branchChevron" class="w-3.5 h-3.5 text-[var(--text-muted)] transition-transform duration-200 flex-shrink-0 ms-1"
+                            fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </button>
+
+                    <!-- Dropdown Panel -->
+                    <div id="branchDropdownPanel"
+                        class="hidden absolute top-full start-0 end-0 mt-1.5 z-50 bg-[var(--card-bg)] border border-[var(--border-color)] rounded-lg shadow-2xl p-3 space-y-2 w-full min-w-[280px]">
+                        <!-- Quick Select Controls -->
+                        <div class="flex items-center justify-between pb-2 border-b border-[var(--border-color)] text-xs">
+                            <div class="flex items-center gap-1.5">
+                                <button id="btnSelectAllBranches" type="button"
+                                    class="px-2 py-0.5 text-xs font-medium rounded-md bg-blue-500/10 text-blue-500 hover:bg-blue-500/20 border border-blue-500/20">
+                                    تحديد الكل
+                                </button>
+                                <button id="btnDeselectAllBranches" type="button"
+                                    class="px-2 py-0.5 text-xs font-medium rounded-md bg-[var(--input-bg)] text-[var(--text-muted)] hover:text-[var(--text-main)] border border-[var(--border-color)]">
+                                    إلغاء التحديد
+                                </button>
+                            </div>
+                            <span id="branchCounterText" class="text-[var(--text-muted)] num-font">0 / 0</span>
+                        </div>
+
+                        <!-- Search in Branches -->
+                        <input id="branchFilterInput" type="text" placeholder="بحث باسم أو كود المنفذ..."
+                            class="w-full bg-[var(--input-bg)] border border-[var(--border-color)] text-[var(--text-main)] text-xs rounded-md px-2.5 py-1.5 focus:border-blue-500 outline-none placeholder:text-[var(--text-muted)]/60">
+
+                        <!-- Scrollable Checkbox List -->
+                        <div id="branchCheckboxList" class="max-h-52 overflow-y-auto space-y-0.5 text-xs pr-1 pl-1">
+                            <div class="text-center py-4 text-[var(--text-muted)]">جاري تحميل المنافذ...</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sort & Update Actions (3 cols) -->
+                <div class="md:col-span-3 flex items-center gap-2">
+                    <div class="w-1/2">
+                        <label for="sortSelect" class="block text-xs font-medium text-[var(--text-muted)] mb-1">الترتيب:</label>
+                        <select id="sortSelect"
+                            class="w-full bg-[var(--input-bg)] border border-[var(--border-color)] text-[var(--text-main)] text-xs rounded-md px-2 py-2 focus:border-blue-500 outline-none cursor-pointer">
+                            <option value="total_desc" selected>الأعلى إيراداً</option>
+                            <option value="total_asc">الأقل إيراداً</option>
+                            <option value="cover_desc">الأعلى طلباً (Cover)</option>
+                            <option value="name_asc">الاسم أبجدياً</option>
+                        </select>
+                    </div>
+
+                    <div class="w-1/2">
+                        <label class="block text-xs font-medium opacity-0 mb-1">تحديث</label>
+                        <button id="btnApplyFilters" type="button"
+                            class="w-full py-2 px-3 rounded-md bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs border border-blue-500/40 transition flex items-center justify-center gap-1.5 cursor-pointer">
+                            <svg id="applyFilterSpinner" class="w-3.5 h-3.5 text-blue-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                            </svg>
+                            <span id="applyFilterText">تحديث البيانات</span>
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Row 2: View Switcher (Feature 2) & Preset Chips & Table Quick Search -->
+            <div class="pt-2.5 border-t border-[var(--border-color)] flex flex-wrap items-center justify-between gap-2.5 text-xs">
+
+                <!-- Time-Series Breakdown Mode Switcher (Feature 2) -->
+                <div class="flex items-center gap-1.5">
+                    <span class="text-[var(--text-muted)] font-medium me-1">نمط العرض:</span>
+                    <div class="inline-flex p-0.5 rounded-md bg-[var(--input-bg)] border border-[var(--border-color)]">
+                        <button type="button" data-granularity="summary"
+                            class="granularity-btn px-2.5 py-1 rounded text-xs font-semibold transition cursor-pointer bg-blue-600 text-white">
+                            ملخص إجمالي الفروع
+                        </button>
+                        <button type="button" data-granularity="month"
+                            class="granularity-btn px-2.5 py-1 rounded text-xs font-semibold transition cursor-pointer text-[var(--text-muted)] hover:text-[var(--text-main)]">
+                            مقارنة شهر بشهر
+                        </button>
+                        <button type="button" data-granularity="day"
+                            class="granularity-btn px-2.5 py-1 rounded text-xs font-semibold transition cursor-pointer text-[var(--text-muted)] hover:text-[var(--text-main)]">
+                            حركة المبيعات يوم بيوم
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Preset Period Chips -->
+                <div class="flex flex-wrap items-center gap-1.5">
+                    <span class="text-[var(--text-muted)] font-medium me-1">فترات سريعة:</span>
+                    <button type="button" data-preset="today"
+                        class="preset-chip px-2.5 py-1 font-medium rounded-md bg-[var(--input-bg)] text-[var(--text-muted)] hover:text-[var(--text-main)] border border-[var(--border-color)] transition">
+                        اليوم
+                    </button>
+                    <button type="button" data-preset="thisWeek"
+                        class="preset-chip px-2.5 py-1 font-medium rounded-md bg-[var(--input-bg)] text-[var(--text-muted)] hover:text-[var(--text-main)] border border-[var(--border-color)] transition">
+                        هذا الأسبوع
+                    </button>
+                    <button type="button" data-preset="thisMonth"
+                        class="preset-chip px-2.5 py-1 font-medium rounded-md bg-[var(--input-bg)] text-[var(--text-muted)] hover:text-[var(--text-main)] border border-[var(--border-color)] transition">
+                        الشهر الحالي
+                    </button>
+                    <button type="button" data-preset="fullYear"
+                        class="preset-chip px-2.5 py-1 font-medium rounded-md bg-blue-500/10 text-blue-500 border border-blue-500/30 transition">
+                        سنة 2026
+                    </button>
+                </div>
+
+                <!-- Table Quick Search & Active Range Label -->
+                <div class="flex items-center gap-2">
+                    <div class="relative w-44 sm:w-52">
+                        <input id="searchInput" type="text" placeholder="تصفية الجدول الحالي..."
+                            class="w-full bg-[var(--input-bg)] border border-[var(--border-color)] text-[var(--text-main)] text-xs rounded-md px-2.5 py-1 focus:border-blue-500 outline-none placeholder:text-[var(--text-muted)]/50">
+                    </div>
+                    <span id="activeRangeBadge"
+                        class="text-[11px] font-medium px-2 py-1 rounded bg-[var(--input-bg)] text-[var(--text-muted)] border border-[var(--border-color)] num-font" dir="ltr">
+                        2026-01-01 -> 2026-10-25
+                    </span>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- KPI Hierarchy: Primary Total Revenue Card + Subordinate Detail Cards -->
+        <section id="kpiContainer" class="grid grid-cols-1 md:grid-cols-12 gap-3 transition-opacity duration-200">
+
+            <!-- Card 1 (Prominent Primary Card - 4 cols): Total Sales -->
+            <div class="md:col-span-4 financial-card rounded-lg p-4 bg-[var(--card-highlight)] border-blue-500/40 flex flex-col justify-between">
+                <div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-semibold text-[var(--text-muted)]">إجمالي مبيعات الكرفانات (ج.م)</span>
+                        <span class="text-[11px] font-bold text-blue-500 px-1.5 py-0.5 rounded bg-blue-500/10 border border-blue-500/20">
+                            الصافي العام
+                        </span>
+                    </div>
+                    <div id="kpiTotalSales" class="text-3xl font-bold text-[var(--text-main)] mt-2 num-font">--</div>
+                </div>
+
+                <div class="mt-4 pt-2.5 border-t border-[var(--border-color)] flex items-center justify-between text-xs text-[var(--text-muted)]">
+                    <span>عدد المعاملات / السجلات:</span>
+                    <span id="kpiCaravanCount" class="font-bold text-[var(--text-main)] num-font">--</span>
+                </div>
+            </div>
+
+            <!-- Card 2 (Subordinate Detail - 3 cols): Cash Collections -->
+            <div class="md:col-span-3 financial-card rounded-lg p-3.5 flex flex-col justify-between">
+                <div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-semibold text-[var(--text-muted)]">المحصلات النقدية (ج.م)</span>
+                        <span id="kpiCashPct" class="text-[11px] font-bold text-emerald-500 px-1.5 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20 num-font">
+                            --%
+                        </span>
+                    </div>
+                    <div id="kpiTotalCash" class="text-2xl font-bold text-emerald-500 mt-2 num-font">--</div>
+                </div>
+
+                <div class="mt-3 pt-2 border-t border-[var(--border-color)]">
+                    <div class="w-full bg-[var(--input-bg)] h-1.5 rounded-full overflow-hidden">
+                        <div id="kpiCashBar" class="bg-emerald-500 h-full rounded-full transition-all duration-300" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card 3 (Subordinate Detail - 3 cols): Visa & Electronic -->
+            <div class="md:col-span-3 financial-card rounded-lg p-3.5 flex flex-col justify-between">
+                <div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-semibold text-[var(--text-muted)]">المدفوعات الإلكترونية / فيزا (ج.م)</span>
+                        <span id="kpiVisaPct" class="text-[11px] font-bold text-blue-500 px-1.5 py-0.5 rounded bg-blue-500/10 border border-blue-500/20 num-font">
+                            --%
+                        </span>
+                    </div>
+                    <div id="kpiTotalVisa" class="text-2xl font-bold text-blue-500 mt-2 num-font">--</div>
+                </div>
+
+                <div class="mt-3 pt-2 border-t border-[var(--border-color)] flex items-center justify-between text-xs text-[var(--text-muted)]">
+                    <span>آجل C/L (مستحق):</span>
+                    <span id="kpiTotalCL" class="font-bold text-amber-500 num-font">--</span>
+                </div>
+            </div>
+
+            <!-- Card 4 (Subordinate Detail - 2 cols): Covers & Ticket Avg -->
+            <div class="md:col-span-2 financial-card rounded-lg p-3.5 flex flex-col justify-between">
+                <div>
+                    <span class="text-xs font-semibold text-[var(--text-muted)]">المعاملات (Cover)</span>
+                    <div id="kpiTotalCover" class="text-2xl font-bold text-[var(--text-main)] mt-2 num-font">--</div>
+                </div>
+
+                <div class="mt-3 pt-2 border-t border-[var(--border-color)] flex items-center justify-between text-xs text-[var(--text-muted)]">
+                    <span>متوسط الفاتورة:</span>
+                    <span id="kpiAvgTicket" class="font-bold text-[var(--text-main)] num-font">--</span>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- Visual Analytics Grid: Bar/Trend & Donut -->
+        <section class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+
+            <!-- Ranking / Time-Series Chart (Span 2) -->
+            <div class="financial-card rounded-lg p-4 lg:col-span-2 flex flex-col">
+                <div class="flex items-center justify-between mb-3">
+                    <div>
+                        <h2 id="chartMainTitle" class="text-sm font-bold text-[var(--text-main)] flex items-center gap-1.5">
+                            <span class="w-2 h-2 rounded-full bg-blue-500"></span>
+                            مقارنة إيرادات الكرفانات
+                        </h2>
+                        <p id="barSubtext" class="text-[11px] text-[var(--text-muted)] mt-0.5">معروض أعلى 12 منفذاً حسب إجمالي المبيعات (ج.م)</p>
+                    </div>
+                    <span id="topCaravanBadge" class="text-xs font-semibold px-2 py-0.5 rounded bg-amber-500/10 text-amber-500 border border-amber-500/30 num-font">
+                        المتصدر: --
+                    </span>
+                </div>
+                <div class="relative flex-1 min-h-[300px]">
+                    <canvas id="rankingChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Payment Composition Donut Chart (Span 1) -->
+            <div class="financial-card rounded-lg p-4 flex flex-col">
+                <div class="flex items-center justify-between mb-2">
+                    <h2 class="text-sm font-bold text-[var(--text-main)] flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                        مزيج قنوات التحصيل
+                    </h2>
+                    <span class="text-[11px] text-[var(--text-muted)]">النسب الإجمالية %</span>
+                </div>
+
+                <div class="relative flex-1 min-h-[200px] flex items-center justify-center">
+                    <canvas id="paymentDonutChart"></canvas>
+                </div>
+
+                <!-- Structured Legend with Amount & Percentage -->
+                <div class="grid grid-cols-3 gap-1.5 mt-3 pt-2.5 border-t border-[var(--border-color)] text-center text-xs">
+                    <div class="p-1.5 rounded bg-[var(--input-bg)] border border-[var(--border-color)]">
+                        <div class="text-[11px] text-emerald-500 font-semibold">كاش</div>
+                        <div id="legendCash" class="font-bold text-[var(--text-main)] num-font mt-0.5">--</div>
+                    </div>
+                    <div class="p-1.5 rounded bg-[var(--input-bg)] border border-[var(--border-color)]">
+                        <div class="text-[11px] text-blue-500 font-semibold">فيزا</div>
+                        <div id="legendVisa" class="font-bold text-[var(--text-main)] num-font mt-0.5">--</div>
+                    </div>
+                    <div class="p-1.5 rounded bg-[var(--input-bg)] border border-[var(--border-color)]">
+                        <div class="text-[11px] text-amber-500 font-semibold">آجل C/L</div>
+                        <div id="legendCL" class="font-bold text-[var(--text-main)] num-font mt-0.5">--</div>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- Detailed Accounting Data Table (High Density, Sticky Headers, Dynamic Columns) -->
+        <section class="financial-card rounded-lg overflow-hidden shadow">
+            <div class="p-3.5 border-b border-[var(--border-color)] flex flex-wrap items-center justify-between gap-3 bg-[var(--card-highlight)]">
+                <div>
+                    <h2 class="text-sm font-bold text-[var(--text-main)]">دفتر مبيعات ومطابقة الكرفانات</h2>
+                    <p class="text-[11px] text-[var(--text-muted)] mt-0.5">المبالغ بالجنيه المصري (ج.م) • الأرقام محاذاة محاسبياً لطرف النهاية</p>
+                </div>
+                <div class="text-xs text-[var(--text-muted)]">
+                    عدد السجلات: <span id="tableRowCount" class="font-bold text-[var(--text-main)] num-font">0</span>
+                </div>
+            </div>
+
+            <!-- Table Container with Horizontal Scroll & Sticky Header -->
+            <div class="overflow-x-auto max-h-[580px]">
+                <table class="w-full text-sm print-table" id="caravansTable">
+                    <thead class="sticky top-0 bg-[var(--table-head-bg)] text-[var(--text-muted)] text-xs font-semibold border-b border-[var(--border-color)] z-10">
+                        <tr id="tableHeaderRow">
+                            <th data-col="idx" class="py-2.5 px-3 text-center w-10">#</th>
+                            <th data-col="code" class="py-2.5 px-3 text-start w-24">كود الفرع</th>
+                            <th data-col="name" class="py-2.5 px-3 text-start">اسم الكرفان / المنفذ</th>
+                            <th data-col="period" class="py-2.5 px-3 text-center w-28 hidden">الفترة / التاريخ</th>
+                            <th data-col="share" class="py-2.5 px-3 text-start w-32">الحصة %</th>
+                            <th data-col="cover" class="py-2.5 px-3 text-end">المعاملات</th>
+                            <th data-col="avgTicket" class="py-2.5 px-3 text-end">متوسط الفاتورة</th>
+                            <th data-col="cash" class="py-2.5 px-3 text-end text-emerald-500 font-semibold">كاش (ج.م)</th>
+                            <th data-col="visa" class="py-2.5 px-3 text-end text-blue-500 font-semibold">فيزا (ج.م)</th>
+                            <th data-col="cl" class="py-2.5 px-3 text-end text-amber-500 font-semibold">آجل C/L (ج.م)</th>
+                            <th data-col="total" class="py-2.5 px-3 text-end text-[var(--text-main)] font-bold">إجمالي المبيعات (ج.م)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody" class="divide-y divide-[var(--border-color)] text-[var(--text-main)] text-xs">
+                        <tr>
+                            <td colspan="11" class="py-10 text-center text-[var(--text-muted)]">
+                                جاري تحميل البيانات المالية...
+                            </td>
+                        </tr>
+                    </tbody>
+                    <tfoot id="tableFooter" class="sticky bottom-0 bg-[var(--table-head-bg)] border-t-2 border-[var(--border-highlight)] text-[var(--text-main)] font-bold text-xs">
+                        <tr id="tableFooterRow">
+                            <td id="footGrandLabel" colspan="3" class="py-3 px-3 text-blue-500">الإجمالي العام (Grand Total)</td>
+                            <td data-col="period" class="py-3 px-3 text-center num-font text-[var(--text-muted)] hidden">-</td>
+                            <td data-col="share" class="py-3 px-3 text-start text-[var(--text-muted)] num-font">100.0%</td>
+                            <td data-col="cover" id="footCover" class="py-3 px-3 text-end num-font">--</td>
+                            <td data-col="avgTicket" id="footAvgTicket" class="py-3 px-3 text-end num-font">--</td>
+                            <td data-col="cash" id="footCash" class="py-3 px-3 text-end num-font text-emerald-500">--</td>
+                            <td data-col="visa" id="footVisa" class="py-3 px-3 text-end num-font text-blue-500">--</td>
+                            <td data-col="cl" id="footCL" class="py-3 px-3 text-end num-font text-amber-500">--</td>
+                            <td data-col="total" id="footTotal" class="py-3 px-3 text-end num-font text-[var(--text-main)] text-sm">--</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Quiet Financial Footer -->
+    <footer class="border-t border-[var(--border-color)] bg-[var(--card-bg)] py-3 text-center text-xs text-[var(--text-muted)] no-print mt-auto">
+        <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
+            <span>نظام الحسابات المالية والتقارير التنفيذية &copy; 2026 دريم بارك Dream Park ERP</span>
+            <span class="num-font" dir="ltr">Direct TLS Query • MS SQL Server</span>
+        </div>
+    </footer>
+
+    <!-- Application Controller Logic -->
+    <script>
+        // Column Customization Definitions (Feature 3)
+        const AVAILABLE_COLUMNS = [
+            { id: 'idx', label: '# (المسلسل)', default: true },
+            { id: 'code', label: 'كود الفرع', default: true },
+            { id: 'name', label: 'اسم الكرفان / المنفذ', default: true },
+            { id: 'period', label: 'التاريخ / الشهر', default: true },
+            { id: 'share', label: 'الحصة السوقية %', default: true },
+            { id: 'cover', label: 'المعاملات (Cover)', default: true },
+            { id: 'avgTicket', label: 'متوسط الفاتورة', default: true },
+            { id: 'cash', label: 'الكاش', default: true },
+            { id: 'visa', label: 'الفيزا والشبكة', default: true },
+            { id: 'cl', label: 'الآجل C/L', default: true },
+            { id: 'total', label: 'الإجمالي الصافي', default: true }
+        ];
+
+        let columnVisibility = {};
+        let currentGranularity = 'summary'; // 'summary' | 'month' | 'day' (Feature 2)
+        let allBranches = [];                // [{ Code, Name }]
+        let selectedBranchCodes = new Set();
+        let currentReportData = null;
+        let rankingChartInstance = null;
+        let donutChartInstance = null;
+
+        // XSS Prevention Sanitizer
+        function escapeHtml(str) {
+            if (str == null) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        // Financial Number Formatters
+        const formatEGP = (val) => {
+            const num = Number(val) || 0;
+            if (num < 0) {
+                return `(${Math.abs(num).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })})`;
+            }
+            return num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        };
+
+        const formatInt = (val) => {
+            const num = Number(val) || 0;
+            if (num < 0) {
+                return `(${Math.abs(num).toLocaleString('en-US')})`;
+            }
+            return num.toLocaleString('en-US');
+        };
+
+        const formatDateIso = (d) => {
+            const year = d.getFullYear();
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        };
+
+        // Theme Switcher (Feature 4)
+        function initTheme() {
+            let savedTheme = 'dark';
+            try {
+                savedTheme = localStorage.getItem('dp_theme') || 'dark';
+            } catch(e) {}
+            applyTheme(savedTheme);
+
+            document.getElementById('btnThemeToggle').addEventListener('click', () => {
+                const isDark = document.documentElement.classList.contains('dark');
+                const newTheme = isDark ? 'light' : 'dark';
+                try { localStorage.setItem('dp_theme', newTheme); } catch(e) {}
+                applyTheme(newTheme);
+            });
+        }
+
+        function applyTheme(theme) {
+            const isLight = (theme === 'light');
+            if (isLight) {
+                document.documentElement.classList.remove('dark');
+                document.documentElement.classList.add('light');
+                document.getElementById('themeIconSun').classList.add('hidden');
+                document.getElementById('themeIconMoon').classList.remove('hidden');
+                document.getElementById('themeLabelText').textContent = 'الوضع الداكن';
+            } else {
+                document.documentElement.classList.remove('light');
+                document.documentElement.classList.add('dark');
+                document.getElementById('themeIconSun').classList.remove('hidden');
+                document.getElementById('themeIconMoon').classList.add('hidden');
+                document.getElementById('themeLabelText').textContent = 'الوضع الفاتح';
+            }
+
+            if (currentReportData) {
+                renderCharts(currentReportData);
+            }
+        }
+
+        // Column Visibility Manager (Feature 3)
+        function initColumnManager() {
+            try {
+                const saved = localStorage.getItem('dp_col_vis');
+                if (saved) {
+                    columnVisibility = JSON.parse(saved);
+                }
+            } catch(e) {}
+
+            AVAILABLE_COLUMNS.forEach(col => {
+                if (columnVisibility[col.id] === undefined) {
+                    columnVisibility[col.id] = col.default;
+                }
+            });
+
+            renderColumnCheckboxes();
+            applyColumnVisibility();
+
+            const btn = document.getElementById('btnColumnSettings');
+            const panel = document.getElementById('columnSettingsPanel');
+
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                panel.classList.toggle('hidden');
+            });
+
+            panel.addEventListener('click', (e) => e.stopPropagation());
+
+            document.addEventListener('click', () => {
+                panel.classList.add('hidden');
+            });
+
+            document.getElementById('btnResetColumns').addEventListener('click', () => {
+                AVAILABLE_COLUMNS.forEach(col => {
+                    columnVisibility[col.id] = col.default;
+                });
+                try { localStorage.removeItem('dp_col_vis'); } catch(e) {}
+                renderColumnCheckboxes();
+                applyColumnVisibility();
+                if (currentReportData && currentReportData.records) {
+                    renderTableRows(currentReportData.records);
+                }
+            });
+        }
+
+        function renderColumnCheckboxes() {
+            const container = document.getElementById('columnCheckboxesContainer');
+            container.innerHTML = AVAILABLE_COLUMNS.map(col => {
+                const isChecked = columnVisibility[col.id] !== false;
+                return `
+                    <label class="flex items-center justify-between p-1.5 rounded hover:bg-[var(--border-color)] cursor-pointer select-none">
+                        <span class="text-[var(--text-main)]">${col.label}</span>
+                        <input type="checkbox" data-col="${col.id}" class="col-checkbox rounded text-blue-600 focus:ring-0 cursor-pointer" ${isChecked ? 'checked' : ''}>
+                    </label>
+                `;
+            }).join('');
+
+            container.querySelectorAll('.col-checkbox').forEach(cb => {
+                cb.addEventListener('change', (e) => {
+                    const colId = e.target.getAttribute('data-col');
+                    columnVisibility[colId] = e.target.checked;
+                    try { localStorage.setItem('dp_col_vis', JSON.stringify(columnVisibility)); } catch(e) {}
+                    applyColumnVisibility();
+                    if (currentReportData && currentReportData.records) {
+                        renderTableRows(currentReportData.records);
+                    }
+                });
+            });
+        }
+
+        function applyColumnVisibility() {
+            const isTimeSeries = (currentGranularity !== 'summary');
+            AVAILABLE_COLUMNS.forEach(col => {
+                let isVisible = columnVisibility[col.id] !== false;
+                if (col.id === 'period') {
+                    isVisible = isVisible && isTimeSeries;
+                }
+
+                // Update Header
+                const th = document.querySelector(`thead th[data-col="${col.id}"]`);
+                if (th) {
+                    if (isVisible) th.classList.remove('hidden');
+                    else th.classList.add('hidden');
+                }
+
+                // Update Footer
+                const tdFoot = document.querySelector(`tfoot td[data-col="${col.id}"]`);
+                if (tdFoot) {
+                    if (isVisible) tdFoot.classList.remove('hidden');
+                    else tdFoot.classList.add('hidden');
+                }
+            });
+
+            // Adjust footGrandLabel colspan dynamically
+            const footLabel = document.getElementById('footGrandLabel');
+            let baseSpan = 0;
+            if (columnVisibility['idx'] !== false) baseSpan++;
+            if (columnVisibility['code'] !== false) baseSpan++;
+            if (columnVisibility['name'] !== false) baseSpan++;
+            footLabel.colSpan = Math.max(1, baseSpan);
+        }
+
+        // Granularity Switcher (Feature 2)
+        function setupGranularitySwitcher() {
+            const btns = document.querySelectorAll('.granularity-btn');
+            btns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const gran = btn.getAttribute('data-granularity');
+                    if (gran === currentGranularity) return;
+
+                    currentGranularity = gran;
+                    btns.forEach(b => {
+                        b.classList.remove('bg-blue-600', 'text-white');
+                        b.classList.add('text-[var(--text-muted)]');
+                    });
+                    btn.classList.add('bg-blue-600', 'text-white');
+                    btn.classList.remove('text-[var(--text-muted)]');
+
+                    applyColumnVisibility();
+                    fetchReportData();
+                });
+            });
+        }
+
+        // Load Branch Metadata
+        async function loadBranches() {
+            try {
+                const response = await fetch('/api/caravans/branches');
+                if (!response.ok) throw new Error(`HTTP error ${response.status}`);
+                const data = await response.json();
+
+                if (data.status === 'success' && Array.isArray(data.branches)) {
+                    allBranches = data.branches;
+                    selectedBranchCodes = new Set(allBranches.map(b => String(b.Code)));
+                    renderBranchDropdown();
+                    updateBranchDropdownLabel();
+                } else {
+                    document.getElementById('branchDropdownLabel').textContent = 'فشل تحميل المنافذ';
+                }
+            } catch (err) {
+                console.error('Error loading branches:', err);
+                document.getElementById('branchDropdownLabel').textContent = 'خطأ في الاتصال بقاعدة البيانات';
+            }
+        }
+
+        function renderBranchDropdown() {
+            const container = document.getElementById('branchCheckboxList');
+            const filterTerm = (document.getElementById('branchFilterInput').value || '').trim().toLowerCase();
+
+            const filteredBranches = allBranches.filter(b => {
+                if (!filterTerm) return true;
+                const name = String(b.Name || '').toLowerCase();
+                const code = String(b.Code || '');
+                return name.includes(filterTerm) || code.includes(filterTerm);
+            });
+
+            if (filteredBranches.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-4 text-xs text-[var(--text-muted)]">
+                        لا توجد منافذ مطابقة للبحث
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = filteredBranches.map(b => {
+                const codeStr = String(b.Code);
+                const isChecked = selectedBranchCodes.has(codeStr);
+                const safeName = escapeHtml(b.Name);
+                const safeCode = escapeHtml(b.Code);
+                return `
+                    <label class="flex items-center justify-between p-1.5 rounded hover:bg-[var(--border-color)] cursor-pointer transition select-none">
+                        <div class="flex items-center gap-2">
+                            <input type="checkbox" value="${safeCode}" class="branch-checkbox w-3.5 h-3.5 rounded text-blue-600 focus:ring-0 bg-[var(--input-bg)] border-[var(--border-color)] cursor-pointer" ${isChecked ? 'checked' : ''}>
+                            <span class="text-[var(--text-main)]">${safeName}</span>
+                        </div>
+                        <span class="text-[11px] text-[var(--text-muted)] num-font" dir="ltr">${safeCode}</span>
+                    </label>
+                `;
+            }).join('');
+
+            container.querySelectorAll('.branch-checkbox').forEach(cb => {
+                cb.addEventListener('change', (e) => {
+                    const code = e.target.value;
+                    if (e.target.checked) selectedBranchCodes.add(code);
+                    else selectedBranchCodes.delete(code);
+                    updateBranchDropdownLabel();
+                });
+            });
+
+            updateBranchDropdownLabel();
+        }
+
+        function updateBranchDropdownLabel() {
+            const labelEl = document.getElementById('branchDropdownLabel');
+            const badgeEl = document.getElementById('branchSelectionBadge');
+            const counterEl = document.getElementById('branchCounterText');
+
+            const total = allBranches.length;
+            const selected = selectedBranchCodes.size;
+
+            counterEl.textContent = `${selected} / ${total}`;
+            badgeEl.textContent = `${selected} من ${total}`;
+
+            if (selected === total && total > 0) {
+                labelEl.innerHTML = `<span class="text-blue-500 font-medium">جميع المنافذ (${total})</span>`;
+            } else if (selected === 0) {
+                labelEl.innerHTML = `<span class="text-red-500 font-medium">لم يتم تحديد أي منفذ</span>`;
+            } else if (selected === 1) {
+                const singleCode = Array.from(selectedBranchCodes)[0];
+                const item = allBranches.find(b => String(b.Code) === singleCode);
+                labelEl.innerHTML = `<span>${item ? escapeHtml(item.Name) : singleCode}</span>`;
+            } else {
+                labelEl.innerHTML = `<span>${selected} منافذ محددة</span>`;
+            }
+        }
+
+        // Fetch Filtered Report Data
+        async function fetchReportData() {
+            const startDate = document.getElementById('startDateInput').value || '2026-01-01';
+            const endDate = document.getElementById('endDateInput').value || '2026-10-25';
+            const sort = document.getElementById('sortSelect').value || 'total_desc';
+
+            const btn = document.getElementById('btnApplyFilters');
+            const spinner = document.getElementById('applyFilterSpinner');
+            const btnText = document.getElementById('applyFilterText');
+            const kpiContainer = document.getElementById('kpiContainer');
+
+            btn.disabled = true;
+            spinner.classList.add('animate-spin');
+            btnText.textContent = 'جاري التحديث...';
+            kpiContainer.classList.add('opacity-50');
+
+            try {
+                const params = new URLSearchParams();
+                params.set('startDate', startDate);
+                params.set('endDate', endDate);
+                params.set('sort', sort);
+                params.set('granularity', currentGranularity);
+
+                if (selectedBranchCodes.size > 0 && selectedBranchCodes.size < allBranches.length) {
+                    params.set('branches', Array.from(selectedBranchCodes).join(','));
+                } else if (selectedBranchCodes.size === 0) {
+                    params.set('branches', '-999');
+                }
+
+                const response = await fetch(`/api/caravans/report?${params.toString()}`);
+                if (!response.ok) throw new Error(`HTTP error ${response.status}`);
+                const data = await response.json();
+
+                if (data.status === 'success') {
+                    currentReportData = data;
+                    renderDashboard(data, startDate, endDate);
+                } else {
+                    alert(`فشل استعلام التقرير: ${data.message || 'خطأ غير معروف'}`);
+                }
+            } catch (err) {
+                console.error('Error fetching report:', err);
+                alert(`حدث خطأ أثناء الاتصال بالخادم: ${err.message}`);
+            } finally {
+                btn.disabled = false;
+                spinner.classList.remove('animate-spin');
+                btnText.textContent = 'تحديث البيانات';
+                kpiContainer.classList.remove('opacity-50');
+            }
+        }
+
+        // Render Dashboard State
+        function renderDashboard(data, startDate, endDate) {
+            const summary = data.summary || {};
+            const records = data.records || [];
+
+            const rangeText = `${startDate} -> ${endDate}`;
+            document.getElementById('activeRangeBadge').textContent = rangeText;
+            document.getElementById('printDateRange').textContent = `${startDate} إلى ${endDate}`;
+            document.getElementById('printGeneratedDate').textContent = new Date().toLocaleString('ar-EG');
+            
+            const granLabel = currentGranularity === 'month' ? 'مقارنة شهر بشهر' : (currentGranularity === 'day' ? 'حركة يومية' : 'إجمالي الفروع');
+            document.getElementById('printGranularity').textContent = granLabel;
+            document.getElementById('printOutletsInfo').textContent = `${records.length} سجل مبيعات`;
+
+            // KPI Values
+            document.getElementById('kpiTotalSales').textContent = formatEGP(summary.totalSales);
+            document.getElementById('kpiCaravanCount').textContent = `${records.length}`;
+
+            document.getElementById('kpiTotalCash').textContent = formatEGP(summary.totalCash);
+            document.getElementById('kpiCashPct').textContent = `${summary.cashPct || 0}%`;
+            document.getElementById('kpiCashBar').style.width = `${Math.min(100, Math.max(0, summary.cashPct || 0))}%`;
+
+            document.getElementById('kpiTotalVisa').textContent = formatEGP(summary.totalVisa);
+            document.getElementById('kpiVisaPct').textContent = `${summary.visaPct || 0}%`;
+            document.getElementById('kpiTotalCL').textContent = formatEGP(summary.totalCL);
+
+            document.getElementById('kpiTotalCover').textContent = formatInt(summary.totalCover);
+            document.getElementById('kpiAvgTicket').textContent = formatEGP(summary.avgTicket);
+
+            if (summary.topCaravan) {
+                document.getElementById('topCaravanBadge').textContent = `المتصدر: ${summary.topCaravan.name} (${formatEGP(summary.topCaravan.total)})`;
+            } else {
+                document.getElementById('topCaravanBadge').textContent = 'المتصدر: --';
+            }
+
+            renderCharts(data);
+            renderPaymentDonutChart(summary);
+            renderTableRows(records);
+
+            // Table Footer Summary
+            document.getElementById('tableRowCount').textContent = records.length;
+            document.getElementById('footCover').textContent = formatInt(summary.totalCover);
+            document.getElementById('footAvgTicket').textContent = formatEGP(summary.avgTicket);
+            document.getElementById('footCash').textContent = formatEGP(summary.totalCash);
+            document.getElementById('footVisa').textContent = formatEGP(summary.totalVisa);
+            document.getElementById('footCL').textContent = formatEGP(summary.totalCL);
+            document.getElementById('footTotal').textContent = formatEGP(summary.totalSales);
+        }
+
+        // Table Rows Renderer with Column Visibility
+        function renderTableRows(records) {
+            const tbody = document.getElementById('tableBody');
+            const searchTerm = (document.getElementById('searchInput').value || '').trim().toLowerCase();
+            const isTimeSeries = (currentGranularity !== 'summary');
+
+            if (selectedBranchCodes.size === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="11" class="py-12 text-center text-amber-500 font-semibold">
+                            لم يتم تحديد أي كرفان في الفلتر. يرجى اختيار منفذ واحد على الأقل من قائمة المنافذ.
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            const filtered = records.filter(r => {
+                if (!searchTerm) return true;
+                const name = String(r.Name || '').toLowerCase();
+                const code = String(r.Branch_Code || '');
+                const period = String(r.Period || '').toLowerCase();
+                return name.includes(searchTerm) || code.includes(searchTerm) || period.includes(searchTerm);
+            });
+
+            if (filtered.length === 0) {
+                const emptyMessage = searchTerm
+                    ? `لا توجد نتائج مطابقة لعبارة البحث "${escapeHtml(searchTerm)}".`
+                    : 'لا توجد معاملات مبيعات مسجلة في النطاق الزمني المحدد للمنافذ المختارة.';
+
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="11" class="py-12 text-center text-[var(--text-muted)]">
+                            ${emptyMessage}
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            const isColVisible = (id) => {
+                if (id === 'period') return isTimeSeries && (columnVisibility[id] !== false);
+                return columnVisibility[id] !== false;
+            };
+
+            tbody.innerHTML = filtered.map((r, index) => {
+                const share = Number(r.marketShare) || 0;
+                const safeCode = escapeHtml(r.Branch_Code);
+                const safeName = escapeHtml(r.Name);
+                const periodStr = r.Period || '-';
+
+                return `
+                    <tr class="hover:bg-[var(--border-color)]/50 transition-colors">
+                        <td data-col="idx" class="py-2.5 px-3 text-center text-[var(--text-muted)] num-font ${isColVisible('idx') ? '' : 'hidden'}">${index + 1}</td>
+                        <td data-col="code" class="py-2.5 px-3 text-start num-font font-medium text-[var(--text-muted)] ${isColVisible('code') ? '' : 'hidden'}" dir="ltr">${safeCode}</td>
+                        <td data-col="name" class="py-2.5 px-3 text-start font-semibold text-[var(--text-main)] ${isColVisible('name') ? '' : 'hidden'}">${safeName}</td>
+                        <td data-col="period" class="py-2.5 px-3 text-center num-font font-bold text-blue-500 ${isColVisible('period') ? '' : 'hidden'}">${periodStr}</td>
+                        <td data-col="share" class="py-2.5 px-3 text-start ${isColVisible('share') ? '' : 'hidden'}">
+                            <div class="flex items-center gap-2">
+                                <div class="w-14 bg-[var(--input-bg)] h-1.5 rounded-full overflow-hidden">
+                                    <div class="bg-blue-500 h-full rounded-full" style="width: ${share}%"></div>
+                                </div>
+                                <span class="num-font text-[11px] text-[var(--text-muted)] w-9 text-end">${share.toFixed(1)}%</span>
+                            </div>
+                        </td>
+                        <td data-col="cover" class="py-2.5 px-3 text-end num-font text-[var(--text-main)] ${isColVisible('cover') ? '' : 'hidden'}">${formatInt(r.Cover)}</td>
+                        <td data-col="avgTicket" class="py-2.5 px-3 text-end num-font text-[var(--text-muted)] ${isColVisible('avgTicket') ? '' : 'hidden'}">${formatEGP(r.avgTicket)}</td>
+                        <td data-col="cash" class="py-2.5 px-3 text-end num-font text-emerald-500 font-medium ${isColVisible('cash') ? '' : 'hidden'}">${formatEGP(r.Cash)}</td>
+                        <td data-col="visa" class="py-2.5 px-3 text-end num-font text-blue-500 font-medium ${isColVisible('visa') ? '' : 'hidden'}">${formatEGP(r.Visa)}</td>
+                        <td data-col="cl" class="py-2.5 px-3 text-end num-font text-amber-500 font-medium ${isColVisible('cl') ? '' : 'hidden'}">${formatEGP(r['C/L'])}</td>
+                        <td data-col="total" class="py-2.5 px-3 text-end num-font font-bold text-[var(--text-main)] ${isColVisible('total') ? '' : 'hidden'}">${formatEGP(r.Total)}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // Charts Renderer (Bar Chart for Summary & Time-Series Trend Line/Bar for Month/Day)
+        function renderCharts(data) {
+            const records = data.records || [];
+            const summary = data.summary || {};
+            const ctx = document.getElementById('rankingChart').getContext('2d');
+            const isLight = document.documentElement.classList.contains('light');
+
+            if (rankingChartInstance) {
+                rankingChartInstance.destroy();
+            }
+
+            const chartTitleEl = document.getElementById('chartMainTitle');
+            const subtextEl = document.getElementById('barSubtext');
+
+            const textColor = isLight ? '#0F172A' : '#F1F5F9';
+            const mutedColor = isLight ? '#64748B' : '#94A3B8';
+            const gridColor = isLight ? 'rgba(226, 232, 240, 0.8)' : 'rgba(31, 41, 55, 0.7)';
+
+            if (currentGranularity !== 'summary') {
+                // Time-Series Mode (Monthly or Daily Evolution)
+                chartTitleEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-blue-500"></span> مسار تطور المبيعات (${currentGranularity === 'month' ? 'شهرياً' : 'يومياً'})`;
+                
+                // Group sales by Period
+                const periodMap = new Map();
+                records.forEach(r => {
+                    const p = r.Period || 'غير محدد';
+                    const cur = periodMap.get(p) || { total: 0, cash: 0, visa: 0 };
+                    cur.total += Number(r.Total) || 0;
+                    cur.cash += Number(r.Cash) || 0;
+                    cur.visa += Number(r.Visa) || 0;
+                    periodMap.set(p, cur);
+                });
+
+                const sortedPeriods = Array.from(periodMap.keys()).sort();
+                const totalVals = sortedPeriods.map(p => periodMap.get(p).total);
+                const cashVals = sortedPeriods.map(p => periodMap.get(p).cash);
+                const visaVals = sortedPeriods.map(p => periodMap.get(p).visa);
+
+                subtextEl.textContent = `تحليل حركة المبيعات عبر ${sortedPeriods.length} فترة زمنية`;
+
+                rankingChartInstance = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: sortedPeriods,
+                        datasets: [
+                            {
+                                label: 'إجمالي المبيعات',
+                                data: totalVals,
+                                borderColor: '#3B82F6',
+                                backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                                fill: true,
+                                tension: 0.3,
+                                borderWidth: 2,
+                                pointRadius: 3
+                            },
+                            {
+                                label: 'كاش',
+                                data: cashVals,
+                                borderColor: '#10B981',
+                                borderDash: [4, 4],
+                                fill: false,
+                                tension: 0.3,
+                                borderWidth: 1.5,
+                                pointRadius: 2
+                            },
+                            {
+                                label: 'فيزا',
+                                data: visaVals,
+                                borderColor: '#0284C7',
+                                borderDash: [2, 2],
+                                fill: false,
+                                tension: 0.3,
+                                borderWidth: 1.5,
+                                pointRadius: 2
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: true,
+                                position: 'top',
+                                labels: { color: textColor, font: { family: 'Cairo', size: 11 } }
+                            },
+                            tooltip: {
+                                rtl: true,
+                                backgroundColor: isLight ? '#FFFFFF' : '#0F172A',
+                                titleColor: textColor,
+                                bodyColor: textColor,
+                                borderColor: isLight ? '#CBD5E1' : '#334155',
+                                borderWidth: 1,
+                                callbacks: {
+                                    label: (ctx) => `${ctx.dataset.label}: ${formatEGP(ctx.raw)} ج.م`
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                grid: { color: gridColor },
+                                ticks: { color: mutedColor, font: { family: 'IBM Plex Sans', size: 10 } }
+                            },
+                            y: {
+                                grid: { color: gridColor },
+                                ticks: {
+                                    color: mutedColor,
+                                    font: { family: 'IBM Plex Sans', size: 11 },
+                                    callback: (val) => val >= 1000000 ? (val/1000000).toFixed(1) + 'M' : (val >= 1000 ? (val/1000).toFixed(0) + 'K' : val)
+                                }
+                            }
+                        }
+                    }
+                });
+
+            } else {
+                // Summary Mode (Horizontal Bar Ranking)
+                chartTitleEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-blue-500"></span> مقارنة إيرادات الكرفانات`;
+                const displayRecords = records.slice(0, 12);
+                const totalCount = records.length;
+                subtextEl.textContent = totalCount > 12 ? `معروض أعلى 12 منفذاً من إجمالي ${totalCount} كرفان مشمول` : `مقارنة المبيعات لكافة المنافذ المشمولة (${totalCount} منفذ)`;
+
+                const labels = displayRecords.map(r => r.Name);
+                const dataValues = displayRecords.map(r => Number(r.Total) || 0);
+
+                const bgColors = dataValues.map((_, i) => i === 0 ? '#F59E0B' : '#2563EB');
+                const borderColors = dataValues.map((_, i) => i === 0 ? '#D97706' : '#1D4ED8');
+
+                rankingChartInstance = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            data: dataValues,
+                            backgroundColor: bgColors,
+                            borderColor: borderColors,
+                            borderWidth: 1,
+                            borderRadius: 4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        indexAxis: 'y',
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                rtl: true,
+                                backgroundColor: isLight ? '#FFFFFF' : '#0F172A',
+                                borderColor: isLight ? '#CBD5E1' : '#334155',
+                                borderWidth: 1,
+                                titleColor: textColor,
+                                bodyColor: textColor,
+                                titleFont: { family: 'Cairo', size: 12, weight: 'bold' },
+                                bodyFont: { family: 'IBM Plex Sans', size: 12 },
+                                callbacks: {
+                                    label: function (context) {
+                                        const val = context.raw || 0;
+                                        const total = Number(summary.totalSales) || 1;
+                                        const pct = ((val / total) * 100).toFixed(1);
+                                        return `المبيعات: ${formatEGP(val)} ج.م (${pct}% من الإجمالي)`;
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                grid: { color: gridColor },
+                                ticks: {
+                                    color: mutedColor,
+                                    font: { family: 'IBM Plex Sans' },
+                                    callback: function (val) {
+                                        return val >= 1000000 ? (val / 1000000).toFixed(1) + 'M' : (val >= 1000 ? (val / 1000) + 'K' : val);
+                                    }
+                                }
+                            },
+                            y: {
+                                grid: { display: false },
+                                ticks: {
+                                    color: textColor,
+                                    font: { family: 'Cairo', size: 11 }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        // Donut Chart Renderer (Strict Payment Semantics)
+        function renderPaymentDonutChart(summary) {
+            const ctx = document.getElementById('paymentDonutChart').getContext('2d');
+            const isLight = document.documentElement.classList.contains('light');
+
+            if (donutChartInstance) {
+                donutChartInstance.destroy();
+            }
+
+            const cashVal = Number(summary.totalCash) || 0;
+            const visaVal = Number(summary.totalVisa) || 0;
+            const clVal = Number(summary.totalCL) || 0;
+            const grandTotal = cashVal + visaVal + clVal;
+
+            const cashPct = grandTotal > 0 ? ((cashVal / grandTotal) * 100).toFixed(1) : 0;
+            const visaPct = grandTotal > 0 ? ((visaVal / grandTotal) * 100).toFixed(1) : 0;
+            const clPct = grandTotal > 0 ? ((clVal / grandTotal) * 100).toFixed(1) : 0;
+
+            document.getElementById('legendCash').innerHTML = `<span>${formatEGP(cashVal)}</span><br><span class="text-[10px] text-[var(--text-muted)]">(${cashPct}%)</span>`;
+            document.getElementById('legendVisa').innerHTML = `<span>${formatEGP(visaVal)}</span><br><span class="text-[10px] text-[var(--text-muted)]">(${visaPct}%)</span>`;
+            document.getElementById('legendCL').innerHTML = `<span>${formatEGP(clVal)}</span><br><span class="text-[10px] text-[var(--text-muted)]">(${clPct}%)</span>`;
+
+            donutChartInstance = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['كاش', 'فيزا', 'آجل C/L'],
+                    datasets: [{
+                        data: [cashVal, visaVal, clVal],
+                        backgroundColor: ['#10B981', '#3B82F6', '#F59E0B'],
+                        borderColor: isLight ? '#FFFFFF' : '#111827',
+                        borderWidth: 2,
+                        hoverOffset: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '70%',
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            rtl: true,
+                            backgroundColor: isLight ? '#FFFFFF' : '#0F172A',
+                            borderColor: isLight ? '#CBD5E1' : '#334155',
+                            borderWidth: 1,
+                            titleFont: { family: 'Cairo', size: 12 },
+                            bodyFont: { family: 'IBM Plex Sans', size: 12 },
+                            callbacks: {
+                                label: function (context) {
+                                    const val = context.raw || 0;
+                                    const pct = grandTotal > 0 ? ((val / grandTotal) * 100).toFixed(1) : 0;
+                                    return `${context.label}: ${formatEGP(val)} ج.م (${pct}%)`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Preset Date Ranges (Saturday start in Egypt & Clamped 2026)
+        function clearActiveChips() {
+            document.querySelectorAll('.preset-chip').forEach(c => {
+                c.classList.remove('bg-blue-500/10', 'text-blue-500', 'border-blue-500/30');
+                c.classList.add('bg-[var(--input-bg)]', 'text-[var(--text-muted)]', 'border-[var(--border-color)]');
+            });
+        }
+
+        function setupPresetChips() {
+            const chips = document.querySelectorAll('.preset-chip');
+            chips.forEach(chip => {
+                chip.addEventListener('click', () => {
+                    const preset = chip.getAttribute('data-preset');
+                    const now = new Date();
+                    let sDate = new Date();
+                    let eDate = new Date();
+
+                    if (preset === 'today') {
+                        sDate = now;
+                        eDate = now;
+                    } else if (preset === 'thisWeek') {
+                        // Work week in Egypt starts on Saturday
+                        const dayOfWeek = now.getDay();
+                        const diffToSaturday = (dayOfWeek + 1) % 7;
+                        sDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - diffToSaturday);
+                        eDate = now;
+                    } else if (preset === 'thisMonth') {
+                        sDate = new Date(now.getFullYear(), now.getMonth(), 1);
+                        eDate = now;
+                    } else if (preset === 'fullYear') {
+                        sDate = new Date(2026, 0, 1);
+                        eDate = (now.getFullYear() === 2026) ? now : new Date(2026, 11, 31);
+                    }
+
+                    document.getElementById('startDateInput').value = formatDateIso(sDate);
+                    document.getElementById('endDateInput').value = formatDateIso(eDate);
+
+                    clearActiveChips();
+                    chip.classList.remove('bg-[var(--input-bg)]', 'text-[var(--text-muted)]', 'border-[var(--border-color)]');
+                    chip.classList.add('bg-blue-500/10', 'text-blue-500', 'border-blue-500/30');
+
+                    fetchReportData();
+                });
+            });
+
+            ['startDateInput', 'endDateInput'].forEach(id => {
+                document.getElementById(id).addEventListener('change', clearActiveChips);
+            });
+        }
+
+        // Helper: Convert column index (1-based) to Excel letter (A, B, C... AA...)
+        function getColumnLetter(colIndex) {
+            let letter = "";
+            let temp = colIndex;
+            while (temp > 0) {
+                const mod = (temp - 1) % 26;
+                letter = String.fromCharCode(65 + mod) + letter;
+                temp = Math.floor((temp - mod) / 26);
+            }
+            return letter;
+        }
+
+        // Formatted Professional Excel Export via ExcelJS (Feature 1)
+        async function exportToExcelAccountingGrade() {
+            if (!currentReportData || !currentReportData.records || currentReportData.records.length === 0) {
+                alert('لا توجد بيانات متاحة للتصدير حالياً.');
+                return;
+            }
+
+            if (typeof ExcelJS === 'undefined') {
+                alert('جاري تحميل مكتبة التصدير ExcelJS، يرجى الانتظار بضع ثوان والمحاولة مجدداً.');
+                return;
+            }
+
+            const btn = document.getElementById('btnExportExcel');
+            const originalBtnHtml = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = `
+                <svg class="w-4 h-4 animate-spin text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                <span>جاري تصدير Excel...</span>
+            `;
+
+            try {
+                const records = currentReportData.records;
+                const summary = currentReportData.summary || {};
+                const startDate = document.getElementById('startDateInput').value || '2026-01-01';
+                const endDate = document.getElementById('endDateInput').value || '2026-10-25';
+                const exportTimestamp = new Date().toLocaleString('ar-EG');
+                const granularityLabel = currentGranularity === 'month' ? 'مقارنة شهرية' : (currentGranularity === 'day' ? 'حركة يومية' : 'ملخص إجمالي الفروع');
+
+                // Determine Visible Columns
+                const isTimeSeries = (currentGranularity !== 'summary');
+                const activeCols = AVAILABLE_COLUMNS.filter(col => {
+                    if (col.id === 'period' && !isTimeSeries) return false;
+                    return columnVisibility[col.id] !== false;
+                });
+
+                const numCols = activeCols.length;
+
+                // Initialize ExcelJS Workbook & RTL Worksheet
+                const workbook = new ExcelJS.Workbook();
+                workbook.creator = "Dream Park ERP - Financial Accounts";
+                workbook.created = new Date();
+
+                const worksheet = workbook.addWorksheet("إيرادات الكرفانات", {
+                    views: [{ rightToLeft: true, showGridLines: true }]
+                });
+
+                worksheet.pageSetup = {
+                    paperSize: 9, // A4
+                    orientation: 'landscape',
+                    fitToPage: true,
+                    fitToWidth: 1,
+                    fitToHeight: 0
+                };
+
+                // Merged Corporate Header
+                worksheet.mergeCells(1, 1, 1, numCols);
+                const r1 = worksheet.getCell(1, 1);
+                r1.value = "مجموعة دريم بارك والزوو - الإدارة المالية";
+                r1.font = { name: 'Cairo', size: 16, bold: true, color: { argb: 'FF0F2B5C' } };
+                r1.alignment = { vertical: 'middle', horizontal: 'center' };
+                worksheet.getRow(1).height = 36;
+
+                worksheet.mergeCells(2, 1, 2, numCols);
+                const r2 = worksheet.getCell(2, 1);
+                r2.value = "تقرير الإيرادات ومطابقة المبيعات النقدية والبنكية";
+                r2.font = { name: 'Cairo', size: 13, bold: true, color: { argb: 'FFB45309' } };
+                r2.alignment = { vertical: 'middle', horizontal: 'center' };
+                worksheet.getRow(2).height = 28;
+
+                worksheet.mergeCells(3, 1, 3, numCols);
+                const r3 = worksheet.getCell(3, 1);
+                r3.value = `تاريخ الاستخراج: ${exportTimestamp} | الفترة المحددة: من ${startDate} إلى ${endDate} | نمط التقرير: ${granularityLabel}`;
+                r3.font = { name: 'Cairo', size: 10, italic: true, color: { argb: 'FF64748B' } };
+                r3.alignment = { vertical: 'middle', horizontal: 'center' };
+                worksheet.getRow(3).height = 24;
+
+                worksheet.getRow(4).height = 12;
+
+                // Table Header Row (Row 5)
+                const headerRow = worksheet.getRow(5);
+                headerRow.height = 32;
+
+                activeCols.forEach((col, idx) => {
+                    const cell = headerRow.getCell(idx + 1);
+                    cell.value = col.label;
+                    cell.font = { name: 'Cairo', size: 11, bold: true, color: { argb: 'FFFFFFFF' } };
+                    cell.fill = {
+                        type: 'pattern',
+                        pattern: 'solid',
+                        fgColor: { argb: 'FF1E293B' }
+                    };
+                    cell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
+                    cell.border = {
+                        top: { style: 'thin', color: { argb: 'FF334155' } },
+                        left: { style: 'thin', color: { argb: 'FF334155' } },
+                        bottom: { style: 'medium', color: { argb: 'FF0F172A' } },
+                        right: { style: 'thin', color: { argb: 'FF334155' } }
+                    };
+                });
+
+                // Data Rows (Starting at Row 6)
+                const startDataRow = 6;
+                const thinBorder = {
+                    top: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+                    left: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+                    bottom: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+                    right: { style: 'thin', color: { argb: 'FFCBD5E1' } }
+                };
+
+                records.forEach((record, rIdx) => {
+                    const currentRowIndex = startDataRow + rIdx;
+                    const row = worksheet.getRow(currentRowIndex);
+                    row.height = 24;
+
+                    const isOdd = (rIdx % 2 !== 0);
+                    const rowFill = {
+                        type: 'pattern',
+                        pattern: 'solid',
+                        fgColor: { argb: isOdd ? 'FFF8FAFC' : 'FFFFFFFF' }
+                    };
+
+                    activeCols.forEach((col, cIdx) => {
+                        const cell = row.getCell(cIdx + 1);
+                        cell.fill = rowFill;
+                        cell.border = thinBorder;
+
+                        switch (col.id) {
+                            case 'idx':
+                                cell.value = rIdx + 1;
+                                cell.alignment = { vertical: 'middle', horizontal: 'center' };
+                                cell.font = { name: 'IBM Plex Sans', size: 10, color: { argb: 'FF64748B' } };
+                                break;
+                            case 'code':
+                                cell.value = String(record.Branch_Code);
+                                cell.alignment = { vertical: 'middle', horizontal: 'center' };
+                                cell.font = { name: 'Courier New', size: 11, bold: true, color: { argb: 'FF1E293B' } };
+                                break;
+                            case 'name':
+                                cell.value = record.Name;
+                                cell.alignment = { vertical: 'middle', horizontal: 'right' };
+                                cell.font = { name: 'Cairo', size: 11, bold: true, color: { argb: 'FF0F172A' } };
+                                break;
+                            case 'period':
+                                cell.value = record.Period || '-';
+                                cell.alignment = { vertical: 'middle', horizontal: 'center' };
+                                cell.font = { name: 'Cairo', size: 10, bold: true, color: { argb: 'FF2563EB' } };
+                                break;
+                            case 'share':
+                                cell.value = (Number(record.marketShare) || 0) / 100;
+                                cell.numFmt = '0.0%';
+                                cell.alignment = { vertical: 'middle', horizontal: 'center' };
+                                cell.font = { name: 'IBM Plex Sans', size: 10, color: { argb: 'FF475569' } };
+                                break;
+                            case 'cover':
+                                cell.value = Number(record.Cover) || 0;
+                                cell.numFmt = '#,##0';
+                                cell.alignment = { vertical: 'middle', horizontal: 'center' };
+                                cell.font = { name: 'IBM Plex Sans', size: 10, bold: true, color: { argb: 'FFD97706' } };
+                                break;
+                            case 'avgTicket':
+                                cell.value = Number(record.avgTicket) || 0;
+                                cell.numFmt = '#,##0.00 "ج.م"';
+                                cell.alignment = { vertical: 'middle', horizontal: 'left' };
+                                cell.font = { name: 'IBM Plex Sans', size: 10, color: { argb: 'FF475569' } };
+                                break;
+                            case 'cash':
+                                cell.value = Number(record.Cash) || 0;
+                                cell.numFmt = '#,##0.00 "ج.م"';
+                                cell.alignment = { vertical: 'middle', horizontal: 'left' };
+                                cell.font = { name: 'IBM Plex Sans', size: 10, bold: true, color: { argb: 'FF059669' } };
+                                break;
+                            case 'visa':
+                                cell.value = Number(record.Visa) || 0;
+                                cell.numFmt = '#,##0.00 "ج.م"';
+                                cell.alignment = { vertical: 'middle', horizontal: 'left' };
+                                cell.font = { name: 'IBM Plex Sans', size: 10, bold: true, color: { argb: 'FF2563EB' } };
+                                break;
+                            case 'cl':
+                                cell.value = Number(record['C/L']) || 0;
+                                cell.numFmt = '#,##0.00 "ج.م"';
+                                cell.alignment = { vertical: 'middle', horizontal: 'left' };
+                                cell.font = { name: 'IBM Plex Sans', size: 11, bold: true, color: { argb: 'FFD97706' } };
+                                break;
+                            case 'total':
+                                cell.value = Number(record.Total) || 0;
+                                cell.numFmt = '#,##0.00 "ج.م"';
+                                cell.alignment = { vertical: 'middle', horizontal: 'left' };
+                                cell.font = { name: 'IBM Plex Sans', size: 11, bold: true, color: { argb: 'FF047857' } };
+                                break;
+                        }
+                    });
+                });
+
+                // Grand Total Summary Row
+                const endDataRow = startDataRow + records.length - 1;
+                const totalRowIndex = endDataRow + 1;
+                const totalRow = worksheet.getRow(totalRowIndex);
+                totalRow.height = 30;
+
+                const totalFill = {
+                    type: 'pattern',
+                    pattern: 'solid',
+                    fgColor: { argb: 'FFFEF3C7' }
+                };
+
+                const totalBorder = {
+                    top: { style: 'thin', color: { argb: 'FF94A3B8' } },
+                    bottom: { style: 'double', color: { argb: 'FF0F172A' } },
+                    left: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+                    right: { style: 'thin', color: { argb: 'FFCBD5E1' } }
+                };
+
+                let firstNumericIndex = -1;
+                activeCols.forEach((c, i) => {
+                    if (['share', 'cover', 'cash', 'visa', 'cl', 'total'].includes(c.id) && firstNumericIndex === -1) {
+                        firstNumericIndex = i + 1;
+                    }
+                });
+
+                if (firstNumericIndex > 1) {
+                    worksheet.mergeCells(totalRowIndex, 1, totalRowIndex, firstNumericIndex - 1);
+                    const labelCell = worksheet.getCell(totalRowIndex, 1);
+                    labelCell.value = "الإجمالي العام لقطاع الكرفانات";
+                    labelCell.font = { name: 'Cairo', size: 12, bold: true, color: { argb: 'FF0F2B5C' } };
+                    labelCell.alignment = { vertical: 'middle', horizontal: 'center' };
+                    labelCell.fill = totalFill;
+                    labelCell.border = totalBorder;
+
+                    for (let c = 1; c < firstNumericIndex; c++) {
+                        const cell = totalRow.getCell(c);
+                        cell.fill = totalFill;
+                        cell.border = totalBorder;
+                    }
+                }
+
+                activeCols.forEach((col, idx) => {
+                    const colNum = idx + 1;
+                    if (colNum < firstNumericIndex) return;
+
+                    const cell = totalRow.getCell(colNum);
+                    cell.fill = totalFill;
+                    cell.border = totalBorder;
+                    const colLetter = getColumnLetter(colNum);
+
+                    if (col.id === 'share') {
+                        cell.value = 1.0;
+                        cell.numFmt = '0.0%';
+                        cell.alignment = { vertical: 'middle', horizontal: 'center' };
+                        cell.font = { name: 'IBM Plex Sans', size: 10, bold: true, color: { argb: 'FF0F172A' } };
+                    } else if (col.id === 'cover') {
+                        cell.value = {
+                            formula: `SUM(${colLetter}${startDataRow}:${colLetter}${endDataRow})`,
+                            result: Number(summary.totalCover) || 0
+                        };
+                        cell.numFmt = '#,##0';
+                        cell.alignment = { vertical: 'middle', horizontal: 'center' };
+                        cell.font = { name: 'IBM Plex Sans', size: 11, bold: true, color: { argb: 'FFB45309' } };
+                    } else if (col.id === 'avgTicket') {
+                        cell.value = Number(summary.avgTicket) || 0;
+                        cell.numFmt = '#,##0.00 "ج.م"';
+                        cell.alignment = { vertical: 'middle', horizontal: 'left' };
+                        cell.font = { name: 'IBM Plex Sans', size: 10, bold: true, color: { argb: 'FF0F172A' } };
+                    } else if (col.id === 'cash') {
+                        cell.value = {
+                            formula: `SUM(${colLetter}${startDataRow}:${colLetter}${endDataRow})`,
+                            result: Number(summary.totalCash) || 0
+                        };
+                        cell.numFmt = '#,##0.00 "ج.م"';
+                        cell.alignment = { vertical: 'middle', horizontal: 'left' };
+                        cell.font = { name: 'IBM Plex Sans', size: 11, bold: true, color: { argb: 'FF059669' } };
+                    } else if (col.id === 'visa') {
+                        cell.value = {
+                            formula: `SUM(${colLetter}${startDataRow}:${colLetter}${endDataRow})`,
+                            result: Number(summary.totalVisa) || 0
+                        };
+                        cell.numFmt = '#,##0.00 "ج.م"';
+                        cell.alignment = { vertical: 'middle', horizontal: 'left' };
+                        cell.font = { name: 'IBM Plex Sans', size: 11, bold: true, color: { argb: 'FF2563EB' } };
+                    } else if (col.id === 'cl') {
+                        cell.value = {
+                            formula: `SUM(${colLetter}${startDataRow}:${colLetter}${endDataRow})`,
+                            result: Number(summary.totalCL) || 0
+                        };
+                        cell.numFmt = '#,##0.00 "ج.م"';
+                        cell.alignment = { vertical: 'middle', horizontal: 'left' };
+                        cell.font = { name: 'IBM Plex Sans', size: 11, bold: true, color: { argb: 'FFD97706' } };
+                    } else if (col.id === 'total') {
+                        cell.value = {
+                            formula: `SUM(${colLetter}${startDataRow}:${colLetter}${endDataRow})`,
+                            result: Number(summary.totalSales) || 0
+                        };
+                        cell.numFmt = '#,##0.00 "ج.م"';
+                        cell.alignment = { vertical: 'middle', horizontal: 'left' };
+                        cell.font = { name: 'IBM Plex Sans', size: 12, bold: true, color: { argb: 'FF047857' } };
+                    }
+                });
+
+                // Auto Column Widths
+                activeCols.forEach((col, idx) => {
+                    const colNum = idx + 1;
+                    let maxLength = col.label ? col.label.length : 10;
+
+                    records.forEach(r => {
+                        let valStr = "";
+                        if (col.id === 'name') valStr = String(r.Name || '');
+                        else if (col.id === 'code') valStr = String(r.Branch_Code || '');
+                        else if (col.id === 'period') valStr = String(r.Period || '');
+                        else if (col.id === 'total') valStr = formatEGP(r.Total);
+                        else if (col.id === 'cash') valStr = formatEGP(r.Cash);
+                        else if (col.id === 'visa') valStr = formatEGP(r.Visa);
+                        else if (col.id === 'cl') valStr = formatEGP(r['C/L']);
+                        else if (col.id === 'cover') valStr = formatInt(r.Cover);
+                        else if (col.id === 'avgTicket') valStr = formatEGP(r.avgTicket);
+                        else if (col.id === 'share') valStr = `${r.marketShare}%`;
+
+                        if (valStr.length > maxLength) maxLength = valStr.length;
+                    });
+
+                    const minWidth = (col.id === 'name') ? 28 : ((col.id === 'total' || col.id === 'cash' || col.id === 'visa' || col.id === 'cover') ? 18 : 14);
+                    worksheet.getColumn(colNum).width = Math.max(maxLength + 6, minWidth);
+                });
+
+                // Download XLSX
+                const buffer = await workbook.xlsx.writeBuffer();
+                const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url;
+                const fileName = `DreamPark_Caravan_Report_${currentGranularity}_${startDate}_to_${endDate}.xlsx`;
+                a.download = fileName;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+
+            } catch (err) {
+                console.error("Error generating ExcelJS spreadsheet:", err);
+                alert(`حدث خطأ أثناء إنشاء ملف Excel: ${err.message}`);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalBtnHtml;
+            }
+        }
+
+        // Dropdown Events Setup
+        function setupBranchDropdownEvents() {
+            const triggerBtn = document.getElementById('branchDropdownBtn');
+            const panel = document.getElementById('branchDropdownPanel');
+            const chevron = document.getElementById('branchChevron');
+            const selectAllBtn = document.getElementById('btnSelectAllBranches');
+            const deselectAllBtn = document.getElementById('btnDeselectAllBranches');
+            const searchInput = document.getElementById('branchFilterInput');
+
+            triggerBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const isOpen = !panel.classList.contains('hidden');
+                if (isOpen) {
+                    panel.classList.add('hidden');
+                    chevron.classList.remove('rotate-180');
+                } else {
+                    panel.classList.remove('hidden');
+                    chevron.classList.add('rotate-180');
+                    searchInput.focus();
+                }
+            });
+
+            panel.addEventListener('click', (e) => e.stopPropagation());
+
+            document.addEventListener('click', () => {
+                panel.classList.add('hidden');
+                chevron.classList.remove('rotate-180');
+            });
+
+            selectAllBtn.addEventListener('click', () => {
+                selectedBranchCodes = new Set(allBranches.map(b => String(b.Code)));
+                renderBranchDropdown();
+            });
+
+            deselectAllBtn.addEventListener('click', () => {
+                selectedBranchCodes.clear();
+                renderBranchDropdown();
+            });
+
+            searchInput.addEventListener('input', () => {
+                renderBranchDropdown();
+            });
+        }
+
+        // Initialize Application
+        document.addEventListener('DOMContentLoaded', async () => {
+            initTheme();
+            initColumnManager();
+            setupGranularitySwitcher();
+            setupBranchDropdownEvents();
+            setupPresetChips();
+
+            await loadBranches();
+            await fetchReportData();
+
+            document.getElementById('btnApplyFilters').addEventListener('click', fetchReportData);
+            document.getElementById('sortSelect').addEventListener('change', fetchReportData);
+
+            document.getElementById('searchInput').addEventListener('input', () => {
+                if (currentReportData && currentReportData.records) {
+                    renderTableRows(currentReportData.records);
+                }
+            });
+
+            document.getElementById('btnExportExcel').addEventListener('click', exportToExcelAccountingGrade);
+            document.getElementById('btnPrint').addEventListener('click', () => window.print());
+        });
+    </script>
+</body>
+
+</html>
