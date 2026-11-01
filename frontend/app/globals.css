@@ -139,18 +139,39 @@
        url('/fonts/cairo-arabic-800-normal.woff') format('woff');
 }
 
-/* Print CSS Optimizations for Modular Printing */
+/* Print CSS Optimizations: Pure White Theme for Physical Printing and PDF Exports */
 @media print {
   @page {
     size: auto;
-    margin: 10mm;
+    margin: 8mm;
   }
 
   body.print-landscape-mode {
     @page {
       size: landscape;
-      margin: 10mm;
+      margin: 8mm;
     }
+  }
+
+  /* Reset color scheme variables to pure white canvas and deep slate typography */
+  :root,
+  .dark,
+  body {
+    --background: 0 0% 100% !important;
+    --foreground: 222 47% 11% !important;
+    --card: 0 0% 100% !important;
+    --card-foreground: 222 47% 11% !important;
+    --popover: 0 0% 100% !important;
+    --popover-foreground: 222 47% 11% !important;
+    --muted: 210 40% 96% !important;
+    --muted-foreground: 215 16% 47% !important;
+    --border: 214 32% 91% !important;
+    --input: 214 32% 91% !important;
+    background: #ffffff !important;
+    background-color: #ffffff !important;
+    color: #0f172a !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
 
   /* Universal scrollbar & overflow cancellation for clean print pages */
@@ -158,6 +179,111 @@
     overflow: visible !important;
     max-height: none !important;
     height: auto !important;
+    background-color: transparent !important;
+  }
+
+  /* Force pure white background on all cards, panels, and wrappers */
+  .dark body,
+  .dark main,
+  .dark section,
+  .dark article,
+  .dark aside,
+  .dark header,
+  main,
+  section,
+  article,
+  [class*="bg-slate-950"],
+  [class*="bg-slate-900"],
+  [class*="bg-slate-800"],
+  [class*="bg-card"],
+  .rounded-2xl,
+  .rounded-xl {
+    background-color: #ffffff !important;
+    background-image: none !important;
+    color: #0f172a !important;
+    border-color: #cbd5e1 !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+
+  /* High-contrast crisp typography */
+  .dark .text-white,
+  .dark .text-slate-50,
+  .dark .text-slate-100,
+  .dark .text-slate-200,
+  .dark .text-slate-300,
+  .text-white,
+  .text-slate-50,
+  .text-slate-100,
+  .text-slate-200,
+  .text-slate-300 {
+    color: #0f172a !important;
+  }
+
+  .dark .text-slate-400,
+  .dark .text-slate-500,
+  .dark .text-slate-600,
+  .text-slate-400,
+  .text-slate-500,
+  .text-slate-600 {
+    color: #334155 !important;
+  }
+
+  /* Tables: Crisp White background with subtle slate zebra and dark headers */
+  table {
+    background-color: #ffffff !important;
+    border-collapse: collapse !important;
+    border: 1px solid #cbd5e1 !important;
+    color: #0f172a !important;
+  }
+
+  thead, thead tr, thead th {
+    background-color: #f1f5f9 !important;
+    color: #0f172a !important;
+    border-bottom: 2px solid #94a3b8 !important;
+    border-top: 1px solid #cbd5e1 !important;
+    font-weight: 800 !important;
+  }
+
+  tbody tr {
+    background-color: #ffffff !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+  }
+
+  tbody tr:nth-child(even) {
+    background-color: #f8fafc !important;
+  }
+
+  td, th {
+    border-color: #e2e8f0 !important;
+    color: #0f172a !important;
+  }
+
+  /* Trend Badges: Crisp high-contrast black/slate on white with clear indicators */
+  .dark [class*="text-emerald-"],
+  [class*="text-emerald-"],
+  .dark [class*="text-emerald"],
+  [class*="text-emerald"] {
+    color: #047857 !important;
+  }
+
+  [class*="bg-emerald-"] {
+    background-color: #ecfdf5 !important;
+    border-color: #a7f3d0 !important;
+    color: #065f46 !important;
+  }
+
+  .dark [class*="text-rose-"],
+  [class*="text-rose-"],
+  .dark [class*="text-rose"],
+  [class*="text-rose"] {
+    color: #b91c1c !important;
+  }
+
+  [class*="bg-rose-"] {
+    background-color: #fef2f2 !important;
+    border-color: #fecaca !important;
+    color: #991b1b !important;
   }
 
   /* Avoid unsightly pagination page-breaks across cards and rows */
@@ -170,14 +296,16 @@
     page-break-inside: avoid !important;
   }
 
-  /* Hide print-hidden elements */
+  /* Completely hide all interactive UI controls in print and PDF */
+  button,
+  input,
+  select,
+  textarea,
+  [role="button"],
+  [role="dialog"],
+  [aria-modal="true"],
   .print\:hidden {
     display: none !important;
-  }
-
-  /* Ensure background colors and gradients render properly on physical paper/PDF */
-  * {
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
+    visibility: hidden !important;
   }
 }

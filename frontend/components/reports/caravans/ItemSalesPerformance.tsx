@@ -42,7 +42,7 @@ export function ItemSalesPerformance({
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(20);
+  const [limit, setLimit] = useState(10);
   const [sortBy, setSortBy] = useState<'revenue' | 'quantity' | 'growth' | 'name' | 'code'>('revenue');
   const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
 
@@ -245,7 +245,7 @@ export function ItemSalesPerformance({
           <div className="flex items-center gap-2">
             <span className="text-xs text-slate-400">عرض في الصفحة:</span>
             <div className="inline-flex rounded-lg border border-slate-700 bg-slate-950 p-0.5">
-              {[20, 50, 100].map((size) => (
+              {[10, 20, 50, 100].map((size) => (
                 <button
                   key={size}
                   onClick={() => {
@@ -318,6 +318,9 @@ export function ItemSalesPerformance({
                   )}
                 </span>
               </th>
+              <th className="px-4 py-3 font-bold whitespace-nowrap">
+                سعر البيع وسلوك السعر
+              </th>
               <th
                 onClick={() => toggleSort('revenue')}
                 className="cursor-pointer px-4 py-3 font-bold text-left transition hover:text-white select-none whitespace-nowrap"
@@ -331,9 +334,6 @@ export function ItemSalesPerformance({
                     <ArrowUpDown className="h-3 w-3 opacity-30" />
                   )}
                 </span>
-              </th>
-              <th className="px-4 py-3 font-bold text-left whitespace-nowrap" dir="ltr">
-                متوسط السعر
               </th>
               <th className="px-4 py-3 font-bold text-left whitespace-nowrap" dir="ltr">
                 إيراد الفترة السابقة
@@ -366,6 +366,10 @@ export function ItemSalesPerformance({
               items.map((item, idx) => {
                 const isEven = idx % 2 === 0;
                 const isPositive = item.growthPct !== null && item.growthPct >= 0;
+                const unitPrice = item.unitPrice && item.unitPrice > 0
+                  ? item.unitPrice
+                  : (item.quantity > 0 ? Math.round((item.netRevenue / item.quantity) * 100) / 100 : (item.avgPrice ?? 0));
+
                 return (
                   <tr
                     key={item.itemCode}
@@ -382,13 +386,32 @@ export function ItemSalesPerformance({
                       {item.itemName}
                     </td>
                     <td className="px-4 py-3 text-left font-semibold text-slate-200 tabular-nums" dir="ltr">
-                      {fmtInt(item.quantity)}
+                      {fmtInt(item.quantity)} قطعة
+                    </td>
+                    <td className="px-4 py-3 align-top">
+                      <div className="text-[11px] text-slate-300 tabular-nums" dir="ltr">
+                        {item.hasPriceChange && item.minPrice && item.maxPrice && item.minPrice < item.maxPrice ? (
+                          <div>
+                            <span>
+                              متوسط السعر:{' '}
+                              <strong className="text-amber-400">{fmtMoney(unitPrice)}</strong>
+                            </span>
+                            <span className="block text-[10px] font-medium text-amber-400/90" dir="rtl">
+                              تغير السعر: من {fmtMoney(item.minPrice)} إلى {fmtMoney(item.maxPrice)}
+                            </span>
+                          </div>
+                        ) : (
+                          <div>
+                            سعر الوحدة: <strong className="text-white">{fmtMoney(unitPrice)}</strong>
+                            <span className="mr-1 text-[10px] text-slate-400" dir="rtl">
+                              ({fmtInt(item.quantity)} × {fmtMoney(unitPrice)})
+                            </span>
+                          </div>
+                        )}
+                      </div>
                     </td>
                     <td className="px-4 py-3 text-left font-extrabold text-emerald-400 tabular-nums" dir="ltr">
                       {fmtMoney(item.netRevenue)}
-                    </td>
-                    <td className="px-4 py-3 text-left text-slate-300 tabular-nums" dir="ltr">
-                      {fmtMoney(item.avgPrice)}
                     </td>
                     <td className="px-4 py-3 text-left text-slate-400 tabular-nums" dir="ltr">
                       {fmtMoney(item.prevNetRevenue)}
@@ -432,7 +455,7 @@ export function ItemSalesPerformance({
           <span className="font-semibold text-slate-200 tabular-nums">
             {fmtInt(pagination.totalItems)}
           </span>{' '}
-          صنف
+          منتج
         </div>
 
         {pagination.totalPages > 1 && (
@@ -457,9 +480,31 @@ export function ItemSalesPerformance({
               <ChevronRight className="h-4 w-4" />
             </button>
 
-            <span className="px-3 text-xs font-semibold text-slate-300 tabular-nums">
-              صفحة {pagination.page} من {pagination.totalPages}
-            </span>
+            {/* Numeric Page Buttons */}
+            {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
+              let pageNum = i + 1;
+              if (pagination.totalPages > 5) {
+                if (pagination.page > 3 && pagination.page < pagination.totalPages - 1) {
+                  pageNum = pagination.page - 2 + i;
+                } else if (pagination.page >= pagination.totalPages - 1) {
+                  pageNum = pagination.totalPages - 4 + i;
+                }
+              }
+              const isActive = pageNum === pagination.page;
+              return (
+                <button
+                  key={pageNum}
+                  onClick={() => setPage(pageNum)}
+                  className={`min-w-[28px] rounded-lg px-2 py-1 text-xs font-bold transition tabular-nums ${
+                    isActive
+                      ? 'bg-emerald-600 text-white'
+                      : 'border border-slate-700 bg-slate-800 text-slate-300 hover:bg-slate-700'
+                  }`}
+                >
+                  {pageNum}
+                </button>
+              );
+            })}
 
             {/* Next Page */}
             <button

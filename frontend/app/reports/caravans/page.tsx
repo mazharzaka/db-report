@@ -900,6 +900,17 @@ export default function CaravanReportPage() {
               scopeLabel={topScopeLabel}
             />
 
+            {/* Detailed Item-Level Sales Analytics with Instant Search & Pagination for Comparison Period */}
+            <div className={`break-inside-avoid ${!printConfig.itemsPerformance ? 'print:hidden' : ''}`}>
+              <ItemSalesPerformance
+                startDate={compStartA}
+                endDate={compEndA}
+                prevStartDate={compStartB}
+                prevEndDate={compEndB}
+                selectedBranches={selected}
+              />
+            </div>
+
             {/* Interactive 2D Map for click-to-compare */}
             <section className="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900 print:hidden">
               <div className="mb-4">
@@ -934,8 +945,8 @@ export default function CaravanReportPage() {
                   <span className="rounded-lg border border-slate-700 bg-slate-950/80 px-2.5 py-1 text-slate-300 font-medium">الفواتير: <strong className="text-white">6,216</strong></span>
                   <span className="rounded-lg border border-slate-700 bg-slate-950/80 px-2.5 py-1 text-slate-300 font-medium">ضريبة الكرافانات: <strong className="text-white">972,781.71 ج.م</strong></span>
                   <span className="rounded-lg border border-slate-700 bg-slate-950/80 px-2.5 py-1 text-slate-300 font-medium">الصافي: <strong className="text-white">7,873,408.73 ج.م</strong></span>
-                  <span className="rounded-lg border border-slate-700 bg-slate-950/80 px-2.5 py-1 text-slate-300 font-medium">ضرائب وخدمات: <strong className="text-white">47,770.01 ج.م</strong></span>
-                  <span className="rounded-lg border border-emerald-500/40 bg-emerald-500/20 px-3 py-1 font-bold text-emerald-300">الإجمالي: 7,921,222.60 ج.م</span>
+                  <span className="rounded-lg border border-cyan-500/40 bg-cyan-500/10 px-2.5 py-1 text-cyan-200 font-medium">ماء معدني صغير: <strong className="text-white">11,906 قطعة</strong> (<strong className="text-emerald-300">238,120.0048 ج.م</strong>)</span>
+                  <span className="rounded-lg border border-emerald-500/40 bg-emerald-500/20 px-3 py-1 font-bold text-emerald-300">الإجمالي الصافي: 7,921,222.60 ج.م</span>
                 </div>
               </div>
             )}

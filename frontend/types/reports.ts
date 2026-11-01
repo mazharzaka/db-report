@@ -29,6 +29,12 @@ export interface ItemPerformanceRecord {
   prevNetRevenue: number;
   growthPct: number | null;
   avgPrice: number;
+  minPrice?: number;
+  maxPrice?: number;
+  hasPriceChange?: boolean;
+  weightedAvgPrice?: number;
+  unitPrice?: number;
+  stableUnitPrice?: number | null;
 }
 
 export interface ItemsPerformanceResponse {
@@ -195,11 +201,22 @@ export interface PeriodMetrics {
   avgTicket: number;
 }
 
+export interface PeriodItemPricing {
+  rank: number | null;
+  qty: number;
+  revenue: number;
+  minPrice?: number;
+  maxPrice?: number;
+  hasPriceChange?: boolean;
+  unitPrice?: number;
+  weightedAvgPrice?: number;
+}
+
 export interface ItemShift {
   itemCode: string;
   itemName: string;
-  periodA: { rank: number | null; qty: number; revenue: number };
-  periodB: { rank: number | null; qty: number; revenue: number };
+  periodA: PeriodItemPricing;
+  periodB: PeriodItemPricing;
   revenueDelta: number;
   revenueGrowthPct: number;
   qtyDelta: number;
