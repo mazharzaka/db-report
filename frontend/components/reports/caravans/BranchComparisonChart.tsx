@@ -18,7 +18,6 @@ const truncate = (s: string, n: number): string =>
 
 /**
  * Outlets Comparison Bar Chart: Executive single-metric bar showing
- * Net Revenue per Outlet or Volume of Orders in unified emerald theme (#10B981).
  * Net Revenue per Outlet or Volume of Orders in Dual-Theme palette.
  * Dark Mode: Elegant solid Lavender (#c4b5fd).
  * Light Mode: Solid Orange (#f97316).
@@ -31,7 +30,6 @@ export function BranchComparisonChart({
   metric?: "revenue" | "orders";
 }) {
   const dark = useIsDark();
-  const tick = dark ? "#94a3b8" : "#475569";
   const tick = dark ? "#94a3b8" : "#4b5563";
   const grid = dark ? "#334155" : "#e5e7eb";
   const barColor = dark ? "#c4b5fd" : "#f97316";
@@ -71,7 +69,6 @@ export function BranchComparisonChart({
               : "";
           },
         },
-        footerColor: "#f97316",
         footerColor: barColor,
       },
     },
@@ -126,7 +123,6 @@ export function BranchComparisonChart({
           {
             label: isRevenue ? "صافي الإيراد" : "عدد الشيكات",
             data: dataValues,
-            backgroundColor: "#f97316",
             backgroundColor: barColor,
             hoverBackgroundColor: barHoverColor,
           },
