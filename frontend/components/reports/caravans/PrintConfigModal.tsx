@@ -46,7 +46,6 @@ export function PrintConfigModal({
       kpis: true,
       charts: true,
       table: true,
-      peakHours: true,
       itemsPerformance: true,
     });
   };
@@ -57,13 +56,12 @@ export function PrintConfigModal({
       kpis: false,
       charts: false,
       table: false,
-      peakHours: false,
       itemsPerformance: false,
     });
   };
 
   const sections: {
-    key: keyof Omit<PrintSectionsConfig, 'orientation'>;
+    key: keyof Omit<PrintSectionsConfig, 'orientation' | 'peakHours'>;
     title: string;
     description: string;
     icon: React.ElementType;
@@ -87,12 +85,6 @@ export function PrintConfigModal({
       icon: TableIcon,
     },
     {
-      key: 'peakHours',
-      title: 'ساعات الذروة وحركة البوابات (Peak Hours & Gate Traffic)',
-      description: 'توزيع حركة مبيعات الكرافانات على مدار ساعات اليوم ومقارنتها بتدفق التذاكر',
-      icon: Clock,
-    },
-    {
       key: 'itemsPerformance',
       title: 'تحليل مبيعات الأصناف والمنتجات (Item-Level Analytics)',
       description: 'جدول أداء المنتجات، الكميات المباعة، صافي المبيعات، ومعدلات النمو الدوري',
@@ -101,7 +93,7 @@ export function PrintConfigModal({
   ];
 
   const anySelected =
-    config.kpis || config.charts || config.table || config.peakHours || config.itemsPerformance;
+    config.kpis || config.charts || config.table || config.itemsPerformance;
 
   return (
     <div
@@ -109,11 +101,11 @@ export function PrintConfigModal({
       role="dialog"
       aria-modal="true"
     >
-      <div className="relative w-full max-w-xl rounded-2xl border border-slate-700 bg-slate-900 p-6 shadow-2xl text-slate-100">
+      <div className="relative w-full max-w-xl rounded-2xl border border-white/10 bg-[#18181b] p-6 shadow-2xl text-slate-100">
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+        <div className="flex items-center justify-between border-b border-white/10 pb-4">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-black rounded-full font-medium/10 border border-indigo-600/20 text-violet-300">
               <Printer className="h-5 w-5" />
             </div>
             <div>
@@ -137,7 +129,7 @@ export function PrintConfigModal({
             <button
               type="button"
               onClick={selectAll}
-              className="text-xs font-semibold text-emerald-400 hover:text-emerald-300 transition"
+              className="text-xs font-semibold text-violet-300 hover:text-indigo-300 transition"
             >
               تحديد الكل
             </button>
@@ -162,20 +154,20 @@ export function PrintConfigModal({
                 onClick={() => toggleSection(key)}
                 className={`flex items-start gap-3 rounded-xl border p-3 cursor-pointer transition select-none ${
                   isChecked
-                    ? 'border-emerald-500/40 bg-emerald-950/20 text-slate-100'
-                    : 'border-slate-800 bg-slate-800/40 text-slate-400 hover:border-slate-700 hover:bg-slate-800/70'
+                    ? 'border-violet-500/30 bg-violet-500/10 text-white rounded-2xl'
+                    : 'border-white/10 bg-slate-800/40 text-slate-400 hover:border-white/10 hover:bg-slate-800/70'
                 }`}
               >
-                <div className="mt-0.5 text-emerald-400 shrink-0">
+                <div className="mt-0.5 text-violet-300 shrink-0">
                   {isChecked ? (
-                    <CheckSquare className="h-5 w-5 text-emerald-400" />
+                    <CheckSquare className="h-5 w-5 text-violet-300" />
                   ) : (
                     <Square className="h-5 w-5 text-slate-500" />
                   )}
                 </div>
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
-                    <Icon className={`h-4 w-4 ${isChecked ? 'text-emerald-400' : 'text-slate-500'}`} />
+                    <Icon className={`h-4 w-4 ${isChecked ? 'text-violet-300' : 'text-slate-500'}`} />
                     <span className={`text-sm font-bold ${isChecked ? 'text-white' : 'text-slate-300'}`}>
                       {title}
                     </span>
@@ -188,10 +180,10 @@ export function PrintConfigModal({
         </div>
 
         {/* Print Layout Orientation Note */}
-        <div className="mt-4 rounded-xl border border-slate-800 bg-slate-950/60 p-3">
+        <div className="mt-4 rounded-xl border border-white/10 bg-zinc-950 p-3">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
-              <SlidersHorizontal className="h-3.5 w-3.5 text-emerald-400" />
+              <SlidersHorizontal className="h-3.5 w-3.5 text-violet-300" />
               اتجاه الصفحة المفضل:
             </span>
             <div className="flex items-center gap-1.5 text-xs">
@@ -200,7 +192,7 @@ export function PrintConfigModal({
                 onClick={() => onChange({ ...config, orientation: 'auto' })}
                 className={`rounded-lg px-2.5 py-1 font-semibold transition ${
                   config.orientation === 'auto'
-                    ? 'bg-emerald-600 text-white'
+                    ? 'bg-white text-black rounded-full font-medium text-white'
                     : 'bg-slate-800 text-slate-400 hover:text-white'
                 }`}
               >
@@ -211,7 +203,7 @@ export function PrintConfigModal({
                 onClick={() => onChange({ ...config, orientation: 'landscape' })}
                 className={`rounded-lg px-2.5 py-1 font-semibold transition ${
                   config.orientation === 'landscape'
-                    ? 'bg-emerald-600 text-white'
+                    ? 'bg-white text-black rounded-full font-medium text-white'
                     : 'bg-slate-800 text-slate-400 hover:text-white'
                 }`}
               >
@@ -222,7 +214,7 @@ export function PrintConfigModal({
                 onClick={() => onChange({ ...config, orientation: 'portrait' })}
                 className={`rounded-lg px-2.5 py-1 font-semibold transition ${
                   config.orientation === 'portrait'
-                    ? 'bg-emerald-600 text-white'
+                    ? 'bg-white text-black rounded-full font-medium text-white'
                     : 'bg-slate-800 text-slate-400 hover:text-white'
                 }`}
               >
@@ -236,11 +228,11 @@ export function PrintConfigModal({
         </div>
 
         {/* Footer Actions */}
-        <div className="mt-5 flex items-center justify-end gap-2.5 border-t border-slate-800 pt-4">
+        <div className="mt-5 flex items-center justify-end gap-2.5 border-t border-white/10 pt-4">
           <button
             type="button"
             onClick={onClose}
-            className="rounded-xl border border-slate-700 bg-slate-800 px-4 py-2 text-xs font-semibold text-slate-300 transition hover:bg-slate-700"
+            className="rounded-xl border border-white/10 bg-slate-800 px-4 py-2 text-xs font-semibold text-slate-300 transition hover:bg-slate-700"
           >
             إلغاء
           </button>
@@ -248,7 +240,7 @@ export function PrintConfigModal({
             type="button"
             onClick={onPrint}
             disabled={!anySelected}
-            className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-5 py-2 text-xs font-bold text-white shadow-md transition hover:bg-emerald-500 disabled:opacity-40 disabled:cursor-not-allowed active:scale-95"
+            className="inline-flex items-center gap-2 rounded-full bg-white text-black px-5 py-2 text-xs font-medium transition hover:bg-zinc-200 disabled:opacity-40 disabled:cursor-not-allowed active:scale-95"
           >
             <Printer className="h-4 w-4" />
             بدء الطباعة الآن

@@ -350,8 +350,8 @@ export class CaravanItemService {
 
             const waterRes = await waterReq.query(`
                 SELECT 
-                    SUM(ISNULL(p.[Item_Qunt], 0)) AS [qty],
-                    ROUND(SUM(ISNULL(p.[NetOfInv], 0)), 4) AS [netRevenue]
+                    SUM(CAST(ISNULL(p.[Item_Qunt], 0) AS FLOAT)) AS [qty],
+                    ROUND(SUM(CAST(ISNULL(p.[NetOfInv], 0) AS FLOAT)), 4) AS [netRevenue]
                 FROM ${TABLE_POS} p WITH (NOLOCK)
                 WHERE ISNULL(p.[Void_item], 0) = 0
                   AND p.[Doc_Date] >= CAST(@wStart AS DATE)
@@ -514,10 +514,36 @@ export class CaravanItemService {
             ORDER BY [revenueA] DESC, [revenueB] DESC;
         `;
 
-        const [sumRes, itemsRes, outletsRes] = await Promise.all([
+        // 4. Distinct Price Tiers Query for Period A & Period B
+        const tiersReq = pool.request();
+        buildParams(tiersReq);
+        const tiersSql = `
+            SELECT 
+                p.[item_Code] AS [itemCode],
+                ROUND(p.[Item_Price] * (1.0 + (ISNULL(NULLIF(p.[item_Sels_Tax_P], 0), 14.0) / 100.0)), 2) AS [price],
+                SUM(CASE WHEN p.[Doc_Date] >= CAST(@pAStart AS DATE) AND p.[Doc_Date] < DATEADD(DAY, 1, CAST(@pAEnd AS DATE)) THEN ISNULL(p.[Item_Qunt], 0) ELSE 0 END) AS [qtyA],
+                ROUND(SUM(CASE WHEN p.[Doc_Date] >= CAST(@pAStart AS DATE) AND p.[Doc_Date] < DATEADD(DAY, 1, CAST(@pAEnd AS DATE)) THEN ROUND(p.[Item_Price] * (1.0 + (ISNULL(NULLIF(p.[item_Sels_Tax_P], 0), 14.0) / 100.0)), 2) * ISNULL(p.[Item_Qunt], 0) ELSE 0 END), 2) AS [totalA],
+                SUM(CASE WHEN p.[Doc_Date] >= CAST(@pBStart AS DATE) AND p.[Doc_Date] < DATEADD(DAY, 1, CAST(@pBEnd AS DATE)) THEN ISNULL(p.[Item_Qunt], 0) ELSE 0 END) AS [qtyB],
+                ROUND(SUM(CASE WHEN p.[Doc_Date] >= CAST(@pBStart AS DATE) AND p.[Doc_Date] < DATEADD(DAY, 1, CAST(@pBEnd AS DATE)) THEN ROUND(p.[Item_Price] * (1.0 + (ISNULL(NULLIF(p.[item_Sels_Tax_P], 0), 14.0) / 100.0)), 2) * ISNULL(p.[Item_Qunt], 0) ELSE 0 END), 2) AS [totalB]
+            FROM ${TABLE_POS} p WITH (NOLOCK)
+            WHERE ISNULL(p.[Void_item], 0) = 0
+              AND (
+                  (p.[Doc_Date] >= CAST(@pAStart AS DATE) AND p.[Doc_Date] < DATEADD(DAY, 1, CAST(@pAEnd AS DATE)))
+                  OR
+                  (p.[Doc_Date] >= CAST(@pBStart AS DATE) AND p.[Doc_Date] < DATEADD(DAY, 1, CAST(@pBEnd AS DATE)))
+              )
+              ${branchFilter}
+            GROUP BY p.[item_Code], ROUND(p.[Item_Price] * (1.0 + (ISNULL(NULLIF(p.[item_Sels_Tax_P], 0), 14.0) / 100.0)), 2)
+            HAVING SUM(CASE WHEN p.[Doc_Date] >= CAST(@pAStart AS DATE) AND p.[Doc_Date] < DATEADD(DAY, 1, CAST(@pAEnd AS DATE)) THEN ISNULL(p.[Item_Qunt], 0) ELSE 0 END) > 0
+                OR SUM(CASE WHEN p.[Doc_Date] >= CAST(@pBStart AS DATE) AND p.[Doc_Date] < DATEADD(DAY, 1, CAST(@pBEnd AS DATE)) THEN ISNULL(p.[Item_Qunt], 0) ELSE 0 END) > 0
+            ORDER BY p.[item_Code], [price] ASC;
+        `;
+
+        const [sumRes, itemsRes, outletsRes, tiersRes] = await Promise.all([
             summaryReq.query(summarySql),
             itemsReq.query(itemsSql),
             outletsReq.query(outletsSql),
+            tiersReq.query(tiersSql),
         ]);
 
         const sRow = sumRes.recordset[0] || {};
@@ -533,9 +559,31 @@ export class CaravanItemService {
         const avgTicketA = ordersA > 0 ? round2(revA / ordersA) : 0;
         const avgTicketB = ordersB > 0 ? round2(revB / ordersB) : 0;
 
+        // Index price tiers by itemCode for Period A and B
+        const compTiersMap = new Map();
+        for (const t of tiersRes.recordset || []) {
+            const ic = String(t.itemCode).trim();
+            if (!compTiersMap.has(ic)) {
+                compTiersMap.set(ic, { tiersA: [], tiersB: [] });
+            }
+            const qA = Number(t.qtyA) || 0;
+            const totA = Number(t.totalA) || 0;
+            const qB = Number(t.qtyB) || 0;
+            const totB = Number(t.totalB) || 0;
+            const pr = Number(t.price) || 0;
+
+            if (qA > 0) {
+                compTiersMap.get(ic).tiersA.push({ price: pr, quantity: qA, total: totA });
+            }
+            if (qB > 0) {
+                compTiersMap.get(ic).tiersB.push({ price: pr, quantity: qB, total: totB });
+            }
+        }
+
         // Process Items Shift with Granular Price Dynamics & Reconciliation
         const itemRows = itemsRes.recordset || [];
         const topItemsShift = itemRows.map((r, i) => {
+            const itemCode = String(r.itemCode).trim();
             const qA = Number(r.qtyA) || 0;
             const qB = Number(r.qtyB) || 0;
             const minA = Number(r.minPriceA) || 0;
@@ -545,14 +593,26 @@ export class CaravanItemService {
             const rawA = Number(r.rawRevA) || 0;
             const rawB = Number(r.rawRevB) || 0;
 
-            const hasChangeA = minA > 0 && maxA > 0 && minA !== maxA;
+            const { tiersA = [], tiersB = [] } = compTiersMap.get(itemCode) || {};
+            let pATiers = tiersA;
+            if (pATiers.length === 0 && qA > 0) {
+                pATiers = [{ price: maxA || 0, quantity: qA, total: rawA }];
+            }
+            let pBTiers = tiersB;
+            if (pBTiers.length === 0 && qB > 0) {
+                pBTiers = [{ price: maxB || 0, quantity: qB, total: rawB }];
+            }
+
+            const hasChangeA = pATiers.length > 1;
+            const weightedA = hasChangeA && qA > 0 ? round2(rawA / qA) : null;
             const unitPriceA = qA > 0
-                ? (hasChangeA ? round2(rawA / qA) : maxA)
+                ? (hasChangeA ? (weightedA || maxA) : (pATiers[0]?.price || maxA))
                 : (maxA || maxB || 0);
 
-            const hasChangeB = minB > 0 && maxB > 0 && minB !== maxB;
+            const hasChangeB = pBTiers.length > 1;
+            const weightedB = hasChangeB && qB > 0 ? round2(rawB / qB) : null;
             const unitPriceB = qB > 0
-                ? (hasChangeB ? round2(rawB / qB) : maxB)
+                ? (hasChangeB ? (weightedB || maxB) : (pBTiers[0]?.price || maxB))
                 : (maxB || unitPriceA || 0);
 
             const rA = rawA > 0 ? round2(rawA) : (qA * unitPriceA);
@@ -568,27 +628,31 @@ export class CaravanItemService {
             else if (revGrowthPct !== null && revGrowthPct < -5) status = 'down';
 
             return {
-                itemCode: String(r.itemCode),
+                itemCode,
                 itemName: String(r.itemName || r.itemCode).trim(),
                 periodA: {
                     rank: qA > 0 ? i + 1 : null,
                     qty: qA,
+                    quantity: qA,
                     revenue: rA,
                     minPrice: minA || unitPriceA,
                     maxPrice: maxA || unitPriceA,
                     hasPriceChange: hasChangeA,
                     unitPrice: unitPriceA,
-                    weightedAvgPrice: unitPriceA,
+                    weightedAvgPrice: weightedA,
+                    priceTiers: pATiers,
                 },
                 periodB: {
                     rank: qB > 0 ? i + 1 : null,
                     qty: qB,
+                    quantity: qB,
                     revenue: rB,
                     minPrice: minB || unitPriceB,
                     maxPrice: maxB || unitPriceB,
                     hasPriceChange: hasChangeB,
                     unitPrice: unitPriceB,
-                    weightedAvgPrice: unitPriceB,
+                    weightedAvgPrice: weightedB,
+                    priceTiers: pBTiers,
                 },
                 revenueDelta: round2(rA - rB),
                 revenueGrowthPct: revGrowthPct ?? 0,
@@ -668,19 +732,13 @@ export class CaravanItemService {
      * 3. Operational POS Items Analytics (Top 5 Best, Dead Stock, Duel, Capture, Outlets)
      */
     static async getItemsSummary({ startDate, endDate, branchCodes = [], metricType = 'revenue', mode = 'best' }) {
-        if (!DATE_RE.test(startDate || '') || !DATE_RE.test(endDate || '')) {
-            const err = new Error('startDate و endDate مطلوبان بصيغة YYYY-MM-DD');
-            err.statusCode = 400;
-            throw err;
-        }
-
+        const startedAt = Date.now();
+        const errors = [];
+        const rawBranches = (branchCodes || []).map((c) => String(c).trim()).filter((c) => c.length > 0 && c.length <= 20);
         const metric = metricType === 'quantity' ? 'quantity' : 'revenue';
         const activeMode = mode === 'slow' ? 'slow' : 'best';
-        const orderBy = metric === 'quantity' ? '[qty] DESC, [revenue] DESC' : '[revenue] DESC, [qty] DESC';
-        const rawBranches = branchCodes.map((c) => String(c).trim()).filter((c) => c.length > 0 && c.length <= 20);
+        const orderCol = metric === 'quantity' ? 'TotalQuantity' : 'TotalRevenue';
         const gate = readGateConfig();
-        const errors = [];
-        const startedAt = Date.now();
 
         const result = {
             executionTimeMs: 0,
@@ -701,372 +759,260 @@ export class CaravanItemService {
                 visitDivisor: gate.divisor,
                 gateBranchCodes: gate.codes,
             },
+            hourlyTraffic: {
+                peakHour: null,
+                peakHourLabel: 'غير مفعل',
+                peakRevenue: 0,
+                peakOrders: 0,
+                peakGateHour: null,
+                peakGateHourLabel: 'غير مفعل',
+                peakGateTickets: 0,
+                peakGuests: 0,
+                totalHourlyRevenue: 0,
+                totalHourlyOrders: 0,
+                totalGateTickets: 0,
+                recommendedStaffingWindow: '—',
+                points: [],
+            },
         };
 
-        const pool = await getPool();
-
-        let allType4Codes = [];
         try {
-            allType4Codes = await getType4BranchCodes(pool);
-        } catch (err) {
-            console.warn('[caravanItemService] Could not fetch Type 4 codes:', err.message);
-        }
+            if (!DATE_RE.test(startDate || '') || !DATE_RE.test(endDate || '')) {
+                const err = new Error('startDate و endDate مطلوبان بصيغة YYYY-MM-DD');
+                err.statusCode = 400;
+                throw err;
+            }
 
-        const activeBranches = rawBranches.length > 0 ? rawBranches : allType4Codes;
-        if (activeBranches.length === 0) {
+            const pool = await getPool();
+
+            console.log('[caravanItemService.getItemsSummary] Executing for range:', {
+                startDate,
+                endDate,
+                rawBranchesCount: rawBranches.length,
+                metric,
+                activeMode
+            });
+
+            const mkReq = () => {
+                const r = pool.request();
+                r.timeout = 120000;
+                r.input('startDate', sql.VarChar, startDate);
+                r.input('endDate', sql.VarChar, endDate);
+                return r;
+            };
+
+            const topReq = mkReq();
+            const slowReq = mkReq();
+            const outletsReq = mkReq();
+            const gateReq = mkReq();
+
+            let branchFilter = '';
+            if (rawBranches.length > 0) {
+                const phs = rawBranches.map((code, i) => {
+                    topReq.input(`b${i}`, sql.VarChar, code);
+                    slowReq.input(`b${i}`, sql.VarChar, code);
+                    outletsReq.input(`b${i}`, sql.VarChar, code);
+                    return `@b${i}`;
+                });
+                branchFilter = `AND p.[Branch_Code] IN (${phs.join(', ')})`;
+            }
+
+            /* ---------- 1. Top 10 Best-Sellers Direct SARGable INNER JOIN ---------- */
+            const topSql = `
+                SELECT TOP 10
+                    p.[Item_Code] AS [itemCode],
+                    COALESCE(NULLIF(LTRIM(RTRIM(p.[Item_Name])), ''), CAST(p.[Item_Code] AS NVARCHAR(50))) AS [itemName],
+                    SUM(CAST(ISNULL(p.[Item_Qunt], 0) AS FLOAT)) AS [TotalQuantity],
+                    ROUND(SUM(CAST(ISNULL(p.[NetOfInv], 0) AS FLOAT)), 2) AS [TotalRevenue]
+                FROM ${TABLE_POS} p WITH (NOLOCK)
+                INNER JOIN ${TABLE_BRANCHS} b WITH (NOLOCK)
+                    ON p.[Branch_Code] = b.[Code]
+                WHERE p.[Doc_Date] >= CAST(@startDate AS DATE)
+                  AND p.[Doc_Date] < DATEADD(DAY, 1, CAST(@endDate AS DATE))
+                  AND b.[Type] = 4
+                  AND ISNULL(p.[Void_item], 0) = 0
+                  ${branchFilter}
+                GROUP BY p.[Item_Code], p.[Item_Name]
+                HAVING SUM(CAST(ISNULL(p.[Item_Qunt], 0) AS FLOAT)) > 0
+                ORDER BY ${orderCol} DESC;
+            `;
+
+            /* ---------- 2. Slow-Moving / Dead Stock Direct SARGable INNER JOIN ---------- */
+            const slowSql = `
+                SELECT TOP 5
+                    p.[Item_Code] AS [itemCode],
+                    COALESCE(NULLIF(LTRIM(RTRIM(p.[Item_Name])), ''), CAST(p.[Item_Code] AS NVARCHAR(50))) AS [itemName],
+                    SUM(CAST(ISNULL(p.[Item_Qunt], 0) AS FLOAT)) AS [TotalQuantity],
+                    ROUND(SUM(CAST(ISNULL(p.[NetOfInv], 0) AS FLOAT)), 2) AS [TotalRevenue]
+                FROM ${TABLE_POS} p WITH (NOLOCK)
+                INNER JOIN ${TABLE_BRANCHS} b WITH (NOLOCK)
+                    ON p.[Branch_Code] = b.[Code]
+                WHERE p.[Doc_Date] >= CAST(@startDate AS DATE)
+                  AND p.[Doc_Date] < DATEADD(DAY, 1, CAST(@endDate AS DATE))
+                  AND b.[Type] = 4
+                  AND ISNULL(p.[Void_item], 0) = 0
+                  ${branchFilter}
+                GROUP BY p.[Item_Code], p.[Item_Name]
+                HAVING SUM(CAST(ISNULL(p.[Item_Qunt], 0) AS FLOAT)) > 0
+                ORDER BY TotalRevenue ASC, TotalQuantity ASC;
+            `;
+
+            /* ---------- 3. Outlets Ranking via POS_Post SARGable INNER JOIN ---------- */
+            const outletsSql = `
+                SELECT 
+                    p.[Branch_Code] AS [branchCode],
+                    COALESCE(NULLIF(LTRIM(RTRIM(b.[Aname])), ''), 'منفذ ' + CAST(p.[Branch_Code] AS VARCHAR(20))) AS [name],
+                    ROUND(SUM(CAST(ISNULL(p.[NetOfInv], 0) AS FLOAT)), 2) AS [revenue],
+                    COUNT(DISTINCT p.[Doc_NO]) AS [orders]
+                FROM ${TABLE_POST} p WITH (NOLOCK)
+                INNER JOIN ${TABLE_BRANCHS} b WITH (NOLOCK) 
+                    ON b.[Code] = p.[Branch_Code]
+                WHERE ISNULL(p.[Void], 0) <> 1
+                  AND b.[Type] = 4
+                  ${branchFilter}
+                  AND p.[Doc_Date] >= CAST(@startDate AS DATE)
+                  AND p.[Doc_Date] < DATEADD(DAY, 1, CAST(@endDate AS DATE))
+                GROUP BY p.[Branch_Code], b.[Aname]
+                ORDER BY [revenue] DESC;
+            `;
+
+            /* ---------- 4. Gate Admissions via Pos_item_post ---------- */
+            gate.codes.forEach((code, i) => gateReq.input(`g${i}`, sql.VarChar, String(code).trim()));
+            const gatePh = gate.codes.map((_, i) => `@g${i}`);
+            const gateSql = `
+                SELECT SUM(CAST(ISNULL(p.[Item_Qunt], 0) AS FLOAT)) AS [ticketQty]
+                FROM ${TABLE_POS} p WITH (NOLOCK)
+                WHERE p.[Branch_Code] IN (${gatePh.join(', ')})
+                  AND p.[Doc_Date] >= CAST(@startDate AS DATE)
+                  AND p.[Doc_Date] < DATEADD(DAY, 1, CAST(@endDate AS DATE))
+                  AND ISNULL(p.[Void_item], 0) = 0;
+            `;
+
+            const [topRes, slowRes, outletsRes, gateRes] = await Promise.all([
+                topReq.query(topSql).catch((e) => {
+                    console.error('[caravanItemService.topSql ERROR]:', e.message, e.stack);
+                    errors.push({ section: 'topItems', message: e.message, stack: e.stack });
+                    return { recordset: [] };
+                }),
+                slowReq.query(slowSql).catch((e) => {
+                    console.error('[caravanItemService.slowSql ERROR]:', e.message, e.stack);
+                    errors.push({ section: 'slowItems', message: e.message, stack: e.stack });
+                    return { recordset: [] };
+                }),
+                outletsReq.query(outletsSql).catch((e) => {
+                    console.error('[caravanItemService.outletsSql ERROR]:', e.message, e.stack);
+                    errors.push({ section: 'outlets', message: e.message, stack: e.stack });
+                    return { recordset: [] };
+                }),
+                gateReq.query(gateSql).catch((e) => {
+                    console.error('[caravanItemService.gateSql ERROR]:', e.message, e.stack);
+                    errors.push({ section: 'gate', message: e.message, stack: e.stack });
+                    return { recordset: [] };
+                }),
+            ]);
+
+            const gateTickets = Number(gateRes.recordset?.[0]?.ticketQty) || 0;
+
+            // Process Top Items
+            const topRows = topRes.recordset || [];
+            const topScopeQty = topRows.reduce((acc, r) => acc + (Number(r.TotalQuantity || r.qty) || 0), 0);
+            const topScopeRevenue = topRows.reduce((acc, r) => acc + (Number(r.TotalRevenue || r.revenue) || 0), 0);
+            const topItems = topRows.map((r) => {
+                const qty = Number(r.TotalQuantity || r.qty) || 0;
+                const revenue = Number(r.TotalRevenue || r.revenue) || 0;
+                const base = metric === 'quantity' ? topScopeQty : topScopeRevenue;
+                const value = metric === 'quantity' ? qty : revenue;
+                return {
+                    itemCode: r.itemCode,
+                    itemName: String(r.itemName || r.itemCode).trim(),
+                    qty,
+                    revenue,
+                    share: base > 0 ? Math.round((value / base) * 1000) / 10 : 0,
+                };
+            });
+
+            // Process Slow Items
+            const slowRows = slowRes.recordset || [];
+            const slowScopeQty = slowRows.reduce((acc, r) => acc + (Number(r.TotalQuantity || r.qty) || 0), 0);
+            const slowScopeRevenue = slowRows.reduce((acc, r) => acc + (Number(r.TotalRevenue || r.revenue) || 0), 0);
+            const slowItems = slowRows.map((r) => {
+                const qty = Number(r.TotalQuantity || r.qty) || 0;
+                const revenue = Number(r.TotalRevenue || r.revenue) || 0;
+                const base = metric === 'quantity' ? slowScopeQty : slowScopeRevenue;
+                const value = metric === 'quantity' ? qty : revenue;
+                return {
+                    itemCode: r.itemCode,
+                    itemName: String(r.itemName || r.itemCode).trim(),
+                    qty,
+                    revenue,
+                    share: base > 0 ? Math.round((value / base) * 1000) / 10 : 0,
+                };
+            });
+
+            // Process Outlets
+            const allOutlets = (outletsRes.recordset || []).map((r) => {
+                const revenue = Number(r.revenue) || 0;
+                const orders = Number(r.orders) || 0;
+                return {
+                    branchCode: String(r.branchCode),
+                    name: String(r.name || r.branchCode).trim(),
+                    revenue,
+                    orders,
+                    avgTicket: orders > 0 ? round2(revenue / orders) : 0,
+                    signature: null,
+                };
+            });
+
+            const scopedOutlets = rawBranches.length > 0
+                ? allOutlets.filter((o) => rawBranches.includes(o.branchCode))
+                : allOutlets;
+
+            // Duel calculation
+            let duel = null;
+            if (scopedOutlets.length >= 2) {
+                const [a, b] = scopedOutlets;
+                const total = a.revenue + b.revenue;
+                duel = {
+                    a: { ...a, share: total > 0 ? Math.round((a.revenue / total) * 1000) / 10 : 50 },
+                    b: { ...b, share: total > 0 ? Math.round((b.revenue / total) * 1000) / 10 : 50 },
+                };
+            } else if (scopedOutlets.length === 1) {
+                const a = scopedOutlets[0];
+                duel = {
+                    a: { ...a, share: 100 },
+                    b: { branchCode: '0', name: 'لا يوجد منفذ ثانٍ للمقارنة', revenue: 0, orders: 0, avgTicket: 0, signature: null, share: 0 },
+                };
+            }
+
+            const caravanRevenue = round2(scopedOutlets.reduce((acc, o) => acc + o.revenue, 0));
+            const guests = gateTickets > 0 ? Math.round(gateTickets / gate.divisor) : 0;
+            const grossRevenue = caravanRevenue;
+
+            result.topItems = topItems;
+            result.slowItems = slowItems;
+            result.duel = duel;
+            result.outlets = scopedOutlets;
+            result.allOutlets = allOutlets;
+            result.capture = {
+                caravanRevenue,
+                grossRevenue,
+                gateTickets,
+                guests,
+                spendPerGuest: guests > 0 ? round2(caravanRevenue / guests) : 0,
+                visitDivisor: gate.divisor,
+                gateBranchCodes: gate.codes,
+            };
+            result.degraded = errors.length > 0;
+            result.executionTimeMs = Date.now() - startedAt;
+
+            return result;
+        } catch (err) {
+            console.error('[caravanItemService] Fatal error in getItemsSummary:', err);
+            result.degraded = true;
+            result.errors.push({ section: 'fatal', message: err.message });
             result.executionTimeMs = Date.now() - startedAt;
             return result;
         }
-
-        const dateFilter = `
-            AND p.[Doc_Date] >= CAST(@startDate AS DATE)
-            AND p.[Doc_Date] < DATEADD(DAY, 1, CAST(@endDate AS DATE))`;
-
-        const mkReq = () => {
-            const r = pool.request();
-            r.input('startDate', sql.VarChar, startDate);
-            r.input('endDate', sql.VarChar, endDate);
-            return r;
-        };
-
-        const topReq = mkReq();
-        const slowReq = mkReq();
-        const outletsReq = mkReq();
-        const gateReq = mkReq();
-        const hourlyReq = mkReq();
-
-        const phs = activeBranches.map((code, i) => {
-            topReq.input(`b${i}`, sql.VarChar, code);
-            slowReq.input(`b${i}`, sql.VarChar, code);
-            hourlyReq.input(`b${i}`, sql.VarChar, code);
-            return `@b${i}`;
-        });
-        const branchInClause = `AND p.[Branch_Code] IN (${phs.join(', ')})`;
-
-        /* ---------- 1. Top 5 Best-Sellers Query (< 100ms) ---------- */
-        const topSql = `
-            SELECT TOP 5
-                p.[item_Code] AS [itemCode],
-                COALESCE(NULLIF(LTRIM(RTRIM(MAX(p.[item_name]))), ''), CAST(p.[item_Code] AS NVARCHAR(50))) AS [itemName],
-                SUM(ISNULL(p.[Item_Qunt], 0)) AS [qty],
-                ROUND(SUM(ISNULL(p.[NetOfInv], 0)), 2) AS [revenue],
-                SUM(SUM(ISNULL(p.[Item_Qunt], 0))) OVER () AS [scopeQty],
-                SUM(SUM(ISNULL(p.[NetOfInv], 0))) OVER () AS [scopeRevenue]
-            FROM ${TABLE_POS} p WITH (NOLOCK)
-            WHERE ISNULL(p.[Void_item], 0) = 0
-              ${branchInClause}
-              ${dateFilter}
-            GROUP BY p.[item_Code]
-            ORDER BY ${orderBy};
-        `;
-
-        /* ---------- 2. Slow-Moving / Dead Stock Query (< 100ms) ---------- */
-        let slowSql = '';
-        if (rawBranches.length === 1) {
-            slowReq.input('targetBranch', sql.Int, parseInt(rawBranches[0], 10) || 0);
-            slowSql = `
-                SELECT TOP 5
-                    it.[code] AS [itemCode],
-                    COALESCE(NULLIF(LTRIM(RTRIM(MAX(it.[name_a]))), ''), CAST(it.[code] AS NVARCHAR(50))) AS [itemName],
-                    ISNULL(SUM(p.[Item_Qunt]), 0) AS [qty],
-                    ROUND(ISNULL(SUM(p.[NetOfInv]), 0), 2) AS [revenue],
-                    SUM(ISNULL(SUM(p.[Item_Qunt]), 0)) OVER () AS [scopeQty],
-                    SUM(ROUND(ISNULL(SUM(p.[NetOfInv]), 0), 2)) OVER () AS [scopeRevenue]
-                FROM ${TABLE_ITEMS} it WITH (NOLOCK)
-                LEFT JOIN ${TABLE_POS} p WITH (NOLOCK)
-                    ON p.[item_Code] = it.[code]
-                    AND p.[Branch_Code] = it.[BranchCode]
-                    AND p.[Doc_Date] >= CAST(@startDate AS DATE)
-                    AND p.[Doc_Date] < DATEADD(DAY, 1, CAST(@endDate AS DATE))
-                    AND ISNULL(p.[Void_item], 0) = 0
-                WHERE it.[BranchCode] = @targetBranch
-                  AND ISNULL(it.[Stopitem], 0) = 0
-                  AND it.[SALPrice] > 0
-                GROUP BY it.[code]
-                ORDER BY [qty] ASC, [revenue] ASC;
-            `;
-        } else {
-            slowSql = `
-                SELECT TOP 5
-                    p.[item_Code] AS [itemCode],
-                    COALESCE(NULLIF(LTRIM(RTRIM(MAX(p.[item_name]))), ''), CAST(p.[item_Code] AS NVARCHAR(50))) AS [itemName],
-                    SUM(ISNULL(p.[Item_Qunt], 0)) AS [qty],
-                    ROUND(SUM(ISNULL(p.[NetOfInv], 0)), 2) AS [revenue],
-                    SUM(SUM(ISNULL(p.[Item_Qunt], 0))) OVER () AS [scopeQty],
-                    SUM(SUM(ISNULL(p.[NetOfInv], 0))) OVER () AS [scopeRevenue]
-                FROM ${TABLE_POS} p WITH (NOLOCK)
-                WHERE ISNULL(p.[Void_item], 0) = 0
-                  ${branchInClause}
-                  ${dateFilter}
-                GROUP BY p.[item_Code]
-                HAVING SUM(ISNULL(p.[Item_Qunt], 0)) > 0
-                ORDER BY [qty] ASC, [revenue] ASC;
-            `;
-        }
-
-        /* ---------- 3. Outlets Ranking via POS_Post Base Table (~100ms) ---------- */
-        const outletsSql = `
-            SELECT 
-                b.[Code] AS [branchCode],
-                b.[Aname] AS [name],
-                ROUND(SUM(ISNULL(p.[NetOfInv], 0)), 2) AS [revenue],
-                COUNT(DISTINCT p.[Doc_NO]) AS [orders],
-                ROUND(SUM(SUM(ISNULL(p.[NetOfInv], 0))) OVER (), 2) AS [grandTotalRev]
-            FROM ${TABLE_BRANCHS} b WITH (NOLOCK)
-            INNER JOIN ${TABLE_POST} p WITH (NOLOCK) 
-                ON p.[Branch_Code] = b.[Code]
-            WHERE b.[Type] = 4
-              AND p.[Doc_Date] >= CAST(@startDate AS DATE)
-              AND p.[Doc_Date] < DATEADD(DAY, 1, CAST(@endDate AS DATE))
-              AND ISNULL(p.[Void], 0) <> 1
-            GROUP BY b.[Code], b.[Aname]
-            ORDER BY [revenue] DESC;
-        `;
-
-        /* ---------- 4. Gate Admissions via Pos_item_post (< 100ms) ---------- */
-        gate.codes.forEach((code, i) => gateReq.input(`g${i}`, sql.VarChar, String(code).trim()));
-        const gatePh = gate.codes.map((_, i) => `@g${i}`);
-        const gateSql = `
-            SELECT SUM(ISNULL(p.[Item_Qunt], 0)) AS [ticketQty]
-            FROM ${TABLE_POS} p WITH (NOLOCK)
-            WHERE p.[Branch_Code] IN (${gatePh.join(', ')})
-              AND p.[Doc_Date] >= CAST(@startDate AS DATE)
-              AND p.[Doc_Date] < DATEADD(DAY, 1, CAST(@endDate AS DATE))
-              AND ISNULL(p.[Void_item], 0) = 0;
-        `;
-
-        /* ---------- 5. Peak Operating Hours Query (Caravan Sales) (~100ms) ---------- */
-        const hourlySql = `
-            SELECT 
-                DATEPART(HOUR, p.[Inv_Time]) AS [hour],
-                COUNT(DISTINCT CONCAT(p.[Branch_Code], '_', p.[Doc_NO])) AS [orders],
-                ROUND(SUM(ISNULL(p.[NetOfInv], 0)), 2) AS [revenue]
-            FROM ${TABLE_POS} p WITH (NOLOCK)
-            WHERE ISNULL(p.[Void_item], 0) = 0
-              ${branchInClause}
-              ${dateFilter}
-              AND p.[Inv_Time] IS NOT NULL
-            GROUP BY DATEPART(HOUR, p.[Inv_Time])
-            ORDER BY [hour] ASC;
-        `;
-
-        /* ---------- 6. Gate Hourly Admissions Query (< 100ms) ---------- */
-        const gateHourlyReq = mkReq();
-        gate.codes.forEach((code, i) => gateHourlyReq.input(`g${i}`, sql.VarChar, String(code).trim()));
-        const gateHourlySql = `
-            SELECT 
-                DATEPART(HOUR, p.[Inv_Time]) AS [hour],
-                SUM(ISNULL(p.[Item_Qunt], 0)) AS [gateTickets]
-            FROM ${TABLE_POS} p WITH (NOLOCK)
-            WHERE p.[Branch_Code] IN (${gatePh.join(', ')})
-              AND p.[Doc_Date] >= CAST(@startDate AS DATE)
-              AND p.[Doc_Date] < DATEADD(DAY, 1, CAST(@endDate AS DATE))
-              AND ISNULL(p.[Void_item], 0) = 0
-              AND p.[Inv_Time] IS NOT NULL
-            GROUP BY DATEPART(HOUR, p.[Inv_Time])
-            ORDER BY [hour] ASC;
-        `;
-
-        const [topRes, slowRes, outletsRes, gateRes, hourlyRes, gateHourlyRes] = await Promise.all([
-            topReq.query(topSql).catch((e) => { errors.push({ section: 'topItems', message: e.message }); return { recordset: [] }; }),
-            slowReq.query(slowSql).catch((e) => { errors.push({ section: 'slowItems', message: e.message }); return { recordset: [] }; }),
-            outletsReq.query(outletsSql).catch((e) => { errors.push({ section: 'outlets', message: e.message }); return { recordset: [] }; }),
-            gateReq.query(gateSql).catch((e) => { errors.push({ section: 'gate', message: e.message }); return { recordset: [] }; }),
-            hourlyReq.query(hourlySql).catch((e) => { errors.push({ section: 'hourlyTraffic', message: e.message }); return { recordset: [] }; }),
-            gateHourlyReq.query(gateHourlySql).catch((e) => { errors.push({ section: 'gateHourly', message: e.message }); return { recordset: [] }; }),
-        ]);
-
-        const gateTickets = Number(gateRes.recordset?.[0]?.ticketQty) || 0;
-
-        // Process Top Items
-        const topRows = topRes.recordset || [];
-        const topScopeQty = Number(topRows[0]?.scopeQty) || 0;
-        const topScopeRevenue = Number(topRows[0]?.scopeRevenue) || 0;
-        const topItems = topRows.map((r) => {
-            const qty = Number(r.qty) || 0;
-            const revenue = Number(r.revenue) || 0;
-            const base = metric === 'quantity' ? topScopeQty : topScopeRevenue;
-            const value = metric === 'quantity' ? qty : revenue;
-            return {
-                itemCode: r.itemCode,
-                itemName: String(r.itemName || r.itemCode).trim(),
-                qty,
-                revenue,
-                share: base > 0 ? Math.round((value / base) * 1000) / 10 : 0,
-            };
-        });
-
-        // Process Slow Items
-        const slowRows = slowRes.recordset || [];
-        const slowScopeQty = Number(slowRows[0]?.scopeQty) || 0;
-        const slowScopeRevenue = Number(slowRows[0]?.scopeRevenue) || 0;
-        const slowItems = slowRows.map((r) => {
-            const qty = Number(r.qty) || 0;
-            const revenue = Number(r.revenue) || 0;
-            const base = metric === 'quantity' ? slowScopeQty : slowScopeRevenue;
-            const value = metric === 'quantity' ? qty : revenue;
-            return {
-                itemCode: r.itemCode,
-                itemName: String(r.itemName || r.itemCode).trim(),
-                qty,
-                revenue,
-                share: base > 0 ? Math.round((value / base) * 1000) / 10 : 0,
-            };
-        });
-
-        // Process Outlets
-        const sqlGrandTotalRev = Number(outletsRes.recordset?.[0]?.grandTotalRev);
-        const allOutlets = (outletsRes.recordset || []).map((r) => {
-            const revenue = Number(r.revenue) || 0;
-            const orders = Number(r.orders) || 0;
-            return {
-                branchCode: String(r.branchCode),
-                name: String(r.name || r.branchCode).trim(),
-                revenue,
-                orders,
-                avgTicket: orders > 0 ? round2(revenue / orders) : 0,
-                signature: null,
-            };
-        });
-
-        // Reconcile 0.01 piaster rounding if applicable
-        if (allOutlets.length > 0 && Number.isFinite(sqlGrandTotalRev) && sqlGrandTotalRev > 0) {
-            const sumRev = allOutlets.reduce((acc, o) => acc + o.revenue, 0);
-            const diff = Math.round((sqlGrandTotalRev - sumRev) * 100) / 100;
-            if (Math.abs(diff) > 0 && Math.abs(diff) <= 0.05) {
-                allOutlets[0].revenue = round2(allOutlets[0].revenue + diff);
-            }
-        }
-
-        const scopedOutlets = rawBranches.length > 0
-            ? allOutlets.filter((o) => rawBranches.includes(o.branchCode))
-            : allOutlets;
-
-        // Duel calculation
-        let duel = null;
-        if (scopedOutlets.length >= 2) {
-            const [a, b] = scopedOutlets;
-            const total = a.revenue + b.revenue;
-            duel = {
-                a: { ...a, share: total > 0 ? Math.round((a.revenue / total) * 1000) / 10 : 50 },
-                b: { ...b, share: total > 0 ? Math.round((b.revenue / total) * 1000) / 10 : 50 },
-            };
-        } else if (scopedOutlets.length === 1) {
-            const a = scopedOutlets[0];
-            duel = {
-                a: { ...a, share: 100 },
-                b: { branchCode: '0', name: 'لا يوجد منفذ ثانٍ للمقارنة', revenue: 0, orders: 0, avgTicket: 0, signature: null, share: 0 },
-            };
-        }
-
-        const caravanRevenue = rawBranches.length === 0 && Number.isFinite(sqlGrandTotalRev) && sqlGrandTotalRev > 0
-            ? sqlGrandTotalRev
-            : round2(scopedOutlets.reduce((acc, o) => acc + o.revenue, 0));
-        const guests = gateTickets > 0 ? Math.round(gateTickets / gate.divisor) : 0;
-        const grossRevenue = caravanRevenue;
-
-        // Process Peak Operating Hours & Gate Traffic
-        const hourlyRows = hourlyRes.recordset || [];
-        const gateHourlyRows = gateHourlyRes.recordset || [];
-
-        const totalHourlyRev = hourlyRows.reduce((acc, r) => acc + (Number(r.revenue) || 0), 0);
-        const totalHourlyOrders = hourlyRows.reduce((acc, r) => acc + (Number(r.orders) || 0), 0);
-        const totalGateHourlyTickets = gateHourlyRows.reduce((acc, r) => acc + (Number(r.gateTickets) || 0), 0);
-
-        const gateMap = new Map();
-        let peakGateHour = null;
-        let peakGateTickets = 0;
-        for (const r of gateHourlyRows) {
-            const h = Number(r.hour);
-            const tkts = Number(r.gateTickets) || 0;
-            const gst = tkts > 0 ? Math.round(tkts / gate.divisor) : 0;
-            gateMap.set(h, { tickets: tkts, guests: gst });
-            if (tkts > peakGateTickets) {
-                peakGateTickets = tkts;
-                peakGateHour = h;
-            }
-        }
-
-        let peakHour = null;
-        let peakRevenue = 0;
-        let peakOrders = 0;
-        for (const r of hourlyRows) {
-            const rev = Number(r.revenue) || 0;
-            if (rev > peakRevenue) {
-                peakRevenue = rev;
-                peakHour = Number(r.hour);
-                peakOrders = Number(r.orders) || 0;
-            }
-        }
-
-        const formatHourLabel = (h) => {
-            if (h === 0 || h === 24) return '12:00 ص';
-            if (h === 12) return '12:00 م';
-            if (h > 12) return `${h - 12}:00 م`;
-            return `${h}:00 ص`;
-        };
-
-        const carMap = new Map();
-        for (const r of hourlyRows) {
-            carMap.set(Number(r.hour), {
-                revenue: Number(r.revenue) || 0,
-                orders: Number(r.orders) || 0,
-            });
-        }
-
-        const allHours = Array.from(new Set([...carMap.keys(), ...gateMap.keys()])).sort((a, b) => a - b);
-        const hourlyPoints = allHours.map((h) => {
-            const cData = carMap.get(h) || { revenue: 0, orders: 0 };
-            const gData = gateMap.get(h) || { tickets: 0, guests: 0 };
-            return {
-                hour: h,
-                label: formatHourLabel(h),
-                orders: cData.orders,
-                revenue: round2(cData.revenue),
-                gateTickets: gData.tickets,
-                guests: gData.guests,
-                sharePct: totalHourlyRev > 0 ? round1((cData.revenue / totalHourlyRev) * 100) : 0,
-                isPeak: h === peakHour,
-                isGatePeak: h === peakGateHour,
-            };
-        });
-
-        result.hourlyTraffic = {
-            peakHour,
-            peakHourLabel: peakHour !== null ? formatHourLabel(peakHour) : 'غير متوفر',
-            peakRevenue: round2(peakRevenue),
-            peakOrders,
-            peakGateHour,
-            peakGateHourLabel: peakGateHour !== null ? formatHourLabel(peakGateHour) : 'غير متوفر',
-            peakGateTickets,
-            peakGuests: peakGateTickets > 0 ? Math.round(peakGateTickets / gate.divisor) : 0,
-            totalHourlyRevenue: round2(totalHourlyRev),
-            totalHourlyOrders,
-            totalGateTickets: totalGateHourlyTickets,
-            recommendedStaffingWindow: peakHour !== null 
-                ? `${formatHourLabel(Math.max(10, peakHour - 1))} — ${formatHourLabel(Math.min(23, peakHour + 2))}`
-                : '5:00 م — 9:00 م',
-            points: hourlyPoints,
-        };
-
-        result.topItems = topItems;
-        result.slowItems = slowItems;
-        result.duel = duel;
-        result.outlets = scopedOutlets;
-        result.allOutlets = allOutlets;
-        result.capture = {
-            caravanRevenue,
-            grossRevenue,
-            gateTickets,
-            guests,
-            spendPerGuest: guests > 0 ? round2(caravanRevenue / guests) : 0,
-            visitDivisor: gate.divisor,
-            gateBranchCodes: gate.codes,
-        };
-        result.degraded = errors.length > 0;
-        result.executionTimeMs = Date.now() - startedAt;
-
-        return result;
     }
 
     /**
@@ -1084,6 +1030,7 @@ export class CaravanItemService {
         limit = 10,
         sortBy = 'revenue',
         sortOrder = 'desc',
+        abcCategory = null,
     }) {
         if (!DATE_RE.test(startDate || '') || !DATE_RE.test(endDate || '')) {
             const err = new Error('startDate و endDate مطلوبان بصيغة YYYY-MM-DD');
@@ -1125,6 +1072,11 @@ export class CaravanItemService {
         req.input('prevEnd', sql.VarChar, pEnd);
         req.input('offset', sql.Int, offset);
         req.input('limit', sql.Int, pageSize);
+
+        const validAbc = ['A', 'B', 'C'].includes(String(abcCategory || '').toUpperCase())
+            ? String(abcCategory).toUpperCase()
+            : null;
+        req.input('abcFilter', sql.VarChar, validAbc);
 
         const phs = activeBranches.map((code, i) => {
             req.input(`b${i}`, sql.VarChar, code);
@@ -1195,7 +1147,7 @@ export class CaravanItemService {
                 HAVING SUM(CASE WHEN p.[Doc_Date] >= CAST(@currStart AS DATE) AND p.[Doc_Date] < DATEADD(DAY, 1, CAST(@currEnd AS DATE)) THEN ISNULL(p.[Item_Qunt], 0) ELSE 0 END) > 0
                     OR SUM(CASE WHEN p.[Doc_Date] >= CAST(@prevStart AS DATE) AND p.[Doc_Date] < DATEADD(DAY, 1, CAST(@prevEnd AS DATE)) THEN ISNULL(p.[Item_Qunt], 0) ELSE 0 END) > 0
             ),
-            CalculatedStats AS (
+            CumulativeStats AS (
                 SELECT 
                     [itemCode],
                     [itemName],
@@ -1212,18 +1164,43 @@ export class CaravanItemService {
                     [rawPrevRev] AS [prevRevenue],
                     CASE 
                         WHEN [prevQty] > 0 AND [rawPrevRev] > 0 AND [currQty] > 0 AND [rawCurrRev] > 0 
-                        THEN ROUND((([rawCurrRev] - [rawPrevRev]) / [rawPrevRev]) * 100.0, 1)
+                        THEN ROUND((([rawCurrRev] - [rawPrevRev]) / NULLIF([rawPrevRev], 0)) * 100.0, 1)
                         ELSE NULL 
                     END AS [growthPct],
+                    SUM([rawCurrRev]) OVER (ORDER BY [rawCurrRev] DESC, [itemCode] ASC) - [rawCurrRev] AS [priorCumulativeRevenue],
+                    SUM([rawCurrRev]) OVER () AS [overallTotalCurrRevenue]
+                FROM ItemStats
+            ),
+            AbcRanked AS (
+                SELECT 
+                    *,
+                    CASE 
+                        WHEN [overallTotalCurrRevenue] <= 0 THEN 'C'
+                        WHEN [priorCumulativeRevenue] < 0.80 * [overallTotalCurrRevenue] THEN 'A'
+                        WHEN [priorCumulativeRevenue] < 0.95 * [overallTotalCurrRevenue] THEN 'B'
+                        ELSE 'C'
+                    END AS [abcCategory],
+                    COUNT(CASE WHEN ([overallTotalCurrRevenue] > 0 AND [priorCumulativeRevenue] < 0.80 * [overallTotalCurrRevenue]) THEN 1 END) OVER () AS [globalCategoryACount],
+                    COUNT(CASE WHEN ([overallTotalCurrRevenue] > 0 AND [priorCumulativeRevenue] >= 0.80 * [overallTotalCurrRevenue] AND [priorCumulativeRevenue] < 0.95 * [overallTotalCurrRevenue]) THEN 1 END) OVER () AS [globalCategoryBCount],
+                    COUNT(CASE WHEN ([overallTotalCurrRevenue] <= 0 OR [priorCumulativeRevenue] >= 0.95 * [overallTotalCurrRevenue]) THEN 1 END) OVER () AS [globalCategoryCCount],
+                    ROUND(SUM(CASE WHEN ([overallTotalCurrRevenue] > 0 AND [priorCumulativeRevenue] < 0.80 * [overallTotalCurrRevenue]) THEN [rawCurrRev] ELSE 0 END) OVER (), 2) AS [globalCategoryARevenue],
+                    ROUND(SUM(CASE WHEN ([overallTotalCurrRevenue] > 0 AND [priorCumulativeRevenue] >= 0.80 * [overallTotalCurrRevenue] AND [priorCumulativeRevenue] < 0.95 * [overallTotalCurrRevenue]) THEN [rawCurrRev] ELSE 0 END) OVER (), 2) AS [globalCategoryBRevenue],
+                    ROUND(SUM(CASE WHEN ([overallTotalCurrRevenue] <= 0 OR [priorCumulativeRevenue] >= 0.95 * [overallTotalCurrRevenue]) THEN [rawCurrRev] ELSE 0 END) OVER (), 2) AS [globalCategoryCRevenue]
+                FROM CumulativeStats
+            ),
+            FilteredStats AS (
+                SELECT 
+                    *,
                     COUNT(*) OVER () AS [totalCount],
                     SUM([currQty]) OVER () AS [totalCurrQty],
                     SUM([rawCurrRev]) OVER () AS [totalCurrRevenue],
                     SUM([prevQty]) OVER () AS [totalPrevQty],
                     SUM([rawPrevRev]) OVER () AS [totalPrevRevenue]
-                FROM ItemStats
+                FROM AbcRanked
+                WHERE (@abcFilter IS NULL OR [abcCategory] = @abcFilter)
             )
             SELECT *
-            FROM CalculatedStats
+            FROM FilteredStats
             ORDER BY ${sortCol} ${direction} ${sortCol !== '[currRevenue]' ? ', [currRevenue] DESC' : ', [itemCode] ASC'}
             OFFSET @offset ROWS
             FETCH NEXT @limit ROWS ONLY;
@@ -1244,7 +1221,72 @@ export class CaravanItemService {
 
         const totalPages = Math.ceil(totalItems / pageSize) || 1;
 
+        const pageItemCodes = rows.map((r) => String(r.itemCode).trim());
+        const priceTiersMap = new Map();
+        if (pageItemCodes.length > 0) {
+            const tiersReq = pool.request();
+            tiersReq.input('currStart', sql.VarChar, startDate);
+            tiersReq.input('currEnd', sql.VarChar, endDate);
+            tiersReq.input('prevStart', sql.VarChar, pStart);
+            tiersReq.input('prevEnd', sql.VarChar, pEnd);
+            activeBranches.forEach((code, i) => tiersReq.input(`b${i}`, sql.VarChar, code));
+            pageItemCodes.forEach((code, i) => tiersReq.input(`ic${i}`, sql.VarChar, code));
+
+            const branchFilterTiers = activeBranches.length > 0
+                ? `AND p.[Branch_Code] IN (${activeBranches.map((_, i) => `@b${i}`).join(', ')})`
+                : '';
+            const itemInClause = pageItemCodes.map((_, i) => `@ic${i}`).join(', ');
+
+            const tiersSql = `
+                SELECT 
+                    p.[item_Code] AS [itemCode],
+                    ROUND(p.[Item_Price] * (1.0 + (ISNULL(NULLIF(p.[item_Sels_Tax_P], 0), 14.0) / 100.0)), 2) AS [price],
+                    SUM(CASE WHEN p.[Doc_Date] >= CAST(@currStart AS DATE) AND p.[Doc_Date] < DATEADD(DAY, 1, CAST(@currEnd AS DATE)) THEN ISNULL(p.[Item_Qunt], 0) ELSE 0 END) AS [currQty],
+                    ROUND(SUM(CASE WHEN p.[Doc_Date] >= CAST(@currStart AS DATE) AND p.[Doc_Date] < DATEADD(DAY, 1, CAST(@currEnd AS DATE)) THEN ROUND(p.[Item_Price] * (1.0 + (ISNULL(NULLIF(p.[item_Sels_Tax_P], 0), 14.0) / 100.0)), 2) * ISNULL(p.[Item_Qunt], 0) ELSE 0 END), 2) AS [currTotal],
+                    SUM(CASE WHEN p.[Doc_Date] >= CAST(@prevStart AS DATE) AND p.[Doc_Date] < DATEADD(DAY, 1, CAST(@prevEnd AS DATE)) THEN ISNULL(p.[Item_Qunt], 0) ELSE 0 END) AS [prevQty],
+                    ROUND(SUM(CASE WHEN p.[Doc_Date] >= CAST(@prevStart AS DATE) AND p.[Doc_Date] < DATEADD(DAY, 1, CAST(@prevEnd AS DATE)) THEN ROUND(p.[Item_Price] * (1.0 + (ISNULL(NULLIF(p.[item_Sels_Tax_P], 0), 14.0) / 100.0)), 2) * ISNULL(p.[Item_Qunt], 0) ELSE 0 END), 2) AS [prevTotal]
+                FROM ${TABLE_POS} p WITH (NOLOCK)
+                WHERE ISNULL(p.[Void_item], 0) = 0
+                  ${branchFilterTiers}
+                  AND p.[item_Code] IN (${itemInClause})
+                  AND (
+                      (p.[Doc_Date] >= CAST(@currStart AS DATE) AND p.[Doc_Date] < DATEADD(DAY, 1, CAST(@currEnd AS DATE)))
+                      OR
+                      (p.[Doc_Date] >= CAST(@prevStart AS DATE) AND p.[Doc_Date] < DATEADD(DAY, 1, CAST(@prevEnd AS DATE)))
+                  )
+                GROUP BY p.[item_Code], ROUND(p.[Item_Price] * (1.0 + (ISNULL(NULLIF(p.[item_Sels_Tax_P], 0), 14.0) / 100.0)), 2)
+                HAVING SUM(CASE WHEN p.[Doc_Date] >= CAST(@currStart AS DATE) AND p.[Doc_Date] < DATEADD(DAY, 1, CAST(@currEnd AS DATE)) THEN ISNULL(p.[Item_Qunt], 0) ELSE 0 END) > 0
+                    OR SUM(CASE WHEN p.[Doc_Date] >= CAST(@prevStart AS DATE) AND p.[Doc_Date] < DATEADD(DAY, 1, CAST(@prevEnd AS DATE)) THEN ISNULL(p.[Item_Qunt], 0) ELSE 0 END) > 0
+                ORDER BY p.[item_Code], [price] ASC;
+            `;
+
+            try {
+                const tiersRes = await tiersReq.query(tiersSql);
+                for (const t of tiersRes.recordset || []) {
+                    const ic = String(t.itemCode).trim();
+                    if (!priceTiersMap.has(ic)) {
+                        priceTiersMap.set(ic, { curr: [], prev: [] });
+                    }
+                    const cQ = Number(t.currQty) || 0;
+                    const cT = Number(t.currTotal) || 0;
+                    const pQ = Number(t.prevQty) || 0;
+                    const pT = Number(t.prevTotal) || 0;
+                    const pr = Number(t.price) || 0;
+
+                    if (cQ > 0) {
+                        priceTiersMap.get(ic).curr.push({ price: pr, quantity: cQ, total: cT });
+                    }
+                    if (pQ > 0) {
+                        priceTiersMap.get(ic).prev.push({ price: pr, quantity: pQ, total: pT });
+                    }
+                }
+            } catch (err) {
+                console.warn('[caravanItemService] Could not fetch price tiers:', err.message);
+            }
+        }
+
         const items = rows.map((r) => {
+            const itemCode = String(r.itemCode).trim();
             const currQty = Number(r.currQty) || 0;
             const prevQty = Number(r.prevQty) || 0;
             const currMin = Number(r.currMinPrice) || 0;
@@ -1254,14 +1296,26 @@ export class CaravanItemService {
             const rawCurrRev = Number(r.rawCurrRev) || 0;
             const rawPrevRev = Number(r.rawPrevRev) || 0;
 
-            const hasPriceChange = currMin > 0 && currMax > 0 && currMin !== currMax;
+            const tiersData = priceTiersMap.get(itemCode) || { curr: [], prev: [] };
+            let currTiers = tiersData.curr;
+            if (currTiers.length === 0 && currQty > 0) {
+                currTiers = [{ price: currMax || 0, quantity: currQty, total: rawCurrRev }];
+            }
+            let prevTiers = tiersData.prev;
+            if (prevTiers.length === 0 && prevQty > 0) {
+                prevTiers = [{ price: prevMax || 0, quantity: prevQty, total: rawPrevRev }];
+            }
+
+            const hasPriceChange = currTiers.length > 1;
+            const weightedAvgPrice = hasPriceChange && currQty > 0 ? round2(rawCurrRev / currQty) : null;
             const unitPrice = currQty > 0 
-                ? (hasPriceChange ? round2(rawCurrRev / currQty) : currMax) 
+                ? (hasPriceChange ? (weightedAvgPrice || currMax) : (currTiers[0]?.price || currMax)) 
                 : (currMax || prevMax || 0);
 
-            const prevHasPriceChange = prevMin > 0 && prevMax > 0 && prevMin !== prevMax;
+            const prevHasPriceChange = prevTiers.length > 1;
+            const prevWeightedAvgPrice = prevHasPriceChange && prevQty > 0 ? round2(rawPrevRev / prevQty) : null;
             const prevUnitPrice = prevQty > 0 
-                ? (prevHasPriceChange ? round2(rawPrevRev / prevQty) : prevMax) 
+                ? (prevHasPriceChange ? (prevWeightedAvgPrice || prevMax) : (prevTiers[0]?.price || prevMax)) 
                 : (prevMax || unitPrice || 0);
 
             const currRev = rawCurrRev > 0 ? round2(rawCurrRev) : (currQty * unitPrice);
@@ -1269,20 +1323,25 @@ export class CaravanItemService {
             const growthPct = prevRev > 0 ? round1(((currRev - prevRev) / prevRev) * 100) : null;
 
             return {
-                itemCode: String(r.itemCode).trim(),
+                itemCode,
                 itemName: String(r.itemName).trim(),
                 quantity: currQty,
+                totalQuantity: currQty,
                 netRevenue: currRev,
+                totalNetRevenue: currRev,
                 prevQuantity: prevQty,
                 prevNetRevenue: prevRev,
                 growthPct,
-                avgPrice: unitPrice,
+                avgPrice: weightedAvgPrice || unitPrice,
                 minPrice: currMin || unitPrice,
                 maxPrice: currMax || unitPrice,
                 hasPriceChange,
-                weightedAvgPrice: unitPrice,
+                weightedAvgPrice,
                 unitPrice,
                 stableUnitPrice: hasPriceChange ? null : unitPrice,
+                priceTiers: currTiers,
+                prevPriceTiers: prevTiers,
+                abcCategory: r.abcCategory || 'C',
             };
         });
 
@@ -1298,6 +1357,7 @@ export class CaravanItemService {
                 search: trimmedSearch,
                 sortBy,
                 sortOrder: direction.toLowerCase(),
+                abcCategory: validAbc,
             },
             pagination: {
                 page: pageNum,
@@ -1314,6 +1374,15 @@ export class CaravanItemService {
                 prevQuantity: totalPrevQty,
                 prevRevenue: totalPrevRevenue,
                 revenueGrowthPct: totalPrevRevenue > 0 ? round1(((totalCurrRevenue - totalPrevRevenue) / totalPrevRevenue) * 100) : null,
+                abcSummary: {
+                    categoryACount: rows[0]?.globalCategoryACount != null ? Number(rows[0].globalCategoryACount) : 0,
+                    categoryBCount: rows[0]?.globalCategoryBCount != null ? Number(rows[0].globalCategoryBCount) : 0,
+                    categoryCCount: rows[0]?.globalCategoryCCount != null ? Number(rows[0].globalCategoryCCount) : 0,
+                    categoryARevenue: rows[0]?.globalCategoryARevenue != null ? round2(Number(rows[0].globalCategoryARevenue)) : 0,
+                    categoryBRevenue: rows[0]?.globalCategoryBRevenue != null ? round2(Number(rows[0].globalCategoryBRevenue)) : 0,
+                    categoryCRevenue: rows[0]?.globalCategoryCRevenue != null ? round2(Number(rows[0].globalCategoryCRevenue)) : 0,
+                    activeCategory: validAbc,
+                },
             },
             items,
         };

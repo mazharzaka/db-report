@@ -9,8 +9,8 @@ type Velocity = 'high' | 'normal' | 'low';
 
 const VELOCITY_STYLE: Record<Velocity, { fill: string; ring: string; label: string; dot: string }> = {
   high: { fill: '#10B981', ring: '#34d399', label: 'مبيعات مرتفعة', dot: 'bg-emerald-500' },
-  normal: { fill: '#F59E0B', ring: '#fbbf24', label: 'مبيعات عادية', dot: 'bg-amber-500' },
-  low: { fill: '#94a3b8', ring: '#cbd5e1', label: 'راكد / منخفض', dot: 'bg-slate-400' },
+  normal: { fill: '#86efac', ring: '#86efac', label: 'مبيعات عادية', dot: 'bg-[#86efac]' },
+  low: { fill: '#fde047', ring: '#fde047', label: 'راكد / منخفض', dot: 'bg-[#fde047]' },
 };
 
 /**
@@ -57,9 +57,9 @@ export function ParkMap({ outlets, selected, onSelect }: Props) {
           aria-label="خريطة المنافذ داخل الحديقة"
         >
           {/* Decorative park base (self-contained, no external assets) */}
-          <rect x="12" y="12" width={PARK_W - 24} height={PARK_H - 24} rx="28" className="fill-slate-50 stroke-slate-200 dark:fill-slate-900 dark:stroke-slate-700" strokeWidth="2" />
-          <path d={`M60 ${PARK_H / 2} C 260 ${PARK_H / 2 - 120}, 460 ${PARK_H / 2 + 120}, ${PARK_W - 60} ${PARK_H / 2}`} className="fill-none stroke-slate-200 dark:stroke-slate-700" strokeWidth="18" strokeLinecap="round" />
-          <ellipse cx={PARK_W / 2} cy={PARK_H - 90} rx="120" ry="38" className="fill-cyan-100 dark:fill-cyan-900/30" />
+          <rect x="12" y="12" width={PARK_W - 24} height={PARK_H - 24} rx="28" className="fill-slate-50 stroke-slate-200 dark:fill-zinc-950 dark:stroke-white/5" strokeWidth="2" />
+          <path d={`M60 ${PARK_H / 2} C 260 ${PARK_H / 2 - 120}, 460 ${PARK_H / 2 + 120}, ${PARK_W - 60} ${PARK_H / 2}`} className="fill-none stroke-slate-200 dark:stroke-white/5" strokeWidth="18" strokeLinecap="round" />
+          <ellipse cx={PARK_W / 2} cy={PARK_H - 90} rx="120" ry="38" className="fill-slate-200 dark:fill-slate-800" />
           <rect x="30" y={PARK_H / 2 - 30} width="46" height="60" rx="10" className="fill-slate-200 dark:fill-slate-700" />
           <text x="53" y={PARK_H / 2 + 4} textAnchor="middle" fontSize="12" className="fill-slate-500 dark:fill-slate-400">البوابة</text>
 
@@ -123,7 +123,7 @@ export function ParkMap({ outlets, selected, onSelect }: Props) {
                 <div className="flex justify-between gap-2"><span className="text-slate-400">الأكثر مبيعاً</span><span className="truncate">{hovered.signature.itemName}</span></div>
               )}
             </div>
-            <p className="mt-2 text-[10px] text-emerald-300">اضغط لتصفية التقرير على هذا المنفذ</p>
+            <p className="mt-2 text-[10px] text-violet-300">اضغط لتصفية التقرير على هذا المنفذ</p>
           </div>
         )}
       </div>

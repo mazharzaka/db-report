@@ -4,85 +4,85 @@
 
 @layer base {
   :root {
-    /* Quiet Editorial Palette - Light Mode (Off-white, soft paper-like) */
-    --background: 40 10% 98%;          /* #faf9f6 */
-    --foreground: 220 15% 15%;         /* #20242b */
+    /* Enterprise Deep Indigo Palette - Light Mode */
+    --background: 210 40% 98%;          /* #f8fafc */
+    --foreground: 222 47% 11%;         /* #0f172a */
 
     --card: 0 0% 100%;
-    --card-foreground: 220 15% 15%;
+    --card-foreground: 222 47% 11%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 220 15% 15%;
+    --popover-foreground: 222 47% 11%;
 
-    /* Muted Pine/Teal Accent */
-    --primary: 173 42% 28%;            /* #29665f */
-    --primary-foreground: 173 20% 98%;
+    /* Deep Indigo Accent */
+    --primary: 238 84% 59%;            /* #4f46e5 */
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 40 8% 93%;
-    --secondary-foreground: 220 15% 18%;
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222 47% 11%;
 
-    --muted: 40 8% 93%;
-    --muted-foreground: 220 10% 46%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215 16% 47%;
 
-    --accent: 173 30% 92%;
-    --accent-foreground: 173 45% 20%;
+    --accent: 238 84% 96%;
+    --accent-foreground: 238 84% 40%;
 
     /* Warning / Destructive */
     --destructive: 358 65% 52%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 40 6% 89%;
-    --input: 40 6% 89%;
-    --ring: 173 42% 28%;
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 238 84% 59%;
 
-    --radius: 0.375rem;
+    --radius: 0.5rem;
 
-    /* Single Accent Hue (Teal 173) Tints: Light to Dark */
-    --chart-1: 173 35% 78%;
-    --chart-2: 173 38% 62%;
-    --chart-3: 173 40% 46%;
-    --chart-4: 173 42% 32%;
-    --chart-5: 173 48% 20%;
+    /* Indigo & Slate Chart Tints */
+    --chart-1: 238 84% 59%;
+    --chart-2: 215 16% 47%;
+    --chart-3: 199 89% 48%;
+    --chart-4: 239 84% 67%;
+    --chart-5: 222 47% 11%;
   }
 
   .dark {
-    /* Quiet Editorial Palette - Dark Mode (Never pure black, never pure white text) */
-    --background: 220 13% 10%;        /* #16181c */
-    --foreground: 220 10% 86%;        /* #d8dade */
+    --background: 240 10% 3.9%;        /* #09090b - Solid Zinc-950 */
+    --foreground: 0 0% 100%;           /* #ffffff - Pure white */
 
-    --card: 220 13% 13%;               /* #1d2025 */
-    --card-foreground: 220 10% 86%;
+    --card: 240 3.7% 15.9%;            /* #18181b - Solid Zinc-900 */
+    --card-foreground: 0 0% 100%;
 
-    --popover: 220 13% 13%;
-    --popover-foreground: 220 10% 86%;
+    --popover: 240 3.7% 15.9%;
+    --popover-foreground: 0 0% 100%;
 
-    /* Muted Pine/Teal Accent (Dark Mode) */
-    --primary: 173 38% 50%;           /* #4ea59b */
-    --primary-foreground: 220 13% 10%;
+    /* Soft Lavender Accent */
+    --primary: 258 90% 85%;            /* #c4b5fd */
+    --primary-foreground: 240 10% 3.9%;
 
-    --secondary: 220 12% 17%;
-    --secondary-foreground: 220 10% 85%;
+    --secondary: 240 3.7% 15.9%;
+    --secondary-foreground: 0 0% 100%;
 
-    --muted: 220 12% 17%;
-    --muted-foreground: 220 9% 60%;
+    --muted: 240 3.7% 15.9%;
+    --muted-foreground: 240 5% 64.9%;  /* #a1a1aa - Zinc 400 */
 
-    --accent: 173 28% 18%;
-    --accent-foreground: 173 38% 82%;
+    --accent: 258 90% 85%;             /* #c4b5fd */
+    --accent-foreground: 240 10% 3.9%;
 
-    /* Warning / Destructive */
     --destructive: 358 60% 55%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 220 12% 18%;
-    --input: 220 12% 18%;
-    --ring: 173 38% 50%;
+    --border: 0 0% 100% / 0.05;        /* border-white/5 */
+    --input: 0 0% 100% / 0.05;
+    --ring: 258 90% 85%;
 
-    /* Dark Mode Chart Tints */
-    --chart-1: 173 30% 28%;
-    --chart-2: 173 34% 40%;
-    --chart-3: 173 38% 52%;
-    --chart-4: 173 40% 66%;
-    --chart-5: 173 42% 80%;
+    --radius: 1.5rem;                  /* rounded-3xl */
+
+    /* Chart Tints */
+    --chart-1: 258 90% 85%;            /* #c4b5fd Lavender */
+    --chart-2: 142 77% 73%;            /* #86efac Mint Green */
+    --chart-3: 48 96% 65%;             /* #fde047 Soft Yellow */
+    --chart-4: 240 5% 65%;             /* Zinc 400 */
+    --chart-5: 0 0% 100%;
   }
 }
 

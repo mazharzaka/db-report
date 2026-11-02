@@ -124,8 +124,17 @@ app.get("/api/caravans/export", exportCaravanExcel);
 // 5. التحليلات التشغيلية على مستوى الأصناف (Pos_item_post)
 // params: startDate, endDate, branchCode (واحد أو عدة أكواد مفصولة بفاصلة), metricType = revenue | quantity, mode = best | slow
 app.get("/api/reports/caravans/items-summary", async (req, res) => {
+  const { startDate, endDate, branchCode, metricType, mode } = req.query;
+  console.log("[DIAGNOSTIC API: items-summary] Incoming Request:", {
+    startDate,
+    endDate,
+    branchCode,
+    metricType,
+    mode,
+    timestamp: new Date().toISOString()
+  });
+
   try {
-    const { startDate, endDate, branchCode, metricType, mode } = req.query;
     const branchCodes = branchCode
       ? String(branchCode)
           .split(",")
@@ -140,12 +149,29 @@ app.get("/api/reports/caravans/items-summary", async (req, res) => {
       metricType: metricType ? String(metricType).toLowerCase() : "revenue",
       mode: mode ? String(mode).toLowerCase() : "best",
     });
+
+    console.log("[DIAGNOSTIC API: items-summary] Result Stats:", {
+      topItemsCount: data.topItems?.length ?? 0,
+      slowItemsCount: data.slowItems?.length ?? 0,
+      outletsCount: data.outlets?.length ?? 0,
+      hasDuel: !!data.duel,
+      guests: data.capture?.guests ?? 0,
+      spendPerGuest: data.capture?.spendPerGuest ?? 0,
+      degraded: data.degraded,
+      errors: data.errors
+    });
+
     res.json({ status: "success", ...data });
   } catch (err) {
-    console.error("[API Error] items-summary:", err);
+    console.error("[DIAGNOSTIC API: items-summary] FATAL EXCEPTION CAUGHT:");
+    console.error("  Error Message:", err.message);
+    console.error("  Error Stack:", err.stack);
+
     res.status(err.statusCode || 500).json({
       status: "error",
+      error: err.message,
       message: err.message,
+      stack: process.env.NODE_ENV !== 'production' ? err.stack : undefined,
       timestamp: new Date().toISOString(),
     });
   }
@@ -167,6 +193,7 @@ app.get("/api/reports/caravans/items-performance", async (req, res) => {
       limit,
       sortBy,
       sortOrder,
+      abcCategory,
     } = req.query;
 
     const rawBranches = branchCode || branches;
@@ -188,6 +215,7 @@ app.get("/api/reports/caravans/items-performance", async (req, res) => {
       limit: parseInt(limit, 10) || 10,
       sortBy: sortBy ? String(sortBy).trim() : "revenue",
       sortOrder: sortOrder ? String(sortOrder).trim() : "desc",
+      abcCategory: abcCategory ? String(abcCategory).trim() : undefined,
     });
 
     res.json(data);

@@ -25,7 +25,7 @@ export const dbConfig = {
     server: serverHost,
     database: process.env.DB_NAME || 'dbDream_Park_Resturant',
     port: process.env.DB_PORT ? parseInt(process.env.DB_PORT, 10) : undefined,
-    requestTimeout: 60000,
+    requestTimeout: 120000,
     connectionTimeout: 20000,
     pool: {
         max: 25,
@@ -38,7 +38,8 @@ export const dbConfig = {
         trustServerCertificate: process.env.DB_TRUST_SERVER_CERTIFICATE !== 'false',
         instanceName: instanceName,
         enableArithAbort: true,
-        rowCollectionOnDone: false
+        rowCollectionOnDone: false,
+        requestTimeout: 120000
     }
 };
 

@@ -122,10 +122,10 @@ export function BranchSelect({ options, value, onChange }: Props) {
         aria-controls={listId}
         aria-label="اختيار الفروع / الكرافانات"
         onClick={() => setOpen((o) => !o)}
-        className={`flex h-10 w-full min-w-[230px] items-center justify-between gap-2 rounded-xl border bg-white px-3 text-sm transition dark:bg-slate-900 ${
+        className={`flex h-10 w-full min-w-[230px] items-center justify-between gap-2 rounded-xl border bg-white px-3 text-sm transition dark:bg-[#18181b] ${
           open
-            ? 'border-emerald-500 ring-2 ring-emerald-500/20'
-            : 'border-slate-200 hover:border-slate-300 dark:border-slate-700 dark:hover:border-slate-600'
+            ? 'border-violet-400 ring-2 ring-violet-400/20'
+            : 'border-slate-200 hover:border-slate-300 dark:border-white/10 dark:hover:border-slate-600'
         }`}
       >
         <span className="flex min-w-0 items-center gap-2">
@@ -134,7 +134,7 @@ export function BranchSelect({ options, value, onChange }: Props) {
         </span>
         <span className="flex shrink-0 items-center gap-2">
           {!allSelected && (
-            <span className="rounded-full bg-emerald-600 px-2 py-0.5 text-[11px] font-bold tabular-nums text-white">
+            <span className="rounded-full bg-white text-black px-2 py-0.5 text-[11px] font-bold tabular-nums">
               {value.length}
             </span>
           )}
@@ -143,8 +143,8 @@ export function BranchSelect({ options, value, onChange }: Props) {
       </button>
 
       {open && (
-        <div className="absolute right-0 z-30 mt-2 w-full min-w-[300px] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl dark:border-slate-700 dark:bg-slate-900">
-          <div className="relative border-b border-slate-100 p-2 dark:border-slate-800">
+        <div className="absolute right-0 z-30 mt-2 w-full min-w-[300px] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl dark:border-white/10 dark:bg-[#18181b]">
+          <div className="relative border-b border-slate-100 p-2 dark:border-white/10">
             <Search className="pointer-events-none absolute right-5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <input
               ref={searchRef}
@@ -153,7 +153,7 @@ export function BranchSelect({ options, value, onChange }: Props) {
               placeholder="ابحث باسم المنفذ أو الكود..."
               aria-controls={listId}
               aria-activedescendant={`${listId}-${active}`}
-              className="w-full rounded-lg bg-slate-50 py-2 pl-3 pr-9 text-sm text-slate-700 outline-none dark:bg-slate-800 dark:text-slate-200"
+              className="w-full rounded-lg bg-slate-50 py-2 pl-3 pr-9 text-sm text-slate-700 outline-none dark:bg-zinc-950 dark:text-slate-200"
             />
           </div>
 
@@ -166,14 +166,14 @@ export function BranchSelect({ options, value, onChange }: Props) {
               onMouseEnter={() => setActive(0)}
               onClick={() => onChange([])}
               className={`flex cursor-pointer items-center justify-between rounded-lg px-3 py-2 text-sm font-semibold ${
-                active === 0 ? 'bg-slate-100 dark:bg-slate-800' : ''
-              } ${allSelected ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-700 dark:text-slate-200'}`}
+                active === 0 ? 'bg-slate-100 dark:bg-zinc-950' : ''
+              } ${allSelected ? 'text-violet-300 font-bold' : 'text-slate-700 dark:text-slate-200'}`}
             >
               <span>جميع الفروع والمنافذ</span>
               {allSelected && <Check className="h-4 w-4" />}
             </li>
 
-            <li role="presentation" className="my-1 h-px bg-slate-100 dark:bg-slate-800" />
+            <li role="presentation" className="my-1 h-px bg-slate-100 dark:bg-zinc-950" />
 
             {filtered.length === 0 && (
               <li role="presentation" className="px-3 py-6 text-center text-sm text-slate-400">
@@ -194,13 +194,13 @@ export function BranchSelect({ options, value, onChange }: Props) {
                   onMouseEnter={() => setActive(idx)}
                   onClick={() => toggle(String(o.Code))}
                   className={`flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2 text-sm ${
-                    active === idx ? 'bg-slate-100 dark:bg-slate-800' : ''
+                    active === idx ? 'bg-slate-100 dark:bg-zinc-950' : ''
                   }`}
                 >
                   <span
                     className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border transition ${
                       selected
-                        ? 'border-emerald-600 bg-emerald-600 text-white'
+                        ? 'border-violet-300 bg-violet-300 text-black'
                         : 'border-slate-300 dark:border-slate-600'
                     }`}
                   >
@@ -213,12 +213,12 @@ export function BranchSelect({ options, value, onChange }: Props) {
             })}
           </ul>
 
-          <div className="flex items-center justify-between border-t border-slate-100 px-3 py-2 text-xs text-slate-400 dark:border-slate-800">
+          <div className="flex items-center justify-between border-t border-slate-100 px-3 py-2 text-xs text-slate-400 dark:border-white/10">
             <span className="tabular-nums">{options.length} منفذ</span>
             <button
               type="button"
               onClick={close}
-              className="rounded-lg bg-emerald-600 px-3 py-1 font-semibold text-white transition hover:bg-emerald-700"
+              className="rounded-full bg-white text-black px-4 py-1 text-xs font-medium transition hover:bg-zinc-200"
             >
               تم
             </button>

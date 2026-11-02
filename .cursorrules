@@ -1,0 +1,25 @@
+# Dream Park ERP Reporting Architecture & Engineering Guidelines
+
+## 1. UI/UX & Design System Constraints (Strict Anti-AI Rules)
+- Never use CSS gradients (linear or radial) on data bars, metric cards, badges, or backgrounds. Always use solid, high-contrast, flat fills.
+- Never use neon shades (`#00ff...`, saturated cyan/lime, vibrant purples). Use enterprise-grade Muted Emerald (`#15803d` / `#166534`), Navy, or Slate (`#0f172a`, `#1e293b`, `#334155`).
+- Maintain an authentic, institutional ERP accounting aesthetic:
+  * Headers and values: High-contrast off-white (`#f8fafc` / `text-slate-100`).
+  * Labels and metadata: Clean muted slate (`#94a3b8` / `text-slate-400`).
+  * Financial figures, quantities, and dates: Strictly format using tabular monospace variants (`tabular-nums font-mono`).
+- Progress tracks must be solid slim tracks (4px-6px, e.g., `bg-slate-800` track with solid `#15803d` or `#0f766e` fill), consistent across rank 1, rank 2, rank 3 without alternating colors or fading.
+- Badges and rank numbers must use minimalist square-rounded neutral badges with dark backgrounds and crisp white text.
+
+## 2. Database & Aggregation Query Integrity
+- All aggregation queries on `[Pos_item_post]` must use standalone `GROUP BY` without multi-table row expansion or rogue `JOIN`s against multi-row tables (e.g. payment methods, multiple tax lines, duplicate item catalogs) that induce Cartesian multiplication prior to aggregation.
+- Branch filtering must be strictly enforced on `p.[Branch_Code]`:
+  * If specific caravan codes are supplied, filter strictly via `p.[Branch_Code] IN (...)`.
+  * If no branch is supplied, restrict strictly to Type 4 outlets via `p.[Branch_Code] IN (SELECT [Code] FROM [branchs] WITH (NOLOCK) WHERE [Type] = 4)`.
+- Audited Golden Benchmark Integrity (2026-01-01 to 2026-10-25):
+  * Checks: 6,216
+  * Subtotal: 7,873,408.73 EGP
+  * Taxes & Services: 47,770.01 EGP
+  * Grand Total: 7,921,222.60 EGP
+  * Small Mineral Water (111070): Exactly 11,906 units = 238,120.0048 EGP.
+- All monetary outputs must be rounded to two decimal places (`round2`).
+

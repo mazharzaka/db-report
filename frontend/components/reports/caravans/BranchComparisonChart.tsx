@@ -40,11 +40,11 @@ export function BranchComparisonChart({
       legend: { display: false },
       tooltip: {
         rtl: true,
-        backgroundColor: 'rgba(15, 23, 42, 0.92)',
-        borderColor: 'rgba(148, 163, 184, 0.25)',
+        backgroundColor: 'rgba(24, 24, 27, 0.95)',
+        borderColor: 'rgba(255, 255, 255, 0.08)',
         borderWidth: 1,
-        titleColor: '#e2e8f0',
-        bodyColor: '#cbd5e1',
+        titleColor: '#ffffff',
+        bodyColor: '#a1a1aa',
         padding: 12,
         cornerRadius: 12,
         usePointStyle: true,
@@ -59,7 +59,7 @@ export function BranchComparisonChart({
             return s ? `متوسط الفاتورة: ${fmtMoney(s.avgTicket)} | الشيكات: ${fmtInt(s.orders)}` : '';
           },
         },
-        footerColor: '#34d399',
+        footerColor: '#c4b5fd',
       },
     },
     scales: {
@@ -107,8 +107,8 @@ export function BranchComparisonChart({
           {
             label: isRevenue ? 'صافي الإيراد' : 'عدد الشيكات',
             data: dataValues,
-            backgroundColor: '#10B981',
-            hoverBackgroundColor: '#34D399',
+            backgroundColor: '#c4b5fd',
+            hoverBackgroundColor: '#a78bfa',
           },
         ],
       }}

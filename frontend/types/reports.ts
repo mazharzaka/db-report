@@ -20,11 +20,19 @@ export interface CaravanRecord {
   grandTotal?: number;
 }
 
+export interface PriceTier {
+  price: number;
+  quantity: number;
+  total: number;
+}
+
 export interface ItemPerformanceRecord {
   itemCode: string;
   itemName: string;
   quantity: number;
+  totalQuantity?: number;
   netRevenue: number;
+  totalNetRevenue?: number;
   prevQuantity: number;
   prevNetRevenue: number;
   growthPct: number | null;
@@ -32,9 +40,22 @@ export interface ItemPerformanceRecord {
   minPrice?: number;
   maxPrice?: number;
   hasPriceChange?: boolean;
-  weightedAvgPrice?: number;
+  weightedAvgPrice?: number | null;
   unitPrice?: number;
   stableUnitPrice?: number | null;
+  priceTiers?: PriceTier[];
+  prevPriceTiers?: PriceTier[];
+  abcCategory?: 'A' | 'B' | 'C';
+}
+
+export interface AbcSummary {
+  categoryACount: number;
+  categoryBCount: number;
+  categoryCCount: number;
+  categoryARevenue: number;
+  categoryBRevenue: number;
+  categoryCRevenue: number;
+  activeCategory?: 'A' | 'B' | 'C' | null;
 }
 
 export interface ItemsPerformanceResponse {
@@ -50,6 +71,7 @@ export interface ItemsPerformanceResponse {
     search?: string;
     sortBy?: string;
     sortOrder?: string;
+    abcCategory?: 'A' | 'B' | 'C' | null;
   };
   pagination: {
     page: number;
@@ -66,6 +88,7 @@ export interface ItemsPerformanceResponse {
     prevQuantity: number;
     prevRevenue: number;
     revenueGrowthPct: number | null;
+    abcSummary?: AbcSummary;
   };
   items: ItemPerformanceRecord[];
 }
@@ -74,7 +97,7 @@ export interface PrintSectionsConfig {
   kpis: boolean;
   charts: boolean;
   table: boolean;
-  peakHours: boolean;
+  peakHours?: boolean;
   itemsPerformance: boolean;
   orientation: 'auto' | 'landscape' | 'portrait';
 }
@@ -209,7 +232,8 @@ export interface PeriodItemPricing {
   maxPrice?: number;
   hasPriceChange?: boolean;
   unitPrice?: number;
-  weightedAvgPrice?: number;
+  weightedAvgPrice?: number | null;
+  priceTiers?: PriceTier[];
 }
 
 export interface ItemShift {
