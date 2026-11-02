@@ -138,18 +138,18 @@ export function ItemSalesPerformance({
 
   return (
     <section
-      className={`rounded-3xl border border-white/5 bg-[#18181b] p-6 break-inside-avoid ${className}`}
+      className={`rounded-3xl border border-slate-200 bg-white p-6 break-inside-avoid dark:border-white/5 dark:bg-[#18181b] ${className}`}
     >
       {/* Header and Summary KPIs */}
-      <div className="flex flex-col gap-4 border-b border-white/5 pb-4">
+      <div className="flex flex-col gap-4 border-b border-slate-200 dark:border-white/5 pb-4">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-violet-300">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-50 border border-orange-200 text-orange-600 dark:bg-violet-500/10 dark:border-violet-500/20 dark:text-violet-300">
               <Package className="h-5 w-5" />
             </div>
             <div>
-              <h3 className="text-base font-bold text-white">تحليل مبيعات الأصناف وتصنيف ABC</h3>
-              <p className="text-xs text-zinc-400">
+              <h3 className="text-base font-bold text-slate-900 dark:text-white">تحليل مبيعات الأصناف وتصنيف ABC</h3>
+              <p className="text-xs text-slate-500 dark:text-zinc-400">
                 مؤشرات أداء الأصناف، تفاصيل شرائح الأسعار، تصنيف أولويات الإيرادات (ABC)، والنمو الدوري
               </p>
             </div>
@@ -160,7 +160,7 @@ export function ItemSalesPerformance({
             <button
               onClick={() => void loadData()}
               disabled={loading}
-              className="inline-flex items-center gap-1.5 rounded-xl border border-white/5 bg-slate-800 px-3 py-1.5 text-xs font-semibold text-slate-200 transition hover:bg-slate-700 disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-200 dark:border-white/5 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700 disabled:opacity-50"
             >
               <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
               تحديث
@@ -170,48 +170,48 @@ export function ItemSalesPerformance({
 
         {/* Aggregate Metrics Bar */}
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <div className="rounded-2xl border border-white/5 bg-zinc-950/60 p-4">
-            <span className="text-[11px] font-medium text-zinc-400 flex items-center gap-1.5">
-              <Boxes className="h-3.5 w-3.5 text-zinc-400" />
+          <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4 dark:border-white/5 dark:bg-zinc-950/60">
+            <span className="text-[11px] font-medium text-slate-500 dark:text-zinc-400 flex items-center gap-1.5">
+              <Boxes className="h-3.5 w-3.5 text-slate-400" />
               الأصناف المطابقة
             </span>
-            <span className="mt-1 block text-lg font-extrabold text-white tabular-nums">
+            <span className="mt-1 block text-lg font-extrabold text-slate-900 dark:text-white tabular-nums">
               {fmtInt(summary.totalItems)} صنف
             </span>
           </div>
 
-          <div className="rounded-2xl border border-white/5 bg-zinc-950/60 p-4">
-            <span className="text-[11px] font-medium text-zinc-400 flex items-center gap-1.5">
-              <Package className="h-3.5 w-3.5 text-violet-300" />
+          <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4 dark:border-white/5 dark:bg-zinc-950/60">
+            <span className="text-[11px] font-medium text-slate-500 dark:text-zinc-400 flex items-center gap-1.5">
+              <Package className="h-3.5 w-3.5 text-orange-600 dark:text-violet-300" />
               إجمالي الكميات المباعة
             </span>
-            <span className="mt-1 block text-lg font-extrabold text-white tabular-nums">
+            <span className="mt-1 block text-lg font-extrabold text-slate-900 dark:text-white tabular-nums">
               {fmtInt(summary.totalQuantity)} قطعة
             </span>
           </div>
 
-          <div className="rounded-2xl border border-white/5 bg-zinc-950/60 p-4">
-            <span className="text-[11px] font-medium text-zinc-400 flex items-center gap-1.5">
-              <Coins className="h-3.5 w-3.5 text-violet-300" />
+          <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4 dark:border-white/5 dark:bg-zinc-950/60">
+            <span className="text-[11px] font-medium text-slate-500 dark:text-zinc-400 flex items-center gap-1.5">
+              <Coins className="h-3.5 w-3.5 text-orange-600 dark:text-violet-300" />
               إجمالي صافي الإيرادات
             </span>
-            <span className="mt-1 block text-lg font-extrabold text-violet-300 tabular-nums font-mono" dir="ltr">
+            <span className="mt-1 block text-lg font-extrabold text-orange-600 dark:text-[#c4b5fd] tabular-nums font-mono" dir="ltr">
               {fmtMoney(summary.totalRevenue)}
             </span>
           </div>
 
-          <div className="rounded-2xl border border-white/5 bg-zinc-950/60 p-4">
-            <span className="text-[11px] font-medium text-zinc-400 flex items-center gap-1.5">
-              <TrendingUp className="h-3.5 w-3.5 text-zinc-400" />
+          <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4 dark:border-white/5 dark:bg-zinc-950/60">
+            <span className="text-[11px] font-medium text-slate-500 dark:text-zinc-400 flex items-center gap-1.5">
+              <TrendingUp className="h-3.5 w-3.5 text-slate-400" />
               معدل النمو الدوري الإجمالي
             </span>
             <span
               className={`mt-1 block text-lg font-extrabold tabular-nums font-mono ${
                 summary.revenueGrowthPct !== null && summary.revenueGrowthPct >= 0
-                  ? 'text-violet-300'
+                  ? 'text-orange-600 dark:text-[#c4b5fd]'
                   : summary.revenueGrowthPct !== null
-                  ? 'text-yellow-300'
-                  : 'text-zinc-400'
+                  ? 'text-amber-600 dark:text-yellow-300'
+                  : 'text-slate-400 dark:text-zinc-400'
               }`}
               dir="ltr"
             >
@@ -224,16 +224,16 @@ export function ItemSalesPerformance({
 
         {/* Top-Line Executive Banner: ABC Revenue Concentration */}
         {summary.abcSummary && summary.abcSummary.categoryACount > 0 && (
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5 rounded-xl border border-white/5/60 bg-zinc-950 px-4 py-3 text-xs text-zinc-300">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-700 dark:border-white/5/60 dark:bg-zinc-950 dark:text-zinc-300">
             <div className="flex items-center gap-2.5">
-              <span className="flex h-2 w-2 rounded-full bg-emerald-400 shrink-0" />
+              <span className="flex h-2 w-2 rounded-full bg-orange-500 dark:bg-emerald-400 shrink-0" />
               <span>
-                أصناف الفئة <strong className="text-violet-300 font-bold">(A)</strong> تمثل <strong className="text-white font-bold">80%</strong> من إجمالي مبيعات الفترة بواقع <strong className="font-mono text-emerald-300 font-bold">{summary.abcSummary.categoryACount}</strong> {summary.abcSummary.categoryACount === 1 ? 'منتج رئيسي' : summary.abcSummary.categoryACount <= 10 ? 'منتجات رئيسية' : 'منتجاً رئيسياً'} بقيمة <span className="font-mono font-bold text-white" dir="ltr">{fmtMoney(summary.abcSummary.categoryARevenue)}</span>.
+                أصناف الفئة <strong className="text-orange-600 dark:text-violet-300 font-bold">(A)</strong> تمثل <strong className="text-slate-900 dark:text-white font-bold">80%</strong> من إجمالي مبيعات الفترة بواقع <strong className="font-mono text-orange-600 dark:text-emerald-300 font-bold">{summary.abcSummary.categoryACount}</strong> {summary.abcSummary.categoryACount === 1 ? 'منتج رئيسي' : summary.abcSummary.categoryACount <= 10 ? 'منتجات رئيسية' : 'منتجاً رئيسياً'} بقيمة <span className="font-mono font-bold text-slate-900 dark:text-white" dir="ltr">{fmtMoney(summary.abcSummary.categoryARevenue)}</span>.
               </span>
             </div>
-            <div className="flex items-center gap-3 text-[11px] text-zinc-400 font-mono">
+            <div className="flex items-center gap-3 text-[11px] text-slate-500 dark:text-zinc-400 font-mono">
               <span>فئة B (15%): {summary.abcSummary.categoryBCount} صنف</span>
-              <span className="text-slate-600">|</span>
+              <span className="text-slate-300 dark:text-slate-600">|</span>
               <span>فئة C (5%): {summary.abcSummary.categoryCCount} صنف</span>
             </div>
           </div>
@@ -242,13 +242,13 @@ export function ItemSalesPerformance({
         {/* ABC Filter Tabs & Quick Search */}
         <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between print:hidden">
           {/* ABC Filter Tabs */}
-          <div className="flex flex-wrap items-center gap-1 p-1 rounded-full border border-white/5 bg-zinc-950 text-xs">
+          <div className="flex flex-wrap items-center gap-1 p-1 rounded-full border border-slate-200 bg-slate-100 text-xs dark:border-white/5 dark:bg-zinc-950">
             <button
               onClick={() => { setAbcFilter('ALL'); setPage(1); }}
               className={`rounded-lg px-3 py-1.5 font-semibold transition ${
                 abcFilter === 'ALL'
-                  ? 'bg-slate-800 text-white shadow-sm'
-                  : 'text-zinc-400 hover:text-slate-200'
+                  ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-800 dark:text-white'
+                  : 'text-slate-600 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-slate-200'
               }`}
             >
               الكل
@@ -257,30 +257,30 @@ export function ItemSalesPerformance({
               onClick={() => { setAbcFilter('A'); setPage(1); }}
               className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 font-semibold transition ${
                 abcFilter === 'A'
-                  ? 'bg-emerald-950/70 text-emerald-300 border border-white/5/80 shadow-sm'
-                  : 'text-zinc-400 hover:text-emerald-300'
+                  ? 'bg-orange-600 text-white shadow-sm dark:bg-emerald-950/70 dark:text-emerald-300 dark:border dark:border-white/5/80'
+                  : 'text-slate-600 hover:text-orange-600 dark:text-zinc-400 dark:hover:text-emerald-300'
               }`}
             >
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+              <span className="h-1.5 w-1.5 rounded-full bg-orange-400 dark:bg-emerald-400" />
               فئة A فقط (أعلى مبيعاً) {summary.abcSummary?.categoryACount ? `(${summary.abcSummary.categoryACount})` : ''}
             </button>
             <button
               onClick={() => { setAbcFilter('B'); setPage(1); }}
               className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 font-semibold transition ${
                 abcFilter === 'B'
-                  ? 'bg-white text-black rounded-full font-medium shadow-sm'
-                  : 'text-zinc-400 hover:text-amber-300'
+                  ? 'bg-blue-600 text-white shadow-sm dark:bg-white dark:text-black'
+                  : 'text-slate-600 hover:text-blue-600 dark:text-zinc-400 dark:hover:text-amber-300'
               }`}
             >
-              <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
+              <span className="h-1.5 w-1.5 rounded-full bg-blue-400 dark:bg-amber-400" />
               فئة B فقط (متوسط) {summary.abcSummary?.categoryBCount ? `(${summary.abcSummary.categoryBCount})` : ''}
             </button>
             <button
               onClick={() => { setAbcFilter('C'); setPage(1); }}
               className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 font-semibold transition ${
                 abcFilter === 'C'
-                  ? 'bg-slate-800 text-slate-200 border border-white/5 shadow-sm'
-                  : 'text-zinc-400 hover:text-zinc-300'
+                  ? 'bg-slate-700 text-white shadow-sm dark:bg-slate-800 dark:text-slate-200 dark:border dark:border-white/5'
+                  : 'text-slate-600 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-zinc-300'
               }`}
             >
               <span className="h-1.5 w-1.5 rounded-full bg-slate-400" />
@@ -291,18 +291,18 @@ export function ItemSalesPerformance({
           {/* Live Search & Limit Controls */}
           <div className="flex flex-col sm:flex-row sm:items-center gap-2.5 flex-1 xl:max-w-md">
             <div className="relative flex-1">
-              <Search className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
+              <Search className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 dark:text-zinc-400" />
               <input
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="ابحث بكود الصنف أو اسم المنتج (مثال: مياه، كانز، 111069)..."
-                className="w-full rounded-xl border border-white/5 bg-zinc-950 py-2 pl-9 pr-9 text-xs text-slate-100 outline-none transition focus:border-violet-400 focus:ring-1 focus:ring-violet-400 placeholder:text-slate-500"
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2 pl-9 pr-9 text-xs text-slate-900 outline-none transition focus:border-orange-500 focus:ring-1 focus:ring-orange-500 placeholder:text-slate-400 dark:border-white/5 dark:bg-zinc-950 dark:text-slate-100 dark:focus:border-violet-400 dark:focus:ring-violet-400 dark:placeholder:text-slate-500"
               />
               {search && (
                 <button
                   onClick={() => setSearch('')}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white"
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 dark:text-zinc-400 dark:hover:text-white"
                   aria-label="مسح البحث"
                 >
                   <X className="h-3.5 w-3.5" />
@@ -311,8 +311,8 @@ export function ItemSalesPerformance({
             </div>
 
             <div className="flex items-center gap-2 shrink-0">
-              <span className="text-xs text-zinc-400">عرض:</span>
-              <div className="inline-flex rounded-lg border border-white/5 bg-zinc-950 p-0.5">
+              <span className="text-xs text-slate-500 dark:text-zinc-400">عرض:</span>
+              <div className="inline-flex rounded-lg border border-slate-200 bg-slate-100 p-0.5 dark:border-white/5 dark:bg-zinc-950">
                 {[10, 20, 50, 100].map((size) => (
                   <button
                     key={size}
@@ -322,8 +322,8 @@ export function ItemSalesPerformance({
                     }}
                     className={`rounded-md px-2.5 py-1 text-xs font-semibold transition ${
                       limit === size
-                        ? 'bg-emerald-600 text-white'
-                        : 'text-zinc-400 hover:text-slate-200'
+                        ? 'bg-orange-600 text-white dark:bg-[#c4b5fd] dark:text-black font-bold'
+                        : 'text-slate-600 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-slate-200'
                     }`}
                   >
                     {size}
@@ -337,7 +337,7 @@ export function ItemSalesPerformance({
 
       {/* Error alert if any */}
       {error && (
-        <div className="mt-4 rounded-xl border border-rose-500/30 bg-rose-500/10 p-3 text-xs text-rose-300">
+        <div className="mt-4 rounded-xl border border-rose-500/30 bg-rose-500/10 p-3 text-xs text-rose-700 dark:text-rose-300">
           {error}
         </div>
       )}
@@ -345,16 +345,16 @@ export function ItemSalesPerformance({
       {/* Items Table */}
       <div className={`mt-4 overflow-x-auto scroll-smooth ${loading ? 'opacity-60' : ''}`}>
         <table className="w-full border-collapse text-xs text-right">
-          <thead className="bg-zinc-950/80 border-b border-white/5 text-zinc-400">
+          <thead className="bg-slate-100 border-b border-slate-200 text-slate-600 dark:bg-zinc-950/80 dark:border-white/5 dark:text-zinc-400">
             <tr>
               <th
                 onClick={() => toggleSort('code')}
-                className="cursor-pointer px-4 py-3 font-bold transition hover:text-white select-none whitespace-nowrap"
+                className="cursor-pointer px-4 py-3 font-bold transition hover:text-slate-900 dark:hover:text-white select-none whitespace-nowrap"
               >
                 <span className="inline-flex items-center gap-1">
                   كود وتصنيف الصنف
                   {sortBy === 'code' ? (
-                    sortOrder === 'asc' ? <ArrowUp className="h-3.5 w-3.5 text-violet-300" /> : <ArrowDown className="h-3.5 w-3.5 text-violet-300" />
+                    sortOrder === 'asc' ? <ArrowUp className="h-3.5 w-3.5 text-orange-600 dark:text-violet-300" /> : <ArrowDown className="h-3.5 w-3.5 text-orange-600 dark:text-violet-300" />
                   ) : (
                     <ArrowUpDown className="h-3 w-3 opacity-30" />
                   )}
@@ -362,12 +362,12 @@ export function ItemSalesPerformance({
               </th>
               <th
                 onClick={() => toggleSort('name')}
-                className="cursor-pointer px-4 py-3 font-bold transition hover:text-white select-none whitespace-nowrap"
+                className="cursor-pointer px-4 py-3 font-bold transition hover:text-slate-900 dark:hover:text-white select-none whitespace-nowrap"
               >
                 <span className="inline-flex items-center gap-1">
                   اسم الصنف / المنتج
                   {sortBy === 'name' ? (
-                    sortOrder === 'asc' ? <ArrowUp className="h-3.5 w-3.5 text-violet-300" /> : <ArrowDown className="h-3.5 w-3.5 text-violet-300" />
+                    sortOrder === 'asc' ? <ArrowUp className="h-3.5 w-3.5 text-orange-600 dark:text-violet-300" /> : <ArrowDown className="h-3.5 w-3.5 text-orange-600 dark:text-violet-300" />
                   ) : (
                     <ArrowUpDown className="h-3 w-3 opacity-30" />
                   )}
@@ -375,13 +375,13 @@ export function ItemSalesPerformance({
               </th>
               <th
                 onClick={() => toggleSort('quantity')}
-                className="cursor-pointer px-4 py-3 font-bold text-left transition hover:text-white select-none whitespace-nowrap"
+                className="cursor-pointer px-4 py-3 font-bold text-left transition hover:text-slate-900 dark:hover:text-white select-none whitespace-nowrap"
                 dir="ltr"
               >
                 <span className="inline-flex items-center gap-1 flex-row-reverse">
                   الكمية المباعة الإجمالية
                   {sortBy === 'quantity' ? (
-                    sortOrder === 'asc' ? <ArrowUp className="h-3.5 w-3.5 text-violet-300" /> : <ArrowDown className="h-3.5 w-3.5 text-violet-300" />
+                    sortOrder === 'asc' ? <ArrowUp className="h-3.5 w-3.5 text-orange-600 dark:text-violet-300" /> : <ArrowDown className="h-3.5 w-3.5 text-orange-600 dark:text-violet-300" />
                   ) : (
                     <ArrowUpDown className="h-3 w-3 opacity-30" />
                   )}
@@ -395,13 +395,13 @@ export function ItemSalesPerformance({
               </th>
               <th
                 onClick={() => toggleSort('revenue')}
-                className="cursor-pointer px-4 py-3 font-bold text-left transition hover:text-white select-none whitespace-nowrap"
+                className="cursor-pointer px-4 py-3 font-bold text-left transition hover:text-slate-900 dark:hover:text-white select-none whitespace-nowrap"
                 dir="ltr"
               >
                 <span className="inline-flex items-center gap-1 flex-row-reverse">
                   صافي الإيراد المحقق
                   {sortBy === 'revenue' ? (
-                    sortOrder === 'asc' ? <ArrowUp className="h-3.5 w-3.5 text-violet-300" /> : <ArrowDown className="h-3.5 w-3.5 text-violet-300" />
+                    sortOrder === 'asc' ? <ArrowUp className="h-3.5 w-3.5 text-orange-600 dark:text-violet-300" /> : <ArrowDown className="h-3.5 w-3.5 text-orange-600 dark:text-violet-300" />
                   ) : (
                     <ArrowUpDown className="h-3 w-3 opacity-30" />
                   )}
@@ -412,13 +412,13 @@ export function ItemSalesPerformance({
               </th>
               <th
                 onClick={() => toggleSort('growth')}
-                className="cursor-pointer px-4 py-3 font-bold text-left transition hover:text-white select-none whitespace-nowrap"
+                className="cursor-pointer px-4 py-3 font-bold text-left transition hover:text-slate-900 dark:hover:text-white select-none whitespace-nowrap"
                 dir="ltr"
               >
                 <span className="inline-flex items-center gap-1 flex-row-reverse">
                   معدل النمو (PoP)
                   {sortBy === 'growth' ? (
-                    sortOrder === 'asc' ? <ArrowUp className="h-3.5 w-3.5 text-violet-300" /> : <ArrowDown className="h-3.5 w-3.5 text-violet-300" />
+                    sortOrder === 'asc' ? <ArrowUp className="h-3.5 w-3.5 text-orange-600 dark:text-violet-300" /> : <ArrowDown className="h-3.5 w-3.5 text-orange-600 dark:text-violet-300" />
                   ) : (
                     <ArrowUpDown className="h-3 w-3 opacity-30" />
                   )}
@@ -427,10 +427,10 @@ export function ItemSalesPerformance({
             </tr>
           </thead>
 
-          <tbody className="divide-y divide-slate-800">
+          <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
             {items.length === 0 ? (
               <tr>
-                <td colSpan={8} className="py-12 text-center text-sm text-zinc-400">
+                <td colSpan={8} className="py-12 text-center text-sm text-slate-400 dark:text-zinc-400">
                   {loading ? 'جاري استرجاع بيانات الأصناف...' : 'لا توجد أصناف مطابقة للبحث أو الفترة المحددة'}
                 </td>
               </tr>
@@ -448,43 +448,43 @@ export function ItemSalesPerformance({
                 return (
                   <tr
                     key={item.itemCode}
-                    className={`transition-colors hover:bg-white/5 ${
-                      isEven ? 'bg-zinc-950/40' : 'bg-zinc-950/70'
+                    className={`transition-colors hover:bg-slate-100/60 dark:hover:bg-white/5 ${
+                      isEven ? 'bg-white dark:bg-zinc-950/40' : 'bg-slate-50/50 dark:bg-zinc-950/70'
                     }`}
                   >
-                    <td className="px-4 py-3 font-mono text-zinc-400 whitespace-nowrap">
+                    <td className="px-4 py-3 font-mono text-slate-600 dark:text-zinc-400 whitespace-nowrap">
                       <div className="flex items-center gap-1.5">
-                        <span className="rounded-md bg-slate-800 px-2 py-0.5 text-[11px] text-zinc-300">
+                        <span className="rounded-md bg-slate-100 px-2 py-0.5 text-[11px] text-slate-700 dark:bg-slate-800 dark:text-zinc-300">
                           {item.itemCode}
                         </span>
                         {item.abcCategory === 'A' ? (
                           <span
                             title="الفئة (A): أعلى مبيعاً (أول 80% من الإيرادات)"
-                            className="inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-bold font-mono bg-emerald-950/80 text-emerald-300 border border-white/5/80"
+                            className="inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-bold font-mono bg-orange-100 text-orange-800 border border-orange-200 dark:bg-emerald-950/80 dark:text-emerald-300 dark:border-white/5/80"
                           >
                             A
                           </span>
                         ) : item.abcCategory === 'B' ? (
                           <span
                             title="الفئة (B): أداء متوسط (15% التالية من الإيرادات)"
-                            className="inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-bold font-mono bg-white text-black rounded-full font-medium shadow-sm"
+                            className="inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-bold font-mono bg-blue-100 text-blue-800 border border-blue-200 dark:bg-white dark:text-black font-medium"
                           >
                             B
                           </span>
                         ) : (
                           <span
                             title="الفئة (C): أصناف راكدة أو منخفضة الحركة (آخر 5% من الإيرادات)"
-                            className="inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-bold font-mono bg-slate-800 text-zinc-400 border border-white/5"
+                            className="inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-bold font-mono bg-slate-100 text-slate-700 border border-slate-200 dark:bg-slate-800 dark:text-zinc-400 dark:border-white/5"
                           >
                             C
                           </span>
                         )}
                       </div>
                     </td>
-                    <td className="px-4 py-3 font-bold text-white whitespace-nowrap">
+                    <td className="px-4 py-3 font-bold text-slate-900 dark:text-white whitespace-nowrap">
                       {item.itemName}
                     </td>
-                    <td className="px-4 py-3 text-left font-semibold text-slate-200 tabular-nums" dir="ltr">
+                    <td className="px-4 py-3 text-left font-semibold text-slate-800 dark:text-slate-200 tabular-nums" dir="ltr">
                       {fmtInt(totalQty)} قطعة
                     </td>
                     <td className="px-4 py-3 align-middle">
@@ -493,35 +493,35 @@ export function ItemSalesPerformance({
                           {item.priceTiers.map((tier, tIdx) => (
                             <div
                               key={tIdx}
-                              className="inline-flex items-center gap-1.5 rounded-lg border border-amber-500/25 bg-amber-500/10 px-2 py-0.5 text-[11px] text-amber-300 font-mono shadow-sm"
+                              className="inline-flex items-center gap-1.5 rounded-lg border border-amber-500/25 bg-amber-500/10 px-2 py-0.5 text-[11px] text-amber-800 dark:text-amber-300 font-mono shadow-xs"
                               dir="ltr"
                             >
                               <span>{fmtInt(tier.quantity)} قطعة</span>
-                              <span className="text-amber-500/80 font-bold">×</span>
-                              <span className="font-bold text-white">{fmtMoney(tier.price)}</span>
-                              <span className="text-zinc-400 font-normal">({fmtMoney(tier.total)})</span>
+                              <span className="text-amber-600 font-bold">×</span>
+                              <span className="font-bold text-slate-900 dark:text-white">{fmtMoney(tier.price)}</span>
+                              <span className="text-slate-500 dark:text-zinc-400 font-normal">({fmtMoney(tier.total)})</span>
                             </div>
                           ))}
                         </div>
                       ) : (
-                        <div className="font-semibold text-slate-100 tabular-nums text-xs" dir="ltr">
+                        <div className="font-semibold text-slate-800 dark:text-slate-100 tabular-nums text-xs" dir="ltr">
                           {fmtMoney(unitPrice)}
                         </div>
                       )}
                     </td>
                     <td className="px-4 py-3 text-left tabular-nums whitespace-nowrap" dir="ltr">
                       {item.hasPriceChange && item.weightedAvgPrice ? (
-                        <span className="font-extrabold text-amber-400">
+                        <span className="font-extrabold text-amber-600 dark:text-amber-400">
                           {fmtMoney(item.weightedAvgPrice)}
                         </span>
                       ) : (
-                        <span className="text-slate-600 font-bold select-none">—</span>
+                        <span className="text-slate-400 dark:text-slate-600 font-bold select-none">—</span>
                       )}
                     </td>
-                    <td className="px-4 py-3 text-left font-extrabold text-violet-300 tabular-nums" dir="ltr">
+                    <td className="px-4 py-3 text-left font-extrabold text-orange-600 dark:text-[#c4b5fd] tabular-nums" dir="ltr">
                       {fmtMoney(totalRev)}
                     </td>
-                    <td className="px-4 py-3 text-left text-zinc-400 tabular-nums" dir="ltr">
+                    <td className="px-4 py-3 text-left text-slate-500 dark:text-zinc-400 tabular-nums" dir="ltr">
                       {fmtMoney(item.prevNetRevenue)}
                     </td>
                     <td className="px-4 py-3 text-left tabular-nums whitespace-nowrap" dir="ltr">
@@ -529,15 +529,15 @@ export function ItemSalesPerformance({
                         <span
                           className={`inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 text-xs font-semibold ${
                             isPositive
-                              ? 'bg-emerald-500/10 text-violet-300 border border-emerald-500/20'
-                              : 'text-yellow-300 bg-yellow-500/10 rounded-full px-2.5 py-0.5 text-xs font-semibold'
+                              ? 'bg-orange-50 text-orange-700 border border-orange-200 dark:bg-violet-500/10 dark:text-violet-300 dark:border-violet-500/20'
+                              : 'bg-amber-50 text-amber-700 border border-amber-200 dark:text-yellow-300 dark:bg-yellow-500/10 dark:border-yellow-500/20'
                           }`}
                         >
                           {isPositive ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
                           {Math.abs(item.growthPct).toFixed(1)}%
                         </span>
                       ) : (
-                        <span className="text-slate-500">—</span>
+                        <span className="text-slate-400 dark:text-slate-500">—</span>
                       )}
                     </td>
                   </tr>
@@ -549,18 +549,18 @@ export function ItemSalesPerformance({
       </div>
 
       {/* Pagination Controls */}
-      <div className="mt-4 flex flex-col gap-3 border-t border-white/5 pt-3 sm:flex-row sm:items-center sm:justify-between print:hidden">
-        <div className="text-xs text-zinc-400">
+      <div className="mt-4 flex flex-col gap-3 border-t border-slate-200 dark:border-white/5 pt-3 sm:flex-row sm:items-center sm:justify-between print:hidden">
+        <div className="text-xs text-slate-500 dark:text-zinc-400">
           عرض{' '}
-          <span className="font-semibold text-slate-200 tabular-nums">
+          <span className="font-semibold text-slate-800 dark:text-slate-200 tabular-nums">
             {pagination.totalItems === 0 ? 0 : (pagination.page - 1) * pagination.limit + 1}
           </span>
           {' - '}
-          <span className="font-semibold text-slate-200 tabular-nums">
+          <span className="font-semibold text-slate-800 dark:text-slate-200 tabular-nums">
             {Math.min(pagination.page * pagination.limit, pagination.totalItems)}
           </span>{' '}
           من أصل{' '}
-          <span className="font-semibold text-slate-200 tabular-nums">
+          <span className="font-semibold text-slate-800 dark:text-slate-200 tabular-nums">
             {fmtInt(pagination.totalItems)}
           </span>{' '}
           منتج
@@ -573,7 +573,7 @@ export function ItemSalesPerformance({
               onClick={() => setPage(1)}
               disabled={pagination.page <= 1 || loading}
               aria-label="الصفحة الأولى"
-              className="rounded-lg border border-white/5 bg-slate-800 p-1.5 text-zinc-300 transition hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed"
+              className="rounded-lg border border-slate-200 bg-slate-100 p-1.5 text-slate-700 transition hover:bg-slate-200 dark:border-white/5 dark:bg-slate-800 dark:text-zinc-300 dark:hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed"
             >
               <ChevronsRight className="h-4 w-4" />
             </button>
@@ -583,7 +583,7 @@ export function ItemSalesPerformance({
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={!pagination.hasPrevPage || loading}
               aria-label="الصفحة السابقة"
-              className="rounded-lg border border-white/5 bg-slate-800 p-1.5 text-zinc-300 transition hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed"
+              className="rounded-lg border border-slate-200 bg-slate-100 p-1.5 text-slate-700 transition hover:bg-slate-200 dark:border-white/5 dark:bg-slate-800 dark:text-zinc-300 dark:hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed"
             >
               <ChevronRight className="h-4 w-4" />
             </button>
@@ -605,8 +605,8 @@ export function ItemSalesPerformance({
                   onClick={() => setPage(pageNum)}
                   className={`min-w-[28px] rounded-lg px-2 py-1 text-xs font-bold transition tabular-nums ${
                     isActive
-                      ? 'bg-emerald-600 text-white'
-                      : 'border border-white/5 bg-slate-800 text-zinc-300 hover:bg-slate-700'
+                      ? 'bg-orange-600 text-white dark:bg-[#c4b5fd] dark:text-black'
+                      : 'border border-slate-200 bg-slate-100 text-slate-700 hover:bg-slate-200 dark:border-white/5 dark:bg-slate-800 dark:text-zinc-300 dark:hover:bg-slate-700'
                   }`}
                 >
                   {pageNum}
@@ -619,7 +619,7 @@ export function ItemSalesPerformance({
               onClick={() => setPage((p) => Math.min(pagination.totalPages, p + 1))}
               disabled={!pagination.hasNextPage || loading}
               aria-label="الصفحة التالية"
-              className="rounded-lg border border-white/5 bg-slate-800 p-1.5 text-zinc-300 transition hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed"
+              className="rounded-lg border border-slate-200 bg-slate-100 p-1.5 text-slate-700 transition hover:bg-slate-200 dark:border-white/5 dark:bg-slate-800 dark:text-zinc-300 dark:hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed"
             >
               <ChevronLeft className="h-4 w-4" />
             </button>
@@ -629,7 +629,7 @@ export function ItemSalesPerformance({
               onClick={() => setPage(pagination.totalPages)}
               disabled={pagination.page >= pagination.totalPages || loading}
               aria-label="الصفحة الأخيرة"
-              className="rounded-lg border border-white/5 bg-slate-800 p-1.5 text-zinc-300 transition hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed"
+              className="rounded-lg border border-slate-200 bg-slate-100 p-1.5 text-slate-700 transition hover:bg-slate-200 dark:border-white/5 dark:bg-slate-800 dark:text-zinc-300 dark:hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed"
             >
               <ChevronsLeft className="h-4 w-4" />
             </button>
@@ -639,4 +639,3 @@ export function ItemSalesPerformance({
     </section>
   );
 }
-

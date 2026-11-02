@@ -12,15 +12,9 @@ import {
   ChevronRight,
   ChevronsLeft,
   ChevronsRight,
-  Coins,
   CreditCard,
   Minus,
-  Package,
-  Receipt,
   Search,
-  Sparkles,
-  TrendingDown,
-  TrendingUp,
   X,
 } from "lucide-react";
 import type {
@@ -42,13 +36,13 @@ export function PeriodComparisonDashboard({
 }: PeriodComparisonDashboardProps) {
   if (loading && !data) {
     return (
-      <div className="flex min-h-[420px] items-center justify-center rounded-3xl border border-white/5 bg-[#18181b] p-8">
+      <div className="flex min-h-[420px] items-center justify-center rounded-3xl border border-slate-200 bg-white p-8 dark:border-white/5 dark:bg-[#18181b]">
         <div className="flex flex-col items-center gap-3 text-center">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-violet-300 border-t-transparent" />
-          <p className="text-sm font-semibold text-slate-700 dark:text-zinc-200">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-orange-500 border-t-transparent dark:border-violet-300" />
+          <p className="text-sm font-semibold text-slate-800 dark:text-zinc-200">
             جاري معالجة بيانات المقارنة المتقاطعة...
           </p>
-          <p className="text-xs text-zinc-400">
+          <p className="text-xs text-slate-500 dark:text-zinc-400">
             تنفيذ الاستعلامات المتوازية عبر SQL Server 2014
           </p>
         </div>
@@ -58,7 +52,7 @@ export function PeriodComparisonDashboard({
 
   if (!data) {
     return (
-      <div className="flex min-h-[300px] items-center justify-center rounded-2xl border border-slate-200 bg-white p-8 text-center text-sm text-zinc-400 dark:border-white/5 dark:bg-[#18181b]">
+      <div className="flex min-h-[300px] items-center justify-center rounded-2xl border border-slate-200 bg-white p-8 text-center text-sm text-slate-500 dark:border-white/5 dark:bg-[#18181b] dark:text-zinc-400">
         حدد الفترتين الزمنيتين لعرض المقارنة التحليلية
       </div>
     );
@@ -110,7 +104,7 @@ export function PeriodComparisonDashboard({
 
   const renderBadge = (growthPct: number | null) => {
     if (growthPct === null || growthPct === undefined) {
-      return <span className="text-zinc-400">—</span>;
+      return <span className="text-slate-400 dark:text-zinc-400">—</span>;
     }
     const isPositive = growthPct > 0;
     const isZero = growthPct === 0;
@@ -128,8 +122,8 @@ export function PeriodComparisonDashboard({
       <span
         className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-bold ${
           isPositive
-            ? "bg-violet-500/20 text-violet-300 border border-violet-500/30 rounded-full font-medium"
-            : "bg-rose-100 text-rose-700 dark:bg-rose-950/50 dark:text-rose-300"
+            ? "bg-orange-50 text-orange-700 border border-orange-200 dark:bg-violet-500/20 dark:text-violet-300 dark:border-violet-500/30"
+            : "bg-amber-50 text-amber-700 border border-amber-200 dark:bg-rose-950/50 dark:text-rose-300"
         }`}
         dir="ltr"
       >
@@ -145,7 +139,7 @@ export function PeriodComparisonDashboard({
 
   const renderItemPricing = (p: PeriodItemPricing, label: string) => {
     if (!p || p.qty === 0) {
-      return <span className="text-zinc-400 dark:text-slate-500">—</span>;
+      return <span className="text-slate-400 dark:text-zinc-400">—</span>;
     }
 
     const unitPrice =
@@ -156,7 +150,7 @@ export function PeriodComparisonDashboard({
       <div className="space-y-1">
         {/* Actual Net Revenue in EGP */}
         <div
-          className="font-extrabold text-sm text-slate-100 tabular-nums"
+          className="font-extrabold text-sm text-slate-900 dark:text-slate-100 tabular-nums"
           dir="ltr"
         >
           {fmtMoney(p.revenue)}
@@ -182,11 +176,11 @@ export function PeriodComparisonDashboard({
                 {p.priceTiers.map((tier, tIdx) => (
                   <div
                     key={tIdx}
-                    className="inline-flex items-center gap-1 rounded border border-amber-500/25 bg-amber-500/10 px-1.5 py-0.5 text-[10px] text-amber-700 dark:text-amber-300 font-mono shadow-xs"
+                    className="inline-flex items-center gap-1 rounded border border-amber-500/25 bg-amber-500/10 px-1.5 py-0.5 text-[10px] text-amber-800 dark:text-amber-300 font-mono shadow-xs"
                     dir="ltr"
                   >
                     <span>{fmtInt(tier.quantity)} قطعة</span>
-                    <span className="font-bold text-amber-600/80">×</span>
+                    <span className="font-bold text-amber-600">×</span>
                     <span className="font-bold text-slate-900 dark:text-white">{fmtMoney(tier.price)}</span>
                     <span className="text-slate-500 dark:text-zinc-400 font-normal">({fmtMoney(tier.total)})</span>
                   </div>
@@ -202,10 +196,10 @@ export function PeriodComparisonDashboard({
           ) : (
             <div>
               سعر الوحدة:{" "}
-              <strong className="text-slate-700 dark:text-zinc-200">
+              <strong className="text-slate-800 dark:text-zinc-200">
                 {fmtMoney(unitPrice)}
               </strong>
-              <span className="mr-1 text-[10px] text-zinc-400" dir="rtl">
+              <span className="mr-1 text-[10px] text-slate-400 dark:text-zinc-400" dir="rtl">
                 ({fmtInt(p.qty)} × {fmtMoney(unitPrice)})
               </span>
             </div>
@@ -220,10 +214,10 @@ export function PeriodComparisonDashboard({
       className={`space-y-6 transition-opacity ${loading ? "opacity-60" : ""}`}
     >
       {/* ---------- Header Banner ---------- */}
-      <div className="flex flex-col gap-2 rounded-3xl border border-white/5 bg-[#18181b] p-6 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-2 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-white/5 dark:bg-[#18181b] sm:flex-row sm:items-center sm:justify-between">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
-            <span className="flex h-2.5 w-2.5 rounded-full bg-white text-black font-medium" />
+            <span className="flex h-2.5 w-2.5 rounded-full bg-orange-600 dark:bg-white" />
             <h3 className="text-base font-extrabold text-slate-900 dark:text-white">
               نتائج المقارنة التحليلية بين الفترتين
             </h3>
@@ -237,20 +231,20 @@ export function PeriodComparisonDashboard({
         </div>
 
         <div className="flex flex-wrap items-center gap-3 text-xs">
-          <div className="flex items-center gap-1.5 rounded-xl border border-violet-500/30 bg-violet-500/10 px-3.5 py-1.5 font-medium text-violet-300 rounded-full">
-            <Calendar className="h-3.5 w-3.5 text-violet-300" />
+          <div className="flex items-center gap-1.5 rounded-xl border border-orange-200 bg-orange-50 px-3.5 py-1.5 font-medium text-orange-700 dark:border-violet-500/30 dark:bg-violet-500/10 dark:text-violet-300 rounded-full">
+            <Calendar className="h-3.5 w-3.5 text-orange-600 dark:text-violet-300" />
             <span>الفترة A:</span>
-            <span className="tabular-nums" dir="ltr">
+            <span className="tabular-nums font-mono" dir="ltr">
               {filters.periodA.startDate} → {filters.periodA.endDate}
             </span>
           </div>
 
-          <span className="font-bold text-zinc-400">مقابل</span>
+          <span className="font-bold text-slate-400 dark:text-zinc-400">مقابل</span>
 
-          <div className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 font-semibold text-slate-700 dark:border-white/5 dark:bg-slate-800 dark:text-zinc-200">
+          <div className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 font-semibold text-slate-700 dark:border-white/5 dark:bg-slate-800 dark:text-zinc-200">
             <Calendar className="h-3.5 w-3.5 text-slate-500" />
             <span>الفترة B:</span>
-            <span className="tabular-nums" dir="ltr">
+            <span className="tabular-nums font-mono" dir="ltr">
               {filters.periodB.startDate} → {filters.periodB.endDate}
             </span>
           </div>
@@ -260,9 +254,9 @@ export function PeriodComparisonDashboard({
       {/* ---------- Row 1: KPI Delta Cards ---------- */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {/* Card 1: Revenue Comparison */}
-        <div className="rounded-3xl border border-white/5 bg-[#18181b] p-6">
+        <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-white/5 dark:bg-[#18181b]">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-zinc-400">
+            <span className="text-xs font-semibold text-slate-500 dark:text-zinc-400">
               صافي الإيرادات
             </span>
             {renderBadge(growth.revenueGrowthPct)}
@@ -276,25 +270,25 @@ export function PeriodComparisonDashboard({
               >
                 {fmtMoney(periodA.revenue)}
               </p>
-              <p className="text-[11px] text-violet-300 dark:text-violet-300">
+              <p className="text-[11px] text-orange-600 dark:text-violet-300 font-semibold">
                 الفترة الحالية (A)
               </p>
             </div>
             <div className="text-left">
               <p
-                className="text-sm font-bold text-zinc-400 tabular-nums"
+                className="text-sm font-bold text-slate-500 dark:text-zinc-400 tabular-nums"
                 dir="ltr"
               >
                 {fmtMoney(periodB.revenue)}
               </p>
-              <p className="text-[11px] text-zinc-400">الفترة السابقة (B)</p>
+              <p className="text-[11px] text-slate-400 dark:text-zinc-400">الفترة السابقة (B)</p>
             </div>
           </div>
 
           <div className="mt-4 border-t border-slate-100 pt-3 text-xs tabular-nums text-slate-500 dark:border-white/5 dark:text-zinc-400">
             الفارق المالي:{" "}
             <span
-              className="font-bold text-slate-700 dark:text-zinc-200"
+              className="font-bold text-slate-800 dark:text-zinc-200"
               dir="ltr"
             >
               {fmtMoney(growth.revenueDelta)}
@@ -303,9 +297,9 @@ export function PeriodComparisonDashboard({
         </div>
 
         {/* Card 2: Orders Comparison */}
-        <div className="rounded-3xl border border-white/5 bg-[#18181b] p-6">
+        <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-white/5 dark:bg-[#18181b]">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-zinc-400">
+            <span className="text-xs font-semibold text-slate-500 dark:text-zinc-400">
               عدد الشيكات والعمليات
             </span>
             {renderBadge(growth.ordersGrowthPct)}
@@ -316,22 +310,22 @@ export function PeriodComparisonDashboard({
               <p className="text-2xl font-black text-slate-900 dark:text-white tabular-nums">
                 {fmtInt(periodA.orders)}
               </p>
-              <p className="text-[11px] text-violet-300 dark:text-violet-300">
+              <p className="text-[11px] text-orange-600 dark:text-violet-300 font-semibold">
                 شيك في (A)
               </p>
             </div>
             <div className="text-left">
-              <p className="text-sm font-bold text-zinc-400 tabular-nums">
+              <p className="text-sm font-bold text-slate-500 dark:text-zinc-400 tabular-nums">
                 {fmtInt(periodB.orders)}
               </p>
-              <p className="text-[11px] text-zinc-400">شيك في (B)</p>
+              <p className="text-[11px] text-slate-400 dark:text-zinc-400">شيك في (B)</p>
             </div>
           </div>
 
           <div className="mt-4 border-t border-slate-100 pt-3 text-xs tabular-nums text-slate-500 dark:border-white/5 dark:text-zinc-400">
             فارق الحركات:{" "}
             <span
-              className="font-bold text-slate-700 dark:text-zinc-200"
+              className="font-bold text-slate-800 dark:text-zinc-200"
               dir="ltr"
             >
               {growth.ordersDelta > 0
@@ -343,9 +337,9 @@ export function PeriodComparisonDashboard({
         </div>
 
         {/* Card 3: AOV Comparison */}
-        <div className="rounded-3xl border border-white/5 bg-[#18181b] p-6">
+        <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-white/5 dark:bg-[#18181b]">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-zinc-400">
+            <span className="text-xs font-semibold text-slate-500 dark:text-zinc-400">
               متوسط الفاتورة (AOV)
             </span>
             {renderBadge(growth.aovGrowthPct)}
@@ -359,25 +353,25 @@ export function PeriodComparisonDashboard({
               >
                 {fmtMoney(periodA.avgTicket)}
               </p>
-              <p className="text-[11px] text-violet-300 dark:text-violet-300">
+              <p className="text-[11px] text-orange-600 dark:text-violet-300 font-semibold">
                 متوسط (A)
               </p>
             </div>
             <div className="text-left">
               <p
-                className="text-sm font-bold text-zinc-400 tabular-nums"
+                className="text-sm font-bold text-slate-500 dark:text-zinc-400 tabular-nums"
                 dir="ltr"
               >
                 {fmtMoney(periodB.avgTicket)}
               </p>
-              <p className="text-[11px] text-zinc-400">متوسط (B)</p>
+              <p className="text-[11px] text-slate-400 dark:text-zinc-400">متوسط (B)</p>
             </div>
           </div>
 
           <div className="mt-4 border-t border-slate-100 pt-3 text-xs tabular-nums text-slate-500 dark:border-white/5 dark:text-zinc-400">
             تغير الصرف للفاتورة:{" "}
             <span
-              className="font-bold text-slate-700 dark:text-zinc-200"
+              className="font-bold text-slate-800 dark:text-zinc-200"
               dir="ltr"
             >
               {fmtMoney(growth.aovDelta)}
@@ -386,20 +380,20 @@ export function PeriodComparisonDashboard({
         </div>
 
         {/* Card 4: Cash vs Visa Shift */}
-        <div className="rounded-3xl border border-white/5 bg-[#18181b] p-6">
-          <span className="text-xs font-semibold text-zinc-400">
+        <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-white/5 dark:bg-[#18181b]">
+          <span className="text-xs font-semibold text-slate-500 dark:text-zinc-400">
             قنوات التحصيل
           </span>
 
           <div className="mt-3 space-y-2 text-xs">
             <div className="flex items-center justify-between">
-              <span className="flex items-center gap-1.5 font-medium text-slate-600 dark:text-zinc-300">
-                <Banknote className="h-3.5 w-3.5 text-violet-300 dark:text-violet-300" />
+              <span className="flex items-center gap-1.5 font-medium text-slate-700 dark:text-zinc-300">
+                <Banknote className="h-3.5 w-3.5 text-orange-600 dark:text-violet-300" />
                 النقدية (Cash)
               </span>
               <div className="flex items-center gap-2">
                 <span
-                  className="font-bold tabular-nums font-mono text-slate-800 dark:text-slate-100"
+                  className="font-bold tabular-nums font-mono text-slate-900 dark:text-slate-100"
                   dir="ltr"
                 >
                   {fmtMoney(periodA.cash)}
@@ -409,13 +403,13 @@ export function PeriodComparisonDashboard({
             </div>
 
             <div className="flex items-center justify-between">
-              <span className="flex items-center gap-1.5 font-medium text-slate-600 dark:text-zinc-300">
+              <span className="flex items-center gap-1.5 font-medium text-slate-700 dark:text-zinc-300">
                 <CreditCard className="h-3.5 w-3.5 text-slate-500 dark:text-zinc-400" />
                 الفيزا (Visa)
               </span>
               <div className="flex items-center gap-2">
                 <span
-                  className="font-bold tabular-nums font-mono text-slate-800 dark:text-slate-100"
+                  className="font-bold tabular-nums font-mono text-slate-900 dark:text-slate-100"
                   dir="ltr"
                 >
                   {fmtMoney(periodA.visa)}
@@ -425,19 +419,19 @@ export function PeriodComparisonDashboard({
             </div>
           </div>
 
-          <div className="mt-4 border-t border-slate-100 pt-3 text-[11px] text-zinc-400 dark:border-white/5">
+          <div className="mt-4 border-t border-slate-100 pt-3 text-[11px] text-slate-400 dark:border-white/5">
             مقارنة طرق الدفع بين الفترتين
           </div>
         </div>
       </div>
 
       {/* ---------- Row 2: Comprehensive Items Performance & Period Comparison Table ---------- */}
-      <section className="rounded-3xl border border-white/5 bg-[#18181b] p-6 break-inside-avoid">
-        <div className="flex flex-col gap-4 border-b border-slate-100 pb-4 dark:border-white/5">
+      <section className="rounded-3xl border border-slate-200 bg-white p-6 break-inside-avoid shadow-sm dark:border-white/5 dark:bg-[#18181b]">
+        <div className="flex flex-col gap-4 border-b border-slate-200 pb-4 dark:border-white/5">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h4 className="flex items-center gap-2 text-base font-bold text-slate-800 dark:text-slate-100">
-                <Award className="h-5 w-5 text-amber-500" />
+              <h4 className="flex items-center gap-2 text-base font-bold text-slate-900 dark:text-slate-100">
+                <Award className="h-5 w-5 text-orange-600 dark:text-amber-500" />
                 تحليل أداء ومقارنة مبيعات الأصناف بين الفترتين
               </h4>
               <p className="mt-0.5 text-xs text-slate-500 dark:text-zinc-400">
@@ -448,20 +442,20 @@ export function PeriodComparisonDashboard({
           </div>
 
           {/* Live Search and Page Size Filter Controls */}
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between print:hidden">
-            <div className="relative flex-1 max-w-md">
-              <Search className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2.5 flex-1 xl:max-w-md">
+            <div className="relative flex-1">
+              <Search className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 dark:text-zinc-400" />
               <input
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="ابحث بكود الصنف أو اسم المنتج (مثال: مياه، كانز، بطاطس)..."
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2 pl-9 pr-9 text-xs text-slate-800 outline-none transition focus:border-violet-400 focus:ring-1 focus:ring-violet-400 placeholder:text-zinc-400 dark:border-white/5 dark:bg-zinc-950 dark:text-slate-100 dark:placeholder:text-slate-500"
+                placeholder="ابحث بكود الصنف أو اسم المنتج..."
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2 pl-9 pr-9 text-xs text-slate-900 outline-none transition focus:border-orange-500 focus:ring-1 focus:ring-orange-500 dark:border-white/5 dark:bg-zinc-950 dark:text-zinc-200 dark:focus:border-violet-400 dark:focus:ring-violet-400 placeholder:text-slate-400"
               />
               {search && (
                 <button
                   onClick={() => setSearch("")}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-slate-600 dark:hover:text-white"
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 dark:text-zinc-400 dark:hover:text-white"
                   aria-label="مسح البحث"
                 >
                   <X className="h-3.5 w-3.5" />
@@ -469,10 +463,8 @@ export function PeriodComparisonDashboard({
               )}
             </div>
 
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-slate-500 dark:text-zinc-400">
-                عرض في الصفحة:
-              </span>
+            <div className="flex items-center gap-2 shrink-0">
+              <span className="text-xs text-slate-500 dark:text-zinc-400">عرض:</span>
               <div className="inline-flex rounded-lg border border-slate-200 bg-slate-100 p-0.5 dark:border-white/5 dark:bg-zinc-950">
                 {[10, 20, 50].map((size) => (
                   <button
@@ -483,8 +475,8 @@ export function PeriodComparisonDashboard({
                     }}
                     className={`rounded-md px-2.5 py-1 text-xs font-semibold transition ${
                       pageSize === size
-                        ? "bg-white text-black rounded-full font-medium shadow-sm"
-                        : "text-slate-600 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-zinc-200"
+                        ? "bg-orange-600 text-white dark:bg-[#c4b5fd] dark:text-black font-bold"
+                        : "text-slate-600 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-slate-200"
                     }`}
                   >
                     {size}
@@ -496,10 +488,10 @@ export function PeriodComparisonDashboard({
         </div>
 
         {/* Table Content */}
-        <div className="overflow-x-auto mt-4">
+        <div className="mt-4 overflow-x-auto scroll-smooth">
           <table className="w-full text-right text-xs">
             <thead>
-              <tr className="border-b border-slate-200 text-slate-600 dark:border-white/5 dark:text-zinc-400 bg-slate-50/70 dark:bg-zinc-950/50">
+              <tr className="border-b border-slate-200 text-slate-600 bg-slate-100 dark:border-white/5 dark:text-zinc-400 dark:bg-zinc-950/50">
                 <th className="py-3 px-3 font-bold whitespace-nowrap">
                   الصنف / المنتج
                 </th>
@@ -520,12 +512,12 @@ export function PeriodComparisonDashboard({
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+            <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
               {paginatedItems.length === 0 ? (
                 <tr>
                   <td
                     colSpan={5}
-                    className="py-12 text-center text-sm text-zinc-400"
+                    className="py-12 text-center text-sm text-slate-400 dark:text-zinc-400"
                   >
                     لا توجد منتجات مطابقة للبحث أو الفترة المحددة
                   </td>
@@ -533,24 +525,24 @@ export function PeriodComparisonDashboard({
               ) : (
                 paginatedItems.map((item, idx) => {
                   let badgeClass =
-                    "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-zinc-300";
+                    "bg-slate-100 text-slate-700 border border-slate-200 dark:bg-slate-800 dark:text-zinc-300 dark:border-transparent";
                   let badgeLabel = "مستقر";
 
                   if (item.status === "new") {
                     badgeClass =
-                      "bg-violet-500/20 text-violet-300 border border-violet-500/30 rounded-full font-medium";
+                      "bg-orange-100 text-orange-800 border border-orange-200 dark:bg-violet-500/20 dark:text-violet-300 dark:border-violet-500/30";
                     badgeLabel = "صنف جديد";
                   } else if (item.status === "up") {
                     badgeClass =
-                      "bg-indigo-950/40 text-violet-300 border border-indigo-800/60";
+                      "bg-orange-50 text-orange-700 border border-orange-200 dark:bg-indigo-950/40 dark:text-violet-300 dark:border-indigo-800/60";
                     badgeLabel = "صاعد";
                   } else if (item.status === "down") {
                     badgeClass =
-                      "text-yellow-300 bg-yellow-500/10 rounded-full px-2.5 py-0.5 text-xs font-medium";
+                      "bg-amber-100 text-amber-800 border border-amber-200 dark:text-yellow-300 dark:bg-yellow-500/10 dark:border-yellow-500/20";
                     badgeLabel = "متراجع";
                   } else if (item.status === "dropped") {
                     badgeClass =
-                      "text-yellow-300 bg-yellow-500/20 rounded-full px-2.5 py-0.5 text-xs font-medium";
+                      "bg-amber-100 text-amber-800 border border-amber-200 dark:text-yellow-300 dark:bg-yellow-500/20 dark:border-yellow-500/30";
                     badgeLabel = "متوقف";
                   }
 
@@ -560,7 +552,7 @@ export function PeriodComparisonDashboard({
                   return (
                     <tr
                       key={item.itemCode}
-                      className="transition-colors hover:bg-slate-50/80 dark:hover:bg-white/5"
+                      className="transition-colors hover:bg-slate-100/60 dark:hover:bg-white/5"
                     >
                       {/* Item Details */}
                       <td className="py-3 px-3 font-semibold text-slate-800 dark:text-zinc-200">
@@ -572,7 +564,7 @@ export function PeriodComparisonDashboard({
                             <span className="font-bold text-slate-900 dark:text-white block">
                               {item.itemName}
                             </span>
-                            <span className="font-mono text-[11px] text-zinc-400">
+                            <span className="font-mono text-[11px] text-slate-500 dark:text-zinc-400">
                               كود: {item.itemCode}
                             </span>
                           </div>
@@ -598,7 +590,7 @@ export function PeriodComparisonDashboard({
                         {renderItemPricing(item.periodB, "الفترة B")}
                       </td>
 
-                      {/* Financial Difference & Trend Badge (Clean Monetary Metrics, No Confusing Formulas) */}
+                      {/* Financial Difference & Trend Badge */}
                       <td
                         className="py-3 px-3 align-top text-left whitespace-nowrap"
                         dir="ltr"
@@ -608,9 +600,9 @@ export function PeriodComparisonDashboard({
                             <span
                               className={
                                 isPositive
-                                  ? "text-violet-300 dark:text-violet-300"
+                                  ? "text-orange-600 dark:text-violet-300"
                                   : isNegative
-                                    ? "text-yellow-300"
+                                    ? "text-amber-600 dark:text-yellow-300"
                                     : "text-slate-500"
                               }
                             >
@@ -619,9 +611,9 @@ export function PeriodComparisonDashboard({
                                 : fmtMoney(item.revenueDelta)}
                             </span>
                           </div>
-                          <div className="text-[11px] text-zinc-400">
+                          <div className="text-[11px] text-slate-500 dark:text-zinc-400">
                             فارق الكمية:{" "}
-                            <strong className="text-slate-700 dark:text-zinc-300">
+                            <strong className="text-slate-800 dark:text-zinc-300">
                               {item.qtyDelta > 0
                                 ? `+${fmtInt(item.qtyDelta)}`
                                 : fmtInt(item.qtyDelta)}
@@ -639,7 +631,7 @@ export function PeriodComparisonDashboard({
         </div>
 
         {/* Dynamic Pagination Controls & Total Counter (Default 10 per page) */}
-        <div className="mt-4 flex flex-col gap-3 border-t border-slate-100 pt-3 dark:border-white/5 sm:flex-row sm:items-center sm:justify-between print:hidden">
+        <div className="mt-4 flex flex-col gap-3 border-t border-slate-200 pt-3 dark:border-white/5 sm:flex-row sm:items-center sm:justify-between print:hidden">
           <div className="text-xs text-slate-500 dark:text-zinc-400">
             عرض{" "}
             <span className="font-semibold text-slate-900 dark:text-slate-100 tabular-nums">
@@ -663,7 +655,7 @@ export function PeriodComparisonDashboard({
                 onClick={() => setPage(1)}
                 disabled={page <= 1}
                 aria-label="الصفحة الأولى"
-                className="rounded-lg border border-slate-200 bg-white p-1.5 text-slate-600 transition hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed dark:border-white/5 dark:bg-slate-800 dark:text-zinc-300 dark:hover:bg-slate-700"
+                className="rounded-lg border border-slate-200 bg-slate-100 p-1.5 text-slate-700 transition hover:bg-slate-200 disabled:opacity-40 disabled:cursor-not-allowed dark:border-white/5 dark:bg-slate-800 dark:text-zinc-300 dark:hover:bg-slate-700"
               >
                 <ChevronsRight className="h-4 w-4" />
               </button>
@@ -673,7 +665,7 @@ export function PeriodComparisonDashboard({
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
                 disabled={page <= 1}
                 aria-label="الصفحة السابقة"
-                className="rounded-lg border border-slate-200 bg-white p-1.5 text-slate-600 transition hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed dark:border-white/5 dark:bg-slate-800 dark:text-zinc-300 dark:hover:bg-slate-700"
+                className="rounded-lg border border-slate-200 bg-slate-100 p-1.5 text-slate-700 transition hover:bg-slate-200 disabled:opacity-40 disabled:cursor-not-allowed dark:border-white/5 dark:bg-slate-800 dark:text-zinc-300 dark:hover:bg-slate-700"
               >
                 <ChevronRight className="h-4 w-4" />
               </button>
@@ -695,8 +687,8 @@ export function PeriodComparisonDashboard({
                     onClick={() => setPage(pageNum)}
                     className={`min-w-[28px] rounded-lg px-2 py-1 text-xs font-bold transition tabular-nums ${
                       isActive
-                        ? "bg-white text-black rounded-full font-medium shadow-sm"
-                        : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-100 dark:border-white/5 dark:bg-slate-800 dark:text-zinc-300 dark:hover:bg-slate-700"
+                        ? "bg-orange-600 text-white dark:bg-[#c4b5fd] dark:text-black"
+                        : "border border-slate-200 bg-slate-100 text-slate-700 hover:bg-slate-200 dark:border-white/5 dark:bg-slate-800 dark:text-zinc-300 dark:hover:bg-slate-700"
                     }`}
                   >
                     {pageNum}
@@ -709,7 +701,7 @@ export function PeriodComparisonDashboard({
                 onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                 disabled={page >= totalPages}
                 aria-label="الصفحة التالية"
-                className="rounded-lg border border-slate-200 bg-white p-1.5 text-slate-600 transition hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed dark:border-white/5 dark:bg-slate-800 dark:text-zinc-300 dark:hover:bg-slate-700"
+                className="rounded-lg border border-slate-200 bg-slate-100 p-1.5 text-slate-700 transition hover:bg-slate-200 disabled:opacity-40 disabled:cursor-not-allowed dark:border-white/5 dark:bg-slate-800 dark:text-zinc-300 dark:hover:bg-slate-700"
               >
                 <ChevronLeft className="h-4 w-4" />
               </button>
@@ -719,7 +711,7 @@ export function PeriodComparisonDashboard({
                 onClick={() => setPage(totalPages)}
                 disabled={page >= totalPages}
                 aria-label="الصفحة الأخيرة"
-                className="rounded-lg border border-slate-200 bg-white p-1.5 text-slate-600 transition hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed dark:border-white/5 dark:bg-slate-800 dark:text-zinc-300 dark:hover:bg-slate-700"
+                className="rounded-lg border border-slate-200 bg-slate-100 p-1.5 text-slate-700 transition hover:bg-slate-200 disabled:opacity-40 disabled:cursor-not-allowed dark:border-white/5 dark:bg-slate-800 dark:text-zinc-300 dark:hover:bg-slate-700"
               >
                 <ChevronsLeft className="h-4 w-4" />
               </button>
@@ -730,12 +722,12 @@ export function PeriodComparisonDashboard({
 
       {/* ---------- Row 3: Outlets Comparison Table ---------- */}
       {outletsComparison.length > 0 && (
-        <section className="rounded-3xl border border-white/5 bg-[#18181b] p-6">
+        <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-white/5 dark:bg-[#18181b]">
           <div className="mb-4">
-            <h4 className="text-base font-bold text-slate-800 dark:text-slate-100">
+            <h4 className="text-base font-bold text-slate-900 dark:text-slate-100">
               أداء المنافذ بين الفترتين
             </h4>
-            <p className="mt-0.5 text-xs text-zinc-400">
+            <p className="mt-0.5 text-xs text-slate-500 dark:text-zinc-400">
               مقارنة العائد وعدد الشيكات لكل كرفان مشمول في التقرير
             </p>
           </div>
@@ -743,7 +735,7 @@ export function PeriodComparisonDashboard({
           <div className="overflow-x-auto">
             <table className="w-full text-right text-sm">
               <thead>
-                <tr className="border-b border-slate-100 text-xs text-zinc-400 dark:border-white/5">
+                <tr className="border-b border-slate-200 text-xs text-slate-600 dark:border-white/5 dark:text-zinc-400">
                   <th className="pb-3 font-semibold">المنفذ / الكرفان</th>
                   <th className="pb-3 font-semibold">إيراد الفترة A</th>
                   <th className="pb-3 font-semibold">إيراد الفترة B</th>
@@ -754,17 +746,17 @@ export function PeriodComparisonDashboard({
                   <th className="pb-3 text-left font-semibold">نمو الحركات</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 text-xs dark:divide-slate-800">
+              <tbody className="divide-y divide-slate-200 text-xs dark:divide-slate-800">
                 {outletsComparison.map((o) => (
                   <tr
                     key={o.branchCode}
-                    className="hover:bg-slate-50/60 dark:hover:bg-white/5"
+                    className="hover:bg-slate-100/60 dark:hover:bg-white/5"
                   >
-                    <td className="py-3 font-bold text-slate-800 dark:text-zinc-200">
+                    <td className="py-3 font-bold text-slate-900 dark:text-zinc-200">
                       {o.name}
                     </td>
                     <td
-                      className="py-3 font-semibold tabular-nums text-slate-800 dark:text-slate-100"
+                      className="py-3 font-semibold tabular-nums text-slate-900 dark:text-slate-100"
                       dir="ltr"
                     >
                       {fmtMoney(o.revenueA)}
@@ -779,11 +771,11 @@ export function PeriodComparisonDashboard({
                       {renderBadge(o.revenueGrowthPct)}
                     </td>
                     <td className="py-3 tabular-nums">
-                      <span className="font-semibold text-slate-700 dark:text-zinc-200">
+                      <span className="font-semibold text-slate-800 dark:text-zinc-200">
                         {fmtInt(o.ordersA)}
                       </span>
-                      <span className="text-zinc-400"> vs </span>
-                      <span className="text-zinc-400">
+                      <span className="text-slate-400 dark:text-zinc-400"> vs </span>
+                      <span className="text-slate-500 dark:text-zinc-400">
                         {fmtInt(o.ordersB)}
                       </span>
                     </td>

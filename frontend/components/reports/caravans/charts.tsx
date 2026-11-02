@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import { useTheme } from "next-themes";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -11,8 +12,6 @@ import {
   ArcElement,
   Tooltip,
   Legend,
-  Filler,
-  type ChartArea,
   type ChartOptions,
 } from "chart.js";
 import { Line, Doughnut } from "react-chartjs-2";
@@ -26,7 +25,6 @@ ChartJS.register(
   ArcElement,
   Tooltip,
   Legend,
-  Filler,
 );
 
 /* ---------- Formatting helpers (LTR numbers inside RTL layout) ---------- */
@@ -47,45 +45,34 @@ export const fmtCompact = (v: number): string => {
 /* ---------- Theme detection (class-based dark mode) ---------- */
 
 export function useIsDark(): boolean {
-  const [dark, setDark] = useState(false);
+  const { resolvedTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
   useEffect(() => {
-    const root = document.documentElement;
-    const update = () => setDark(root.classList.contains("dark"));
-    update();
-    const obs = new MutationObserver(update);
-    obs.observe(root, { attributes: true, attributeFilter: ["class"] });
-    return () => obs.disconnect();
+    setMounted(true);
   }, []);
-  return dark;
+  if (!mounted) return true;
+  return resolvedTheme === "dark";
 }
 
-const PALETTE = {
-  indigo: "79, 70, 229", // #4F46E5
-  slate: "100, 116, 139", // #64748B
-  amber: "217, 119, 6", // #D97706
+export const PALETTE = {
+  orange: "249, 115, 22", // #F97316 (Light Mode Primary)
+  lavender: "196, 181, 253", // #C4B5FD (Dark Mode Primary)
+  purple: "139, 92, 246", // #8B5CF6
+  navy: "30, 58, 138", // #1E3A8A (Light Mode Secondary)
+  royalBlue: "37, 99, 235", // #2563EB
+  slate: "148, 163, 184", // #94A3B8 (Dark Mode Secondary)
+  amber: "245, 158, 11", // #F59E0B (Tertiary)
   rose: "225, 29, 72", // #E11D48
-  emerald: "79, 70, 229", // Backward compatibility redirect to Deep Indigo
-  cyan: "100, 116, 139", // Backward compatibility redirect to Slate
-  violet: "79, 70, 229", // Deep Indigo
+  emerald: "16, 185, 129",
+  indigo: "196, 181, 253",
+  cyan: "148, 163, 184",
+  violet: "196, 181, 253",
 };
-
-function gradient(
-  ctx: CanvasRenderingContext2D,
-  area: ChartArea,
-  rgb: string,
-  top: number,
-  bottom: number,
-) {
-  const g = ctx.createLinearGradient(0, area.top, 0, area.bottom);
-  g.addColorStop(0, `rgba(${rgb}, ${top})`);
-  g.addColorStop(1, `rgba(${rgb}, ${bottom})`);
-  return g;
-}
 
 /* Dark translucent tooltip shared by all charts */
 const tooltipBase = {
   rtl: true,
-  backgroundColor: "rgba(15, 23, 42, 0.88)",
+  backgroundColor: "rgba(15, 23, 42, 0.95)",
   borderColor: "rgba(148, 163, 184, 0.25)",
   borderWidth: 1,
   titleColor: "#e2e8f0",
@@ -96,7 +83,7 @@ const tooltipBase = {
   usePointStyle: true,
 } as const;
 
-/* ---------- Sparkline ---------- */
+/* ---------- Sparkline (NO GRADIENTS: clean solid flat line) ---------- */
 
 export function Sparkline({
   data,
@@ -105,7 +92,12 @@ export function Sparkline({
   data: number[];
   color: keyof typeof PALETTE;
 }) {
-  const rgb = PALETTE[color];
+  const dark = useIsDark();
+  // In dark mode: Lavender/Purple, In light mode: Orange or specified color
+  const rgb = color === 'orange' || color === 'indigo' || color === 'violet'
+    ? (dark ? PALETTE.lavender : PALETTE.orange)
+    : PALETTE[color];
+
   const options: ChartOptions<"line"> = {
     responsive: true,
     maintainAspectRatio: false,
@@ -123,11 +115,8 @@ export function Sparkline({
           {
             data,
             borderColor: `rgb(${rgb})`,
-            fill: true,
-            backgroundColor: (c) =>
-              c.chart.chartArea
-                ? gradient(c.chart.ctx, c.chart.chartArea, rgb, 0.3, 0)
-                : `rgba(${rgb}, 0.1)`,
+            fill: false,
+            backgroundColor: "transparent",
           },
         ],
       }}
@@ -135,7 +124,7 @@ export function Sparkline({
   );
 }
 
-/* ---------- Chart A: revenue trend ---------- */
+/* ---------- Chart A: revenue trend (NO GRADIENTS, Dual-Theme) ---------- */
 
 export interface TrendPoint {
   label: string;
@@ -146,13 +135,28 @@ export interface TrendPoint {
 
 export function RevenueTrendChart({ points }: { points: TrendPoint[] }) {
   const dark = useIsDark();
-  const tick = dark ? "#94a3b8" : "#64748b";
-  const grid = dark ? "rgba(51, 65, 85, 0.5)" : "rgba(226, 232, 240, 0.9)";
+  const tick = dark ? "#94a3b8" : "#4b5563";
+  const grid = dark ? "#334155" : "#e5e7eb";
 
+  // Strict Dual-Theme Palette:
+  // Dark: Primary = Lavender (#c4b5fd), Secondary = Slate (#94a3b8), Tertiary = Amber (#f59e0b)
+  // Light: Primary = Solid Orange (#f97316), Secondary = Deep Navy (#1e3a8a), Tertiary = Amber (#f59e0b)
   const series = [
-    { key: "total" as const, label: "صافي الإيرادات", rgb: PALETTE.indigo },
-    { key: "cash" as const, label: "النقدية", rgb: PALETTE.slate },
-    { key: "visa" as const, label: "الفيزا", rgb: PALETTE.amber },
+    {
+      key: "total" as const,
+      label: "صافي الإيرادات",
+      rgb: dark ? PALETTE.lavender : PALETTE.orange,
+    },
+    {
+      key: "cash" as const,
+      label: "النقدية",
+      rgb: dark ? PALETTE.slate : PALETTE.navy,
+    },
+    {
+      key: "visa" as const,
+      label: "الفيزا",
+      rgb: PALETTE.amber,
+    },
   ];
 
   const options: ChartOptions<"line"> = {
@@ -173,6 +177,10 @@ export function RevenueTrendChart({ points }: { points: TrendPoint[] }) {
       },
       tooltip: {
         ...tooltipBase,
+        backgroundColor: dark ? "rgba(24, 24, 27, 0.95)" : "rgba(255, 255, 255, 0.98)",
+        borderColor: dark ? "rgba(255, 255, 255, 0.08)" : "#e2e8f0",
+        titleColor: dark ? "#ffffff" : "#0f172a",
+        bodyColor: dark ? "#a1a1aa" : "#475569",
         callbacks: {
           label: (c) => ` ${c.dataset.label}: ${fmtMoney(Number(c.parsed.y))}`,
         },
@@ -197,7 +205,7 @@ export function RevenueTrendChart({ points }: { points: TrendPoint[] }) {
     },
     elements: {
       point: { radius: 0, hoverRadius: 5 },
-      line: { tension: 0.4, borderWidth: 2.5 },
+      line: { tension: 0.35, borderWidth: 2.5 },
     },
   };
 
@@ -206,29 +214,19 @@ export function RevenueTrendChart({ points }: { points: TrendPoint[] }) {
       options={options}
       data={{
         labels: points.map((p) => p.label),
-        datasets: series.map((s, i) => ({
+        datasets: series.map((s) => ({
           label: s.label,
           data: points.map((p) => p[s.key]),
           borderColor: `rgb(${s.rgb})`,
           pointBackgroundColor: `rgb(${s.rgb})`,
-          fill: true,
-          backgroundColor: (c) =>
-            c.chart.chartArea
-              ? gradient(
-                  c.chart.ctx,
-                  c.chart.chartArea,
-                  s.rgb,
-                  i === 0 ? 0.32 : 0.1,
-                  0,
-                )
-              : `rgba(${s.rgb}, 0.1)`,
+          fill: false, // Strictly NO GRADIENTS: clean solid lines
         })),
       }}
     />
   );
 }
 
-/* ---------- Chart B: top caravans (pure HTML progress bars) ---------- */
+/* ---------- Chart B: top caravans (pure HTML progress bars, Light/Dark) ---------- */
 
 export interface RankedItem {
   name: string;
@@ -245,10 +243,11 @@ export function TopCaravansBars({
   offset?: number;
   max?: number;
 }) {
+  const dark = useIsDark();
   const max = Math.max(maxOverride ?? 0, ...items.map((i) => i.total), 1);
   if (items.length === 0) {
     return (
-      <div className="py-10 text-center text-sm text-zinc-400">
+      <div className="py-10 text-center text-sm text-slate-400 dark:text-zinc-400">
         لا توجد بيانات
       </div>
     );
@@ -264,13 +263,13 @@ export function TopCaravansBars({
                 <span
                   className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold tabular-nums ${
                     idx === 0
-                      ? 'bg-white text-black font-medium'
-                      : 'bg-white/5 text-zinc-300 border border-white/5'
+                      ? 'bg-slate-900 text-white dark:bg-white dark:text-black font-medium'
+                      : 'bg-slate-100 text-slate-700 dark:bg-white/5 dark:text-zinc-300 border border-slate-200 dark:border-white/5'
                   }`}
                 >
                   {idx + 1}
                 </span>
-                <span className="truncate font-medium text-white">
+                <span className="truncate font-medium text-slate-900 dark:text-white">
                   {item.name}
                 </span>
               </div>
@@ -278,22 +277,28 @@ export function TopCaravansBars({
                 className="flex shrink-0 items-center gap-2 tabular-nums"
                 dir="ltr"
               >
-                <span className="text-xs text-zinc-400">
+                <span className="text-xs text-slate-500 dark:text-zinc-400">
                   {item.share.toFixed(1)}%
                 </span>
-                <span className="font-semibold text-white">
+                <span className="font-semibold text-slate-900 dark:text-white">
                   {fmtCompact(item.total)}
                 </span>
               </div>
             </div>
-            <div className="h-2 w-full overflow-hidden rounded-full bg-zinc-950">
+            <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-zinc-950">
               <div
                 className={`h-full rounded-full transition-all duration-700 ease-out ${
-                  idx === 0
-                    ? 'bg-[#c4b5fd]'
-                    : idx === 1
-                      ? 'bg-[#86efac]'
-                      : 'bg-[#fde047]'
+                  dark
+                    ? idx === 0
+                      ? 'bg-[#c4b5fd]'
+                      : idx === 1
+                        ? 'bg-[#86efac]'
+                        : 'bg-[#fde047]'
+                    : idx === 0
+                      ? 'bg-[#f97316]'
+                      : idx === 1
+                        ? 'bg-[#2563eb]'
+                        : 'bg-[#f59e0b]'
                 }`}
                 style={{ width: `${(item.total / max) * 100}%` }}
               />
@@ -324,6 +329,25 @@ export function PaymentDonut({
   const dark = useIsDark();
   const total = slices.reduce((a, s) => a + s.value, 0);
 
+  // Palette adaptation for slices:
+  // In dark: [Lavender, Slate, Amber]
+  // In light: [Orange, Navy, Amber]
+  const themedSlices = slices.map((s, idx) => {
+    let rgb = s.rgb;
+    let dot = s.dot;
+    if (idx === 0) {
+      rgb = dark ? PALETTE.lavender : PALETTE.orange;
+      dot = dark ? "bg-[#c4b5fd]" : "bg-[#f97316]";
+    } else if (idx === 1) {
+      rgb = dark ? PALETTE.slate : PALETTE.navy;
+      dot = dark ? "bg-[#94a3b8]" : "bg-[#1e3a8a]";
+    } else if (idx === 2) {
+      rgb = PALETTE.amber;
+      dot = "bg-amber-500";
+    }
+    return { ...s, rgb, dot };
+  });
+
   const options: ChartOptions<"doughnut"> = {
     responsive: true,
     maintainAspectRatio: false,
@@ -332,6 +356,10 @@ export function PaymentDonut({
       legend: { display: false },
       tooltip: {
         ...tooltipBase,
+        backgroundColor: dark ? "rgba(24, 24, 27, 0.95)" : "rgba(255, 255, 255, 0.98)",
+        borderColor: dark ? "rgba(255, 255, 255, 0.08)" : "#e2e8f0",
+        titleColor: dark ? "#ffffff" : "#0f172a",
+        bodyColor: dark ? "#a1a1aa" : "#475569",
         callbacks: {
           label: (c) => {
             const v = Number(c.parsed);
@@ -350,23 +378,23 @@ export function PaymentDonut({
         <Doughnut
           options={options}
           data={{
-            labels: slices.map((s) => s.label),
+            labels: themedSlices.map((s) => s.label),
             datasets: [
               {
-                data: slices.map((s) => s.value),
-                backgroundColor: slices.map((s) => `rgb(${s.rgb})`),
-                borderColor: dark ? "#0f172a" : "#ffffff",
+                data: themedSlices.map((s) => s.value),
+                backgroundColor: themedSlices.map((s) => `rgb(${s.rgb})`),
+                borderColor: dark ? "#18181b" : "#ffffff",
                 borderWidth: 3,
-                borderRadius: 6,
+                borderRadius: 4,
                 hoverOffset: 6,
               },
             ],
           }}
         />
         <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-          <span className="text-xs text-slate-400">الإجمالي</span>
+          <span className="text-xs text-slate-500 dark:text-slate-400">الإجمالي</span>
           <span
-            className="text-lg font-bold tabular-nums text-slate-800 dark:text-slate-100"
+            className="text-lg font-bold tabular-nums text-slate-900 dark:text-slate-100"
             dir="ltr"
           >
             {fmtCompact(total)}
@@ -375,28 +403,28 @@ export function PaymentDonut({
       </div>
 
       <ul className={`space-y-2.5 ${compact ? "mt-4" : "mt-5"}`}>
-        {slices.map((s) => (
+        {themedSlices.map((s) => (
           <li
             key={s.label}
             className="flex items-center justify-between text-sm"
           >
             <div className="flex items-center gap-2">
               <span className={`h-2.5 w-2.5 rounded-full ${s.dot}`} />
-              <span className="text-slate-600 dark:text-slate-300">
+              <span className="text-slate-700 dark:text-slate-300">
                 {s.label}
               </span>
             </div>
             <div className="flex items-center gap-2 tabular-nums" dir="ltr">
-              <span className="text-xs text-slate-400">
+              <span className="text-xs text-slate-500 dark:text-slate-400">
                 {total > 0 ? ((s.value / total) * 100).toFixed(1) : "0.0"}%
               </span>
               {!compact && (
-                <span className="font-semibold text-slate-800 dark:text-slate-100">
+                <span className="font-semibold text-slate-900 dark:text-slate-100">
                   {fmtMoney(s.value)}
                 </span>
               )}
               {compact && (
-                <span className="font-semibold text-slate-800 dark:text-slate-100">
+                <span className="font-semibold text-slate-900 dark:text-slate-100">
                   {fmtCompact(s.value)}
                 </span>
               )}

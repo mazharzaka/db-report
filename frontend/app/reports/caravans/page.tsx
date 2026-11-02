@@ -235,6 +235,38 @@ function buildBranchStats(records: CaravanRecord[]): LocalBranchStat[] {
   return Array.from(map.values()).sort((a, b) => b.total - a.total);
 }
 
+/* ------------------------------ Single Source of Truth Normalization ------------------------------ */
+
+type ItemRow = { name: string; qty?: number; revenue?: number; [k: string]: any };
+type OutletRow = { name: string; [k: string]: any };
+
+function normalizeItemsSummary(raw: any) {
+  const src = raw ?? {};
+  const cap = src.capture ?? {};
+  const kpi = src.kpis ?? {};
+  const pick = (...c: any[]) => c.find((v) => v !== undefined && v !== null);
+  const asArray = <T,>(v: unknown): T[] => (Array.isArray(v) ? (v as T[]) : []);
+  const asNum = (v: unknown) => {
+    const n = Number(v);
+    return Number.isFinite(n) ? n : 0;
+  };
+  return {
+    guests: asNum(pick(src.guests, kpi.guests, cap.guests, src.visitors, src.visitorCount)),
+    spendPerGuest: asNum(pick(src.spendPerGuest, kpi.spendPerGuest, cap.spendPerGuest)),
+    topItems: asArray<ItemRow>(pick(src.topItems, src.top_items, src.topSellers)),
+    slowItems: asArray<ItemRow>(pick(src.slowItems, src.slow_items, src.worstItems)),
+    outlets: asArray<OutletRow>(pick(src.outlets, src.branches, src.caravans)),
+    allOutlets: asArray<OutletRow>(pick(src.allOutlets, src.outlets)),
+    duel: pick(src.duel, null),
+    caravanRevenue: asNum(pick(src.caravanRevenue, kpi.caravanRevenue, cap.caravanRevenue)),
+    grossRevenue: asNum(pick(src.grossRevenue, kpi.grossRevenue, cap.grossRevenue, src.caravanRevenue, cap.caravanRevenue)),
+    gateTickets: asNum(pick(src.gateTickets, kpi.gateTickets, cap.gateTickets)),
+    degraded: Boolean(src.degraded),
+    blockStatus: src.blockStatus ?? {},
+    errors: asArray<any>(src.errors),
+  };
+}
+
 /* ------------------------------ UI building blocks ------------------------------ */
 
 interface KpiProps {
@@ -262,30 +294,30 @@ function KpiCard({
 }: KpiProps) {
   const isPositive = delta !== null && delta >= 0;
   return (
-    <div className="flex flex-col justify-between rounded-2xl border border-white/5 bg-[#18181b] p-5 shadow-sm transition hover:border-white/5">
+    <div className="flex flex-col justify-between rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm transition hover:border-slate-300 dark:border-white/5 dark:bg-[#18181b] dark:hover:border-white/10">
       <div className="flex items-start justify-between">
-        <span className="text-sm font-medium text-zinc-400">{title}</span>
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#09090b] border border-white/5 text-zinc-300">
+        <span className="text-sm font-medium text-slate-500 dark:text-zinc-400">{title}</span>
+        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 border border-slate-200/80 text-slate-700 dark:bg-[#09090b] dark:border-white/5 dark:text-zinc-300">
           <Icon className="h-5 w-5" />
         </div>
       </div>
 
       <div className="mt-3 flex items-baseline justify-between gap-2">
         {loading ? (
-          <div className="h-8 w-32 animate-pulse rounded-lg bg-[#09090b]" />
+          <div className="h-8 w-32 animate-pulse rounded-lg bg-slate-200 dark:bg-[#09090b]" />
         ) : (
-          <span className="text-2xl font-bold tracking-tight text-white font-mono tabular-nums" dir="ltr">
+          <span className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white font-mono tabular-nums" dir="ltr">
             {value}
           </span>
         )}
         {loading ? (
-          <div className="h-5 w-12 animate-pulse rounded-full bg-[#09090b]" />
+          <div className="h-5 w-12 animate-pulse rounded-full bg-slate-200 dark:bg-[#09090b]" />
         ) : delta !== null ? (
           <span
-            className={`inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 text-xs font-semibold ${
+            className={`inline-flex items-center gap-0.5 rounded-full px-2.5 py-1 text-xs font-semibold ${
               isPositive
-                ? 'text-[#86efac] bg-[#166534]/30 rounded-full px-2.5 py-1 text-xs font-semibold'
-                : 'text-yellow-300 bg-yellow-500/10 rounded-full px-2.5 py-1 text-xs font-semibold'
+                ? 'text-orange-600 bg-orange-50 dark:text-orange-400 dark:bg-orange-500/10'
+                : 'text-yellow-600 bg-yellow-50 dark:text-yellow-300 dark:bg-yellow-500/10'
             }`}
             dir="ltr"
           >
@@ -298,7 +330,7 @@ function KpiCard({
       <div className="mt-3 h-12">
         <Sparkline data={spark.length > 1 ? spark : [0, 0]} color={sparkColor} />
       </div>
-      <p className="mt-2 text-xs tabular-nums text-zinc-400">{footnote}</p>
+      <p className="mt-2 text-xs tabular-nums text-slate-500 dark:text-zinc-400">{footnote}</p>
     </div>
   );
 }
@@ -317,11 +349,11 @@ function Card({
   className?: string;
 }) {
   return (
-    <section className={`rounded-2xl border border-white/5 bg-[#18181b]/90 p-5 shadow-sm backdrop-blur-sm ${className}`}>
+    <section className={`rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm backdrop-blur-sm dark:border-white/5 dark:bg-[#18181b]/90 ${className}`}>
       <div className="mb-4 flex items-start justify-between gap-3">
         <div>
-          <h3 className="text-base font-bold text-white">{title}</h3>
-          {subtitle && <p className="mt-0.5 text-xs text-zinc-400">{subtitle}</p>}
+          <h3 className="text-base font-bold text-slate-900 dark:text-white">{title}</h3>
+          {subtitle && <p className="mt-0.5 text-xs text-slate-500 dark:text-zinc-400">{subtitle}</p>}
         </div>
         {action}
       </div>
@@ -340,15 +372,15 @@ function Segmented<T extends string>({
   onChange: (v: T) => void;
 }) {
   return (
-    <div className="flex shrink-0 items-center gap-1 rounded-full bg-[#09090b] border border-white/5/60 p-1">
+    <div className="flex shrink-0 items-center gap-1 rounded-full bg-slate-100 border border-slate-200 p-1 dark:bg-[#09090b] dark:border-white/5/60">
       {options.map((o) => (
         <button
           key={o.id}
           onClick={() => onChange(o.id)}
           className={`rounded-full px-3 py-1 text-xs font-semibold transition ${
             value === o.id
-              ? 'bg-white text-black rounded-full font-medium shadow-sm'
-              : 'text-zinc-400 hover:text-zinc-300'
+              ? 'bg-white text-slate-900 shadow-sm dark:bg-white dark:text-black font-bold'
+              : 'text-slate-600 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-white'
           }`}
         >
           {o.label}
@@ -399,6 +431,11 @@ export default function CaravanReportPage() {
   const [trend, setTrend] = useState<TrendPoint[]>([]);
   const [branchStats, setBranchStats] = useState<LocalBranchStat[]>([]);
   const [itemsData, setItemsData] = useState<ItemsSummary | null>(null);
+  const [guests, setGuests] = useState<number>(0);
+  const [spendPerGuest, setSpendPerGuest] = useState<number>(0);
+  const [topItems, setTopItems] = useState<any[]>([]);
+  const [slowItems, setSlowItems] = useState<any[]>([]);
+  const [outlets, setOutlets] = useState<any[]>([]);
   const [itemMetric, setItemMetric] = useState<ItemMetric>('revenue');
   const [itemMode, setItemMode] = useState<ItemMode>('best');
   const [itemsLoading, setItemsLoading] = useState(false);
@@ -559,12 +596,34 @@ export default function CaravanReportPage() {
           throw new Error(`خطأ في استجابة الخادم (${res.status}): ${text.slice(0, 80)}`);
         }
         const json = await res.json();
-        console.log('[Frontend items-summary response payload]:', json);
-        // Robust mapping: handle both direct { status: 'success', topItems: [...] } and wrapped { status: 'success', data: { ... } }
-        const payload: ItemsSummary = json.data ? { ...json.data, status: json.status } : json;
-        if (payload.status !== 'success' && json.status !== 'success') {
-          throw new Error(payload.message || json.message || `خطأ في استجابة الخادم`);
-        }
+        const data = normalizeItemsSummary(json);
+
+        setGuests(data.guests);
+        setSpendPerGuest(data.spendPerGuest);
+        setTopItems(data.topItems);
+        setSlowItems(data.slowItems);
+        setOutlets(data.outlets);
+
+        const payload: ItemsSummary = {
+          ...json,
+          status: 'success',
+          topItems: data.topItems,
+          slowItems: data.slowItems,
+          outlets: data.outlets,
+          allOutlets: data.allOutlets,
+          duel: data.duel,
+          guests: data.guests,
+          spendPerGuest: data.spendPerGuest,
+          capture: {
+            caravanRevenue: data.caravanRevenue,
+            grossRevenue: data.grossRevenue,
+            gateTickets: data.gateTickets,
+            guests: data.guests,
+            spendPerGuest: data.spendPerGuest,
+            visitDivisor: Number(json.capture?.visitDivisor ?? 6) || 6,
+            gateBranchCodes: Array.isArray(json.capture?.gateBranchCodes) ? json.capture.gateBranchCodes : [],
+          },
+        };
         setItemsData(payload);
       })
       .catch((err: Error) => {
@@ -635,13 +694,14 @@ export default function CaravanReportPage() {
   };
 
   const comparisonStats = useMemo<OutletMetricStat[]>(() => {
-    if (itemsData?.outlets && itemsData.outlets.length > 0) {
-      return itemsData.outlets.map((o) => ({
-        code: o.branchCode,
-        name: o.name,
-        revenue: o.revenue,
-        orders: o.orders,
-        avgTicket: o.avgTicket,
+    const list = outlets.length > 0 ? outlets : (itemsData?.outlets ?? []);
+    if (list.length > 0) {
+      return list.map((o: any) => ({
+        code: String(o.branchCode || o.code),
+        name: String(o.name || o.branchCode || ''),
+        revenue: Number(o.revenue) || 0,
+        orders: Number(o.orders) || 0,
+        avgTicket: Number(o.avgTicket) || (Number(o.orders) > 0 ? Number(o.revenue) / Number(o.orders) : 0),
       })).slice(0, MAX_BRANCHES_IN_CHART);
     }
     return branchStats.map((b) => ({
@@ -651,17 +711,17 @@ export default function CaravanReportPage() {
       orders: b.cover,
       avgTicket: b.cover > 0 ? b.total / b.cover : 0,
     })).slice(0, MAX_BRANCHES_IN_CHART);
-  }, [itemsData, branchStats]);
+  }, [outlets, itemsData, branchStats]);
 
   const overallAov = summary?.avgTicket ?? 0;
 
   return (
-    <div className="relative min-h-screen bg-[#09090b] text-white selection:bg-violet-500/20 selection:text-violet-300">
+    <div className="relative min-h-screen bg-slate-50 text-slate-900 selection:bg-orange-500/20 selection:text-orange-600 dark:bg-[#09090b] dark:text-white dark:selection:bg-orange-500/20 dark:selection:text-orange-400">
       {/* 1. Splash Screen with Dream Park Theming & Ferris Wheel Loader */}
       <SplashScreen isLoading={loading || kpisLoading} minDurationMs={1400} />
 
       {/* 2. Institutional Dream Park Subtle Background Watermark */}
-      <div className="pointer-events-none fixed inset-0 z-0 flex items-center justify-center opacity-[0.035] select-none overflow-hidden print:opacity-[0.05]">
+      <div className="pointer-events-none fixed inset-0 z-0 flex items-center justify-center opacity-[0.03] select-none overflow-hidden print:opacity-[0.05] dark:opacity-[0.035]">
         <img
           src="/dreampark-logo.png"
           alt=""
@@ -673,10 +733,10 @@ export default function CaravanReportPage() {
         {/* ---------- Header ---------- */}
         <header className="space-y-4">
           <div className="flex items-center justify-between">
-            <nav className="flex items-center gap-1.5 text-sm text-zinc-400" aria-label="breadcrumb">
-              <a href="/" className="transition hover:text-violet-300">التقارير المالية</a>
+            <nav className="flex items-center gap-1.5 text-sm text-slate-500 dark:text-zinc-400" aria-label="breadcrumb">
+              <a href="/" className="transition hover:text-orange-600 dark:hover:text-orange-400">التقارير المالية</a>
               <ChevronLeft className="h-3.5 w-3.5" />
-              <span className="font-medium text-zinc-300">إيرادات الكرافانات والمنافذ</span>
+              <span className="font-medium text-slate-700 dark:text-zinc-300">إيرادات الكرافانات والمنافذ</span>
             </nav>
             <div className="print:hidden"><ThemeToggle /></div>
           </div>
@@ -685,14 +745,14 @@ export default function CaravanReportPage() {
             <div className="flex flex-wrap items-center gap-3">
               <div className="flex items-center gap-3">
                 <img src="/dreampark-logo.png" alt="Dream Park" className="h-10 w-auto object-contain drop-shadow" />
-                <h1 className="text-2xl font-extrabold text-white sm:text-3xl">
+                <h1 className="text-2xl font-extrabold text-slate-900 dark:text-white sm:text-3xl">
                   تقرير إيرادات الكرافانات والمنافذ
                 </h1>
               </div>
-              <span className="inline-flex items-center gap-2 rounded-full bg-white/5 border border-white/5 px-3 py-1 text-xs font-medium text-zinc-300 rounded-full">
+              <span className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-700 shadow-sm dark:border-white/5 dark:bg-white/5 dark:text-zinc-300">
                 <span className="relative flex h-2 w-2">
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#86efac] opacity-60" />
-                  <span className="relative inline-flex h-2 w-2 rounded-full bg-[#86efac]" />
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-orange-500 opacity-60" />
+                  <span className="relative inline-flex h-2 w-2 rounded-full bg-orange-500" />
                 </span>
                 محدث لحظياً
                 {updatedAt && (
@@ -704,13 +764,13 @@ export default function CaravanReportPage() {
             {/* Actions & Mode Switcher */}
             <div className="flex flex-wrap items-center gap-2 print:hidden">
               {/* Primary Mode Toggle: Standard vs Period Comparison */}
-              <div className="inline-flex rounded-xl bg-[#18181b] border border-white/5 p-1">
+              <div className="inline-flex rounded-xl border border-slate-200 bg-slate-100 p-1 dark:border-white/5 dark:bg-[#18181b]">
                 <button
                   onClick={() => setViewMode('standard')}
                   className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition ${
                     viewMode === 'standard'
-                      ? 'bg-[#09090b] text-violet-300 shadow-sm border border-white/5/60'
-                      : 'text-zinc-400 hover:text-zinc-300'
+                      ? 'bg-white text-orange-600 shadow-sm dark:bg-[#09090b] dark:text-orange-400 border border-slate-200/80 dark:border-white/10'
+                      : 'text-slate-600 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-zinc-300'
                   }`}
                 >
                   <BarChart3 className="h-3.5 w-3.5" />
@@ -720,8 +780,8 @@ export default function CaravanReportPage() {
                   onClick={() => setViewMode('comparison')}
                   className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition ${
                     viewMode === 'comparison'
-                      ? 'bg-[#09090b] text-violet-300 shadow-sm border border-white/5/60'
-                      : 'text-zinc-400 hover:text-zinc-300'
+                      ? 'bg-white text-orange-600 shadow-sm dark:bg-[#09090b] dark:text-orange-400 border border-slate-200/80 dark:border-white/10'
+                      : 'text-slate-600 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-zinc-300'
                   }`}
                 >
                   <Scale className="h-3.5 w-3.5" />
@@ -733,20 +793,20 @@ export default function CaravanReportPage() {
                 onClick={() => setRefreshTick((t) => t + 1)}
                 disabled={loading || comparisonLoading}
                 aria-label="تحديث"
-                className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-white/5 bg-[#09090b] text-zinc-300 transition hover:text-violet-300 hover:border-slate-600 disabled:opacity-50"
+                className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 shadow-sm transition hover:text-orange-600 hover:bg-slate-50 dark:border-white/5 dark:bg-[#09090b] dark:text-zinc-300 dark:hover:text-orange-400 dark:hover:bg-slate-800 disabled:opacity-50"
               >
                 <RefreshCw className={`h-4 w-4 ${loading || comparisonLoading ? 'animate-spin' : ''}`} />
               </button>
               <button
                 onClick={exportExcel}
-                className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-emerald-600 px-3 text-xs font-semibold text-white shadow-sm transition hover:bg-emerald-700 active:scale-95"
+                className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-orange-600 px-3 text-xs font-semibold text-white shadow-sm transition hover:bg-orange-700 active:scale-95"
               >
                 <FileSpreadsheet className="h-4 w-4" />
                 تصدير Excel
               </button>
               <button
                 onClick={() => setPrintModalOpen(true)}
-                className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-white/5 bg-[#09090b] px-3 text-xs font-semibold text-zinc-300 transition hover:bg-slate-700 active:scale-95"
+                className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 dark:border-white/5 dark:bg-[#09090b] dark:text-zinc-300 dark:hover:bg-slate-800 active:scale-95"
               >
                 <Printer className="h-4 w-4" />
                 طباعة
@@ -757,7 +817,7 @@ export default function CaravanReportPage() {
           {/* ---------- Filter Toolbar ---------- */}
           {viewMode === 'standard' ? (
             /* Standard Mode Filters */
-            <div className="flex flex-col gap-3 rounded-2xl border border-white/5 bg-[#18181b]/90 p-3 xl:flex-row xl:items-center xl:justify-between print:hidden shadow-sm">
+            <div className="flex flex-col gap-3 rounded-2xl border border-slate-200/80 bg-white p-3 shadow-sm xl:flex-row xl:items-center xl:justify-between print:hidden dark:border-white/5 dark:bg-[#18181b]/90">
               <div className="flex flex-wrap items-center gap-2">
                 {PRESETS.map((p) => (
                   <button
@@ -765,8 +825,8 @@ export default function CaravanReportPage() {
                     onClick={() => applyPreset(p.id)}
                     className={`rounded-full px-4 py-1.5 text-sm font-semibold transition-all duration-200 ${
                       preset === p.id
-                        ? 'bg-white text-black rounded-full font-medium shadow-sm'
-                        : 'bg-[#09090b] text-zinc-300 hover:bg-slate-700 hover:text-white'
+                        ? 'bg-orange-600 text-white shadow-sm dark:bg-white dark:text-black font-medium'
+                        : 'bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-[#09090b] dark:text-zinc-300 dark:hover:bg-slate-700 dark:hover:text-white'
                     }`}
                   >
                     {p.label}
@@ -779,16 +839,16 @@ export default function CaravanReportPage() {
                     max={end}
                     aria-label="من تاريخ"
                     onChange={(e) => { setStart(e.target.value); setPreset('custom'); }}
-                    className="rounded-lg border border-white/5 bg-[#09090b] px-2 py-1 text-xs tabular-nums text-white outline-none focus:border-violet-400"
+                    className="rounded-lg border border-slate-200 bg-slate-50 px-2 py-1 text-xs tabular-nums text-slate-900 outline-none focus:border-orange-500 dark:border-white/5 dark:bg-[#09090b] dark:text-white dark:focus:border-orange-400"
                   />
-                  <span className="text-zinc-400">→</span>
+                  <span className="text-slate-400 dark:text-zinc-400">→</span>
                   <input
                     type="date"
                     value={end}
                     min={start}
                     aria-label="إلى تاريخ"
                     onChange={(e) => { setEnd(e.target.value); setPreset('custom'); }}
-                    className="rounded-lg border border-white/5 bg-[#09090b] px-2 py-1 text-xs tabular-nums text-white outline-none focus:border-violet-400"
+                    className="rounded-lg border border-slate-200 bg-slate-50 px-2 py-1 text-xs tabular-nums text-slate-900 outline-none focus:border-orange-500 dark:border-white/5 dark:bg-[#09090b] dark:text-white dark:focus:border-orange-400"
                   />
                 </div>
               </div>
@@ -800,18 +860,18 @@ export default function CaravanReportPage() {
             </div>
           ) : (
             /* Period Comparison Mode Filters */
-            <div className="flex flex-col gap-4 rounded-2xl border border-white/5 bg-[#18181b]/95 p-4 print:hidden shadow-sm">
-              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/5 pb-3">
+            <div className="flex flex-col gap-4 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm print:hidden dark:border-white/5 dark:bg-[#18181b]/95">
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 dark:border-white/5 pb-3">
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-xs font-bold text-zinc-400">أنماط المقارنة الجاهزة:</span>
+                  <span className="text-xs font-bold text-slate-500 dark:text-zinc-400">أنماط المقارنة الجاهزة:</span>
                   {COMP_PRESETS.map((p) => (
                     <button
                       key={p.id}
                       onClick={() => applyCompPreset(p.id)}
                       className={`rounded-full px-3 py-1 text-xs font-semibold transition-all duration-200 ${
                         compPreset === p.id
-                          ? 'bg-white text-black rounded-full font-medium shadow-sm'
-                          : 'bg-[#09090b] text-zinc-300 hover:bg-slate-700 hover:text-white'
+                          ? 'bg-orange-600 text-white shadow-sm dark:bg-white dark:text-black font-medium'
+                          : 'bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-[#09090b] dark:text-zinc-300 dark:hover:bg-slate-700 dark:hover:text-white'
                       }`}
                     >
                       {p.label}
@@ -820,53 +880,53 @@ export default function CaravanReportPage() {
                 </div>
 
                 <div className="flex items-center gap-3">
-                  <span className="text-xs font-bold text-zinc-400">تصفية المنافذ:</span>
+                  <span className="text-xs font-bold text-slate-500 dark:text-zinc-400">تصفية المنافذ:</span>
                   <BranchSelect options={branchOptions} value={selected} onChange={setSelected} />
                 </div>
               </div>
 
               {/* Dual Period Date Pickers */}
               <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                <div className="flex items-center gap-2 rounded-xl border border-white/5 bg-[#09090b] p-2.5">
-                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-[#86efac] text-xs font-bold text-white">A</span>
-                  <span className="text-xs font-bold text-zinc-300">الفترة الحالية (A):</span>
+                <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 p-2.5 dark:border-white/5 dark:bg-[#09090b]">
+                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-orange-500 text-xs font-bold text-white">A</span>
+                  <span className="text-xs font-bold text-slate-700 dark:text-zinc-300">الفترة الحالية (A):</span>
                   <div className="flex flex-1 items-center gap-1.5" dir="ltr">
                     <input
                       type="date"
                       value={compStartA}
                       max={compEndA}
                       onChange={(e) => { setCompStartA(e.target.value); setCompPreset('custom'); }}
-                      className="w-full rounded-lg border border-white/5 bg-[#18181b] px-2 py-1 text-xs tabular-nums text-white outline-none focus:border-violet-400"
+                      className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs tabular-nums text-slate-900 outline-none focus:border-orange-500 dark:border-white/5 dark:bg-[#18181b] dark:text-white dark:focus:border-orange-400"
                     />
-                    <span className="text-zinc-400">→</span>
+                    <span className="text-slate-400 dark:text-zinc-400">→</span>
                     <input
                       type="date"
                       value={compEndA}
                       min={compStartA}
                       onChange={(e) => { setCompEndA(e.target.value); setCompPreset('custom'); }}
-                      className="w-full rounded-lg border border-white/5 bg-[#18181b] px-2 py-1 text-xs tabular-nums text-white outline-none focus:border-violet-400"
+                      className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs tabular-nums text-slate-900 outline-none focus:border-orange-500 dark:border-white/5 dark:bg-[#18181b] dark:text-white dark:focus:border-orange-400"
                     />
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2 rounded-xl border border-white/5 bg-[#09090b]/80 p-2.5">
-                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-slate-500 text-xs font-bold text-white">B</span>
-                  <span className="text-xs font-bold text-zinc-300">فترة المقارنة (B):</span>
+                <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50/80 p-2.5 dark:border-white/5 dark:bg-[#09090b]/80">
+                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-slate-400 text-xs font-bold text-white dark:bg-slate-600">B</span>
+                  <span className="text-xs font-bold text-slate-700 dark:text-zinc-300">فترة المقارنة (B):</span>
                   <div className="flex flex-1 items-center gap-1.5" dir="ltr">
                     <input
                       type="date"
                       value={compStartB}
                       max={compEndB}
                       onChange={(e) => { setCompStartB(e.target.value); setCompPreset('custom'); }}
-                      className="w-full rounded-lg border border-white/5 bg-[#18181b] px-2 py-1 text-xs tabular-nums text-white outline-none focus:border-violet-400"
+                      className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs tabular-nums text-slate-900 outline-none focus:border-orange-500 dark:border-white/5 dark:bg-[#18181b] dark:text-white dark:focus:border-orange-400"
                     />
-                    <span className="text-zinc-400">→</span>
+                    <span className="text-slate-400 dark:text-zinc-400">→</span>
                     <input
                       type="date"
                       value={compEndB}
                       min={compStartB}
                       onChange={(e) => { setCompEndB(e.target.value); setCompPreset('custom'); }}
-                      className="w-full rounded-lg border border-white/5 bg-[#18181b] px-2 py-1 text-xs tabular-nums text-white outline-none focus:border-violet-400"
+                      className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs tabular-nums text-slate-900 outline-none focus:border-orange-500 dark:border-white/5 dark:bg-[#18181b] dark:text-white dark:focus:border-orange-400"
                     />
                   </div>
                 </div>
@@ -913,13 +973,13 @@ export default function CaravanReportPage() {
             </div>
 
             {/* Interactive 2D Map for click-to-compare */}
-            <section className="rounded-2xl border border-slate-200 bg-white p-5 dark:border-white/5 dark:bg-[#18181b] print:hidden">
+            <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-white/5 dark:bg-[#18181b] print:hidden">
               <div className="mb-4">
-                <h3 className="text-base font-bold text-slate-800 dark:text-white">خريطة الكرافانات — انقر للمقارنة الفردية</h3>
-                <p className="mt-0.5 text-xs text-zinc-400">اضغط على أي منفذ بالخريطة لعزل ومقارنة أدائه بين الفترتين A و B فورياً</p>
+                <h3 className="text-base font-bold text-slate-900 dark:text-white">خريطة الكرافانات — انقر للمقارنة الفردية</h3>
+                <p className="mt-0.5 text-xs text-slate-500 dark:text-zinc-400">اضغط على أي منفذ بالخريطة لعزل ومقارنة أدائه بين الفترتين A و B فورياً</p>
               </div>
               <ParkMap
-                outlets={itemsData?.allOutlets ?? itemsData?.outlets ?? []}
+                outlets={outlets.length > 0 ? outlets : (itemsData?.allOutlets ?? itemsData?.outlets ?? [])}
                 selected={selected}
                 onSelect={selectFromMap}
               />
@@ -930,27 +990,6 @@ export default function CaravanReportPage() {
           /* VIEW MODE 2: STANDARD OPERATIONAL REPORT (التقرير التشغيلي القياسي)      */
           /* ========================================================================= */
           <div className="space-y-6">
-            {/* ---------- Golden Benchmark Reconciliation Banner ---------- */}
-            {benchmarkInfo?.isTargetRange && (
-              <div className={`flex flex-col gap-3 rounded-2xl border border-white/5/80 bg-[#18181b] p-4 text-xs text-zinc-300 shadow-sm sm:flex-row sm:items-center sm:justify-between break-inside-avoid ${!printConfig.kpis ? 'print:hidden' : ''}`}>
-                <div className="flex items-center gap-3">
-                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-emerald-950 text-violet-300 font-bold border border-emerald-800">
-                    ✓
-                  </span>
-                  <div>
-                    <h4 className="font-bold text-white text-sm">مطابقة المعيار المالي الذهبي الرسمي (Golden Benchmark Reconciled)</h4>
-                    <p className="text-zinc-400 text-[11px]">الفترة من 2026-01-01 إلى 2026-10-25 متطابقة تماماً مع سجلات الحسابات المعتمدة</p>
-                  </div>
-                </div>
-                <div className="flex flex-wrap items-center gap-2 tabular-nums font-mono">
-                  <span className="rounded-lg border border-white/5 bg-[#09090b] px-2.5 py-1 text-zinc-300 font-medium">الفواتير: <strong className="text-white">6,216</strong></span>
-                  <span className="rounded-lg border border-white/5 bg-[#09090b] px-2.5 py-1 text-zinc-300 font-medium">ضريبة الكرافانات: <strong className="text-white">972,781.71 ج.م</strong></span>
-                  <span className="rounded-lg border border-white/5 bg-[#09090b] px-2.5 py-1 text-zinc-300 font-medium">الصافي: <strong className="text-white">7,873,408.73 ج.م</strong></span>
-                  <span className="rounded-lg border border-white/5 bg-[#09090b] px-2.5 py-1 text-zinc-300 font-medium">ماء معدني صغير: <strong className="text-white">11,906 قطعة</strong> (<strong className="text-emerald-300">238,120.0048 ج.م</strong>)</span>
-                  <span className="rounded-lg border border-emerald-800 bg-emerald-950/80 px-3 py-1 font-bold text-emerald-300">الإجمالي الصافي: 7,921,222.60 ج.م</span>
-                </div>
-              </div>
-            )}
 
             {/* ---------- Row 1: Top Metrics (Executive KPI Cards - Fast Conditional Aggregation) ---------- */}
             <div className={`grid grid-cols-1 gap-4 transition-opacity sm:grid-cols-2 xl:grid-cols-4 break-inside-avoid ${loading && kpisLoading ? 'opacity-60' : ''} ${!printConfig.kpis ? 'print:hidden' : ''}`}>
@@ -1027,13 +1066,28 @@ export default function CaravanReportPage() {
             <div className={`grid grid-cols-1 gap-4 lg:grid-cols-12 break-inside-avoid ${!printConfig.kpis ? 'print:hidden' : ''}`}>
               {/* Col 1-3: Capture Rate */}
               <div className="lg:col-span-12 xl:col-span-3">
-                <CaptureRateCard capture={itemsData?.capture ?? null} loading={itemsLoading} />
+                <CaptureRateCard
+                  guests={guests}
+                  spendPerGuest={spendPerGuest}
+                  capture={
+                    itemsData?.capture ?? {
+                      caravanRevenue: summary?.totalSales ?? 0,
+                      grossRevenue: summary?.totalSales ?? 0,
+                      gateTickets: 0,
+                      guests,
+                      spendPerGuest,
+                      visitDivisor: 6,
+                      gateBranchCodes: [],
+                    }
+                  }
+                  loading={itemsLoading}
+                />
               </div>
               {/* Col 4-8: Top 5 Best Sellers & Slow-Moving (Dead Stock) */}
               <div className="lg:col-span-12 xl:col-span-5">
                 <TopItemsWidget
-                  items={itemsData?.topItems ?? []}
-                  slowItems={itemsData?.slowItems ?? []}
+                  items={topItems.length > 0 ? topItems : (itemsData?.topItems ?? [])}
+                  slowItems={slowItems.length > 0 ? slowItems : (itemsData?.slowItems ?? [])}
                   mode={itemMode}
                   onModeChange={setItemMode}
                   metric={itemMetric}
@@ -1101,13 +1155,13 @@ export default function CaravanReportPage() {
             </div>
 
             {/* ---------- Row 5: Interactive 2D Park Map ---------- */}
-            <section className="rounded-2xl border border-white/5 bg-[#18181b]/90 p-5 shadow-sm print:hidden">
+            <section className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm dark:border-white/5 dark:bg-[#18181b]/90 print:hidden">
               <div className="mb-4">
-                <h3 className="text-base font-bold text-white">خريطة المنافذ ونشاط المبيعات</h3>
-                <p className="mt-0.5 text-xs text-zinc-400">اللون يعبّر عن سرعة المبيعات مقارنةً بمتوسط المنافذ — اضغط على منفذ لتصفية التقرير والجدول</p>
+                <h3 className="text-base font-bold text-slate-900 dark:text-white">خريطة المنافذ ونشاط المبيعات</h3>
+                <p className="mt-0.5 text-xs text-slate-500 dark:text-zinc-400">اللون يعبّر عن سرعة المبيعات مقارنةً بمتوسط المنافذ — اضغط على منفذ لتصفية التقرير والجدول</p>
               </div>
               <ParkMap
-                outlets={itemsData?.allOutlets ?? itemsData?.outlets ?? []}
+                outlets={outlets.length > 0 ? outlets : (itemsData?.allOutlets ?? itemsData?.outlets ?? [])}
                 selected={selected}
                 onSelect={selectFromMap}
               />

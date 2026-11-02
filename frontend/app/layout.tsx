@@ -9,6 +9,7 @@ import '@fontsource/cairo/latin-600.css';
 import '@fontsource/cairo/latin-700.css';
 import '@fontsource/cairo/latin-800.css';
 import './globals.css';
+import { ThemeProvider } from '@/components/ThemeProvider';
 
 export const metadata: Metadata = {
   title: 'منظومة دريم بارك المركزية للعمليات والتحليلات — Dream Park & Zoo',
@@ -21,9 +22,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="ar" dir="rtl" className="dark" style={{ colorScheme: 'dark' }} suppressHydrationWarning>
-      <body className="min-h-screen bg-[#09090b] text-slate-100 antialiased selection:bg-violet-500/20 selection:text-violet-300 dark">
-        {children}
+    <html lang="ar" dir="rtl" suppressHydrationWarning>
+      <body className="min-h-screen bg-slate-50 text-slate-900 antialiased selection:bg-orange-500/20 selection:text-orange-500 dark:bg-[#09090b] dark:text-slate-100">
+        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
+          {children}
+        </ThemeProvider>
       </body>
     </html>
   );

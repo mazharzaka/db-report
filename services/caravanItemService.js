@@ -785,10 +785,16 @@ export class CaravanItemService {
 
             const pool = await getPool();
 
+            let activeBranches = rawBranches;
+            if (activeBranches.length === 0) {
+                activeBranches = await getType4BranchCodes(pool);
+            }
+
             console.log('[caravanItemService.getItemsSummary] Executing for range:', {
                 startDate,
                 endDate,
                 rawBranchesCount: rawBranches.length,
+                activeBranchesCount: activeBranches.length,
                 metric,
                 activeMode
             });
@@ -801,63 +807,47 @@ export class CaravanItemService {
                 return r;
             };
 
-            const topReq = mkReq();
-            const slowReq = mkReq();
+            const itemsReq = mkReq();
             const outletsReq = mkReq();
             const gateReq = mkReq();
 
-            let branchFilter = '';
-            if (rawBranches.length > 0) {
-                const phs = rawBranches.map((code, i) => {
-                    topReq.input(`b${i}`, sql.VarChar, code);
-                    slowReq.input(`b${i}`, sql.VarChar, code);
-                    outletsReq.input(`b${i}`, sql.VarChar, code);
-                    return `@b${i}`;
-                });
-                branchFilter = `AND p.[Branch_Code] IN (${phs.join(', ')})`;
-            }
+            const phs = activeBranches.map((code, i) => {
+                itemsReq.input(`b${i}`, sql.VarChar, code);
+                outletsReq.input(`b${i}`, sql.VarChar, code);
+                return `@b${i}`;
+            });
+            const branchFilter = phs.length > 0 ? `AND p.[Branch_Code] IN (${phs.join(', ')})` : '';
 
-            /* ---------- 1. Top 10 Best-Sellers Direct SARGable INNER JOIN ---------- */
-            const topSql = `
-                SELECT TOP 10
-                    p.[Item_Code] AS [itemCode],
-                    COALESCE(NULLIF(LTRIM(RTRIM(p.[Item_Name])), ''), CAST(p.[Item_Code] AS NVARCHAR(50))) AS [itemName],
-                    SUM(CAST(ISNULL(p.[Item_Qunt], 0) AS FLOAT)) AS [TotalQuantity],
-                    ROUND(SUM(CAST(ISNULL(p.[NetOfInv], 0) AS FLOAT)), 2) AS [TotalRevenue]
-                FROM ${TABLE_POS} p WITH (NOLOCK)
-                INNER JOIN ${TABLE_BRANCHS} b WITH (NOLOCK)
-                    ON p.[Branch_Code] = b.[Code]
-                WHERE p.[Doc_Date] >= CAST(@startDate AS DATE)
-                  AND p.[Doc_Date] < DATEADD(DAY, 1, CAST(@endDate AS DATE))
-                  AND b.[Type] = 4
-                  AND ISNULL(p.[Void_item], 0) = 0
-                  ${branchFilter}
-                GROUP BY p.[Item_Code], p.[Item_Name]
-                HAVING SUM(CAST(ISNULL(p.[Item_Qunt], 0) AS FLOAT)) > 0
-                ORDER BY ${orderCol} DESC;
+            /* ---------- 1. Combined Single-Pass Query for Top & Slow Items ---------- */
+            const itemsSql = `
+                WITH AggregatedItems AS (
+                    SELECT 
+                        p.[Item_Code] AS [itemCode],
+                        COALESCE(NULLIF(LTRIM(RTRIM(MAX(p.[Item_Name]))), ''), CAST(p.[Item_Code] AS NVARCHAR(50))) AS [itemName],
+                        SUM(CAST(ISNULL(p.[Item_Qunt], 0) AS FLOAT)) AS [TotalQuantity],
+                        ROUND(SUM(ROUND(p.[Item_Price] * (1.0 + (ISNULL(NULLIF(p.[item_Sels_Tax_P], 0), 14.0) / 100.0)), 2) * CAST(ISNULL(p.[Item_Qunt], 0) AS FLOAT)), 2) AS [TotalRevenue]
+                    FROM ${TABLE_POS} p WITH (NOLOCK)
+                    WHERE p.[Doc_Date] >= CAST(@startDate AS DATE)
+                      AND p.[Doc_Date] < DATEADD(DAY, 1, CAST(@endDate AS DATE))
+                      ${branchFilter}
+                      AND (p.[Void_item] = 0 OR p.[Void_item] IS NULL)
+                    GROUP BY p.[Item_Code]
+                    HAVING SUM(CAST(ISNULL(p.[Item_Qunt], 0) AS FLOAT)) > 0
+                )
+                SELECT * FROM (
+                    SELECT TOP 5 *, 'TOP' AS [bucket]
+                    FROM AggregatedItems
+                    ORDER BY ${orderCol} DESC
+                ) t
+                UNION ALL
+                SELECT * FROM (
+                    SELECT TOP 5 *, 'SLOW' AS [bucket]
+                    FROM AggregatedItems
+                    ORDER BY TotalRevenue ASC, TotalQuantity ASC
+                ) s;
             `;
 
-            /* ---------- 2. Slow-Moving / Dead Stock Direct SARGable INNER JOIN ---------- */
-            const slowSql = `
-                SELECT TOP 5
-                    p.[Item_Code] AS [itemCode],
-                    COALESCE(NULLIF(LTRIM(RTRIM(p.[Item_Name])), ''), CAST(p.[Item_Code] AS NVARCHAR(50))) AS [itemName],
-                    SUM(CAST(ISNULL(p.[Item_Qunt], 0) AS FLOAT)) AS [TotalQuantity],
-                    ROUND(SUM(CAST(ISNULL(p.[NetOfInv], 0) AS FLOAT)), 2) AS [TotalRevenue]
-                FROM ${TABLE_POS} p WITH (NOLOCK)
-                INNER JOIN ${TABLE_BRANCHS} b WITH (NOLOCK)
-                    ON p.[Branch_Code] = b.[Code]
-                WHERE p.[Doc_Date] >= CAST(@startDate AS DATE)
-                  AND p.[Doc_Date] < DATEADD(DAY, 1, CAST(@endDate AS DATE))
-                  AND b.[Type] = 4
-                  AND ISNULL(p.[Void_item], 0) = 0
-                  ${branchFilter}
-                GROUP BY p.[Item_Code], p.[Item_Name]
-                HAVING SUM(CAST(ISNULL(p.[Item_Qunt], 0) AS FLOAT)) > 0
-                ORDER BY TotalRevenue ASC, TotalQuantity ASC;
-            `;
-
-            /* ---------- 3. Outlets Ranking via POS_Post SARGable INNER JOIN ---------- */
+            /* ---------- 2. Outlets Ranking via POS_Post SARGable INNER JOIN ---------- */
             const outletsSql = `
                 SELECT 
                     p.[Branch_Code] AS [branchCode],
@@ -867,7 +857,7 @@ export class CaravanItemService {
                 FROM ${TABLE_POST} p WITH (NOLOCK)
                 INNER JOIN ${TABLE_BRANCHS} b WITH (NOLOCK) 
                     ON b.[Code] = p.[Branch_Code]
-                WHERE ISNULL(p.[Void], 0) <> 1
+                WHERE (p.[Void] = 0 OR p.[Void] IS NULL)
                   AND b.[Type] = 4
                   ${branchFilter}
                   AND p.[Doc_Date] >= CAST(@startDate AS DATE)
@@ -876,7 +866,7 @@ export class CaravanItemService {
                 ORDER BY [revenue] DESC;
             `;
 
-            /* ---------- 4. Gate Admissions via Pos_item_post ---------- */
+            /* ---------- 3. Gate Admissions via Pos_item_post ---------- */
             gate.codes.forEach((code, i) => gateReq.input(`g${i}`, sql.VarChar, String(code).trim()));
             const gatePh = gate.codes.map((_, i) => `@g${i}`);
             const gateSql = `
@@ -885,18 +875,13 @@ export class CaravanItemService {
                 WHERE p.[Branch_Code] IN (${gatePh.join(', ')})
                   AND p.[Doc_Date] >= CAST(@startDate AS DATE)
                   AND p.[Doc_Date] < DATEADD(DAY, 1, CAST(@endDate AS DATE))
-                  AND ISNULL(p.[Void_item], 0) = 0;
+                  AND (p.[Void_item] = 0 OR p.[Void_item] IS NULL);
             `;
 
-            const [topRes, slowRes, outletsRes, gateRes] = await Promise.all([
-                topReq.query(topSql).catch((e) => {
-                    console.error('[caravanItemService.topSql ERROR]:', e.message, e.stack);
-                    errors.push({ section: 'topItems', message: e.message, stack: e.stack });
-                    return { recordset: [] };
-                }),
-                slowReq.query(slowSql).catch((e) => {
-                    console.error('[caravanItemService.slowSql ERROR]:', e.message, e.stack);
-                    errors.push({ section: 'slowItems', message: e.message, stack: e.stack });
+            const [itemsRes, outletsRes, gateRes] = await Promise.all([
+                itemsReq.query(itemsSql).catch((e) => {
+                    console.error('[caravanItemService.itemsSql ERROR]:', e.message, e.stack);
+                    errors.push({ section: 'items', message: e.message, stack: e.stack });
                     return { recordset: [] };
                 }),
                 outletsReq.query(outletsSql).catch((e) => {
@@ -913,8 +898,11 @@ export class CaravanItemService {
 
             const gateTickets = Number(gateRes.recordset?.[0]?.ticketQty) || 0;
 
-            // Process Top Items
-            const topRows = topRes.recordset || [];
+            // Separate Top and Slow items from single-pass result
+            const allItemRows = itemsRes.recordset || [];
+            const topRows = allItemRows.filter((r) => r.bucket === 'TOP');
+            const slowRows = allItemRows.filter((r) => r.bucket === 'SLOW');
+
             const topScopeQty = topRows.reduce((acc, r) => acc + (Number(r.TotalQuantity || r.qty) || 0), 0);
             const topScopeRevenue = topRows.reduce((acc, r) => acc + (Number(r.TotalRevenue || r.revenue) || 0), 0);
             const topItems = topRows.map((r) => {
@@ -931,8 +919,6 @@ export class CaravanItemService {
                 };
             });
 
-            // Process Slow Items
-            const slowRows = slowRes.recordset || [];
             const slowScopeQty = slowRows.reduce((acc, r) => acc + (Number(r.TotalQuantity || r.qty) || 0), 0);
             const slowScopeRevenue = slowRows.reduce((acc, r) => acc + (Number(r.TotalRevenue || r.revenue) || 0), 0);
             const slowItems = slowRows.map((r) => {
@@ -988,19 +974,40 @@ export class CaravanItemService {
             const guests = gateTickets > 0 ? Math.round(gateTickets / gate.divisor) : 0;
             const grossRevenue = caravanRevenue;
 
+            const spendPerGuest = guests > 0 ? round2(caravanRevenue / guests) : 0;
+
             result.topItems = topItems;
             result.slowItems = slowItems;
             result.duel = duel;
             result.outlets = scopedOutlets;
             result.allOutlets = allOutlets;
+            result.guests = guests;
+            result.spendPerGuest = spendPerGuest;
+            result.caravanRevenue = caravanRevenue;
+            result.grossRevenue = grossRevenue;
+            result.gateTickets = gateTickets;
             result.capture = {
                 caravanRevenue,
                 grossRevenue,
                 gateTickets,
                 guests,
-                spendPerGuest: guests > 0 ? round2(caravanRevenue / guests) : 0,
+                spendPerGuest,
                 visitDivisor: gate.divisor,
                 gateBranchCodes: gate.codes,
+            };
+            result.kpis = {
+                guests,
+                spendPerGuest,
+                caravanRevenue,
+                grossRevenue,
+                gateTickets,
+            };
+            result.blockStatus = {
+                topItems: errors.some(e => e.section === 'items') ? 'error' : 'ok',
+                slowItems: errors.some(e => e.section === 'items') ? 'error' : 'ok',
+                outlets: errors.some(e => e.section === 'outlets') ? 'error' : 'ok',
+                gate: errors.some(e => e.section === 'gate') ? 'error' : 'ok',
+                kpis: 'ok',
             };
             result.degraded = errors.length > 0;
             result.executionTimeMs = Date.now() - startedAt;

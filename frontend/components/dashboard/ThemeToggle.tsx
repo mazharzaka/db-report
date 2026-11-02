@@ -1,35 +1,37 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import { useTheme } from 'next-themes';
 import { Sun, Moon } from 'lucide-react';
 
 export function ThemeToggle() {
-  const [isDark, setIsDark] = useState(true);
+  const { setTheme, resolvedTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    // Permanent Dark Mode Default
-    document.documentElement.classList.add('dark');
-    setIsDark(true);
+    setMounted(true);
   }, []);
 
-  const toggleTheme = () => {
-    if (isDark) {
-      document.documentElement.classList.remove('dark');
-      setIsDark(false);
-    } else {
-      document.documentElement.classList.add('dark');
-      setIsDark(true);
-    }
-  };
+  if (!mounted) {
+    return (
+      <div className="w-9 h-9 rounded-xl border border-slate-200 bg-white dark:border-white/10 dark:bg-[#18181b]" />
+    );
+  }
+
+  const isDark = resolvedTheme === 'dark';
 
   return (
     <button
-      onClick={toggleTheme}
-      aria-label="Toggle Theme"
-      className="inline-flex items-center justify-center w-8 h-8 rounded-xl border border-slate-700 bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700 transition-colors shadow-sm"
+      onClick={() => setTheme(isDark ? 'light' : 'dark')}
+      aria-label="تبديل المظهر (فاتح / داكن)"
+      title={isDark ? 'التحويل للوضع الفاتح' : 'التحويل للوضع الداكن'}
+      className="inline-flex items-center justify-center w-9 h-9 rounded-xl border border-slate-200 bg-white text-slate-700 shadow-sm transition hover:bg-slate-100 dark:border-white/10 dark:bg-[#18181b] dark:text-zinc-200 dark:hover:bg-slate-800"
     >
-      {isDark ? <Moon className="w-4 h-4 text-emerald-400" /> : <Sun className="w-4 h-4 text-amber-400" />}
+      {isDark ? (
+        <Sun className="w-4 h-4 text-orange-400" />
+      ) : (
+        <Moon className="w-4 h-4 text-slate-700" />
+      )}
     </button>
   );
 }
-

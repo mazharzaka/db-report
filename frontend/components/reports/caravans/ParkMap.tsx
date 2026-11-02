@@ -8,9 +8,9 @@ import { fmtInt, fmtMoney } from './charts';
 type Velocity = 'high' | 'normal' | 'low';
 
 const VELOCITY_STYLE: Record<Velocity, { fill: string; ring: string; label: string; dot: string }> = {
-  high: { fill: '#10B981', ring: '#34d399', label: 'مبيعات مرتفعة', dot: 'bg-emerald-500' },
-  normal: { fill: '#86efac', ring: '#86efac', label: 'مبيعات عادية', dot: 'bg-[#86efac]' },
-  low: { fill: '#fde047', ring: '#fde047', label: 'راكد / منخفض', dot: 'bg-[#fde047]' },
+  high: { fill: '#f97316', ring: '#fb923c', label: 'مبيعات مرتفعة', dot: 'bg-orange-500' },
+  normal: { fill: '#fbbf24', ring: '#fcd34d', label: 'مبيعات متوسطة', dot: 'bg-amber-400' },
+  low: { fill: '#71717a', ring: '#a1a1aa', label: 'راكد / منخفض', dot: 'bg-zinc-500' },
 };
 
 /**
