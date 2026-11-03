@@ -10,7 +10,7 @@
 caravan-revenues-app/
 ├── package.json              # تبعيات الحد الأدنى (express, mssql, cors, dotenv, node-windows)
 ├── server.js                 # خادم Express يربط مباشرة بقاعدة بيانات SQL Server
-├── .env                      # إعدادات الاتصال والمنفذ (Port 3005)
+├── .env                      # إعدادات الاتصال والمنفذ (Port 5000)
 ├── .env.example              # نموذج متغيرات البيئة
 ├── install_service.js        # سكريبت تثبيت التطبيق كخدمة ويندوز 24/7 (Windows Service)
 ├── uninstall_service.js      # سكريبت إزالة خدمة الويندوز

@@ -42,7 +42,7 @@ if exist "%APP_DIR%.env.example" (
     copy /y "%APP_DIR%.env.example" "%APP_DIR%.env" >nul
 ) else (
     echo   - Generating basic .env configuration file...
-    > "%APP_DIR%.env" echo PORT=3005
+    > "%APP_DIR%.env" echo PORT=5000
     >> "%APP_DIR%.env" echo DB_SERVER=DP-DATABASESRV2\SQL2014
     >> "%APP_DIR%.env" echo DB_INSTANCE=SQLEXPRESS
     >> "%APP_DIR%.env" echo DB_NAME=dbDream_Park_Resturant
@@ -55,8 +55,8 @@ if exist "%APP_DIR%.env.example" (
 echo   - Environment configuration file ready.
 
 :env_ready
-:: Extract configured port or default to 3005
-set "APP_PORT=3005"
+:: Extract configured port or default to 5000
+set "APP_PORT=5000"
 for /f "tokens=1,2 delims==" %%a in ('type "%APP_DIR%.env"') do (
     set "key=%%a"
     set "val=%%b"

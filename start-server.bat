@@ -32,9 +32,15 @@ if not exist "server.js" (
 set "PORT=5000"
 if exist ".env" (
     for /f "usebackq tokens=1,2 delims==" %%a in (".env") do (
-        if /i "%%a"=="PORT" set "PORT=%%b"
+        set "key=%%a"
+        set "val=%%b"
+        set "key=!key: =!"
+        if /i "!key!"=="PORT" (
+            set "PORT=!val: =!"
+        )
     )
 )
+if "!PORT!"=="" set "PORT=5000"
 
 :: 4. Check if server is already running on the configured port
 netstat -ano | findstr /r /c:":%PORT% *LISTENING" >nul 2>nul

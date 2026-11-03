@@ -7,6 +7,7 @@
   "scripts": {
     "start": "node server.js",
     "dev": "node --watch server.js",
+    "build": "npm --prefix frontend run build",
     "service:install": "node install_service.js",
     "service:uninstall": "node uninstall_service.js"
   },
