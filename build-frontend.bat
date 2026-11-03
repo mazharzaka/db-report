@@ -25,11 +25,11 @@ if %errorlevel% neq 0 (
 echo.
 echo [2/3] Verifying static export in frontend\out...
 set "EXPORT_SRC=%FRONTEND_DIR%\out"
-if not exist "%EXPORT_SRC%\reports\caravans\index.html" (
-    if exist "%FRONTEND_DIR%\.next-build\reports\caravans\index.html" (
+if not exist "%EXPORT_SRC%\index.html" (
+    if exist "%FRONTEND_DIR%\.next-build\index.html" (
         set "EXPORT_SRC=%FRONTEND_DIR%\.next-build"
     ) else (
-        echo [ERROR] Static export reports\caravans\index.html not found!
+        echo [ERROR] Static export index.html not found!
         exit /b 1
     )
 )

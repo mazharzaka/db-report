@@ -318,10 +318,12 @@ app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
-app.get("/reports/caravans", (req, res) => {
-  res.sendFile(
-    path.join(__dirname, "public", "reports", "caravans", "index.html"),
-  );
+app.get("/login", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "login", "index.html"));
+});
+
+app.get(["/reports/caravans", "/reports"], (req, res) => {
+  res.redirect("/");
 });
 
 // Global Error Handler
