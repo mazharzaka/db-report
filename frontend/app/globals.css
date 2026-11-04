@@ -139,50 +139,102 @@
        url('/fonts/cairo-arabic-800-normal.woff') format('woff');
 }
 
-/* Print CSS Optimizations: Pure White Theme for Physical Printing and PDF Exports */
+/* Print CSS Optimizations: Pure Black & White Executive Financial Report Theme */
 @media print {
+  /* 1. Page Setup: Strict A4 Landscape with 1cm Margins */
   @page {
-    size: auto;
-    margin: 8mm;
+    size: A4 landscape;
+    margin: 1cm;
   }
 
   body.print-landscape-mode {
     @page {
-      size: landscape;
-      margin: 8mm;
+      size: A4 landscape;
+      margin: 1cm;
     }
   }
 
-  /* Reset color scheme variables to pure white canvas and deep slate typography */
+  /* 2. Global B&W Reset: Pure White Canvas & Zero Effect Overhead */
+  *,
+  *::before,
+  *::after {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+    filter: none !important;
+    backdrop-filter: none !important;
+  }
+
   :root,
   .dark,
   body {
     --background: 0 0% 100% !important;
-    --foreground: 222 47% 11% !important;
+    --foreground: 0 0% 0% !important;
     --card: 0 0% 100% !important;
-    --card-foreground: 222 47% 11% !important;
+    --card-foreground: 0 0% 0% !important;
     --popover: 0 0% 100% !important;
-    --popover-foreground: 222 47% 11% !important;
-    --muted: 210 40% 96% !important;
-    --muted-foreground: 215 16% 47% !important;
-    --border: 214 32% 91% !important;
-    --input: 214 32% 91% !important;
+    --popover-foreground: 0 0% 0% !important;
+    --muted: 0 0% 96% !important;
+    --muted-foreground: 0 0% 0% !important;
+    --border: 0 0% 80% !important;
+    --input: 0 0% 80% !important;
     background: #ffffff !important;
     background-color: #ffffff !important;
-    color: #0f172a !important;
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
+    color: #000000 !important;
   }
 
-  /* Universal scrollbar & overflow cancellation for clean print pages */
-  html, body, #__next, main, div, section, table {
-    overflow: visible !important;
-    max-height: none !important;
+  html,
+  body,
+  #__next,
+  main {
+    background: #ffffff !important;
+    background-color: #ffffff !important;
+    color: #000000 !important;
+    width: 100% !important;
     height: auto !important;
-    background-color: transparent !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
   }
 
-  /* Force pure white background on all cards, panels, and wrappers */
+  /* 3. Solid Black Typography for All Elements & Financial Figures */
+  body,
+  main,
+  section,
+  article,
+  aside,
+  header,
+  div,
+  p,
+  span,
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6,
+  th,
+  td,
+  b,
+  strong,
+  label,
+  li,
+  a,
+  .tabular-nums,
+  [class*="text-"] {
+    color: #000000 !important;
+  }
+
+  /* SVG Icons in Crisp Solid Black */
+  svg,
+  svg path,
+  [class*="lucide-"] {
+    stroke: #000000 !important;
+    color: #000000 !important;
+  }
+
+  /* 4. Convert Dark & Heavy Backgrounds to White / Light Gray / Transparent */
   .dark body,
   .dark main,
   .dark section,
@@ -192,111 +244,205 @@
   main,
   section,
   article,
-  [class*="bg-slate-950"],
-  [class*="bg-slate-900"],
-  [class*="bg-slate-800"],
+  [class*="bg-slate-"],
+  [class*="bg-zinc-"],
+  [class*="bg-gray-"],
+  [class*="bg-[#18181b]"],
+  [class*="bg-[#09090b]"],
   [class*="bg-card"],
   .rounded-2xl,
+  .rounded-3xl,
   .rounded-xl {
     background-color: #ffffff !important;
     background-image: none !important;
-    color: #0f172a !important;
     border-color: #cbd5e1 !important;
+    color: #000000 !important;
+  }
+
+  /* Preserve Card & Widget UI Structure with Clean Subtle Borders */
+  .rounded-2xl,
+  .rounded-3xl,
+  .rounded-xl {
+    border: 1px solid #cbd5e1 !important;
+  }
+
+  /* Convert Badges, Trend Badges & Status Pills to Ink-Saving Light Gray with Solid Black Text */
+  [class*="rounded-full"],
+  [class*="badge"],
+  [class*="bg-orange-"],
+  [class*="bg-emerald-"],
+  [class*="bg-rose-"],
+  [class*="bg-amber-"],
+  [class*="bg-violet-"] {
+    background-color: #f1f5f9 !important;
+    border: 1px solid #94a3b8 !important;
+    color: #000000 !important;
+  }
+
+  /* Hide Non-Essential Background Noise, Pulsing Lights & Watermarks */
+  .pointer-events-none.fixed.inset-0,
+  [class*="opacity-[0.03]"],
+  [class*="opacity-[0.05]"],
+  [class*="animate-ping"] {
+    display: none !important;
+  }
+
+  /* 5. Overflow Cancellation: Full-Width Flow for Wide A4 Printable Area */
+  html,
+  body,
+  #__next,
+  main,
+  div,
+  section {
+    overflow: visible !important;
+    max-height: none !important;
+    height: auto !important;
+  }
+
+  .overflow-x-auto,
+  .overflow-y-auto,
+  [class*="overflow-"] {
+    overflow: visible !important;
+    max-height: none !important;
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  /* 6. Precision Table Fitting & Typography for A4 Landscape */
+  table {
+    display: table !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    table-layout: auto !important;
+    border-collapse: collapse !important;
+    border: 1.5px solid #000000 !important;
+    background-color: #ffffff !important;
+    font-size: 8pt !important;
+    line-height: 1.2 !important;
+    page-break-inside: auto !important;
+    break-inside: auto !important;
+    zoom: 94%;
+  }
+
+  th,
+  td {
+    border: 1px solid #d1d5db !important;
+    color: #000000 !important;
+    padding: 3.5px 5px !important;
+    position: static !important;
     box-shadow: none !important;
     text-shadow: none !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    white-space: normal !important;
+    word-break: normal !important;
+    overflow-wrap: break-word !important;
   }
 
-  /* High-contrast crisp typography */
-  .dark .text-white,
-  .dark .text-slate-50,
-  .dark .text-slate-100,
-  .dark .text-slate-200,
-  .dark .text-slate-300,
-  .text-white,
-  .text-slate-50,
-  .text-slate-100,
-  .text-slate-200,
-  .text-slate-300 {
-    color: #0f172a !important;
+  /* Financial numbers: keep digits on one line without wrapping */
+  td.tabular-nums,
+  .tabular-nums,
+  [dir="ltr"] {
+    white-space: nowrap !important;
+    color: #000000 !important;
+    font-weight: 700 !important;
   }
 
-  .dark .text-slate-400,
-  .dark .text-slate-500,
-  .dark .text-slate-600,
-  .text-slate-400,
-  .text-slate-500,
-  .text-slate-600 {
-    color: #334155 !important;
+  /* Neutralize Sticky positioning & drop-shadows in print */
+  th.sticky,
+  td.sticky,
+  [class*="sticky"] {
+    position: static !important;
+    box-shadow: none !important;
+    background-color: transparent !important;
   }
 
-  /* Tables: Crisp White background with subtle slate zebra and dark headers */
-  table {
-    background-color: #ffffff !important;
-    border-collapse: collapse !important;
-    border: 1px solid #cbd5e1 !important;
-    color: #0f172a !important;
+  /* 7. Pagination & Repeating Table Header */
+  thead {
+    display: table-header-group !important;
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
   }
 
-  thead, thead tr, thead th {
+  thead tr,
+  thead th {
     background-color: #f1f5f9 !important;
-    color: #0f172a !important;
-    border-bottom: 2px solid #94a3b8 !important;
-    border-top: 1px solid #cbd5e1 !important;
+    color: #000000 !important;
     font-weight: 800 !important;
+    border-top: 1.5px solid #000000 !important;
+    border-bottom: 2px solid #000000 !important;
+  }
+
+  tbody {
+    display: table-row-group !important;
   }
 
   tbody tr {
     background-color: #ffffff !important;
-    border-bottom: 1px solid #e2e8f0 !important;
+    border-bottom: 1px solid #e5e7eb !important;
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
   }
 
   tbody tr:nth-child(even) {
     background-color: #f8fafc !important;
   }
 
-  td, th {
-    border-color: #e2e8f0 !important;
-    color: #0f172a !important;
-  }
-
-  /* Trend Badges: Crisp high-contrast black/slate on white with clear indicators */
-  .dark [class*="text-emerald-"],
-  [class*="text-emerald-"],
-  .dark [class*="text-emerald"],
-  [class*="text-emerald"] {
-    color: #047857 !important;
-  }
-
-  [class*="bg-emerald-"] {
-    background-color: #ecfdf5 !important;
-    border-color: #a7f3d0 !important;
-    color: #065f46 !important;
-  }
-
-  .dark [class*="text-rose-"],
-  [class*="text-rose-"],
-  .dark [class*="text-rose"],
-  [class*="text-rose"] {
-    color: #b91c1c !important;
-  }
-
-  [class*="bg-rose-"] {
-    background-color: #fef2f2 !important;
-    border-color: #fecaca !important;
-    color: #991b1b !important;
-  }
-
-  /* Avoid unsightly pagination page-breaks across cards and rows */
-  .break-inside-avoid,
-  .print-avoid-break,
-  tr,
-  article,
-  section {
+  tfoot {
+    display: table-footer-group !important;
     break-inside: avoid !important;
     page-break-inside: avoid !important;
   }
 
-  /* Completely hide all interactive UI controls in print and PDF */
+  tfoot tr,
+  tfoot td {
+    background-color: #f1f5f9 !important;
+    color: #000000 !important;
+    font-weight: 800 !important;
+    border-top: 2px solid #000000 !important;
+    border-bottom: 2px solid #000000 !important;
+  }
+
+  /* Prevent row splitting and allow clean multi-page table flow */
+  tr,
+  tbody tr {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+
+  .break-inside-avoid,
+  .print-avoid-break,
+  article {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+
+  /* Multi-page table wrappers must break cleanly across pages */
+  div:has(> table),
+  .caravan-table-section {
+    break-inside: auto !important;
+    page-break-inside: auto !important;
+  }
+
+  /* 8. Recharts & Visual Chart Styling for Black & White */
+  .recharts-text,
+  .recharts-cartesian-axis-tick-value,
+  .recharts-legend-item-text {
+    fill: #000000 !important;
+    color: #000000 !important;
+  }
+
+  .recharts-cartesian-axis-line,
+  .recharts-cartesian-axis-tick-line {
+    stroke: #000000 !important;
+  }
+
+  .recharts-cartesian-grid line {
+    stroke: #e5e7eb !important;
+  }
+
+  /* 9. Hide All Interactive Controls & Elements */
   button,
   input,
   select,

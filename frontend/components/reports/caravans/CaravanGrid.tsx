@@ -263,7 +263,7 @@ export function CaravanGrid({ rows, showPeriod, loading, className = '' }: Props
 
   return (
     <div
-      className={`rounded-3xl border border-slate-200 bg-white p-6 shadow-sm print:border-none print:shadow-none break-inside-avoid dark:border-white/5 dark:bg-[#18181b] ${className}`}
+      className={`rounded-3xl border border-slate-200 bg-white p-6 shadow-sm print:border-none print:shadow-none print:break-inside-auto print:p-0 dark:border-white/5 dark:bg-[#18181b] ${className}`}
     >
       {/* Header and Controls */}
       <div className="flex flex-col gap-3 border-b border-slate-200 dark:border-white/5 p-4 sm:flex-row sm:items-center sm:justify-between print:hidden">

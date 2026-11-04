@@ -490,15 +490,11 @@ export default function CaravanDashboardHomePage() {
     table: true,
     peakHours: true,
     itemsPerformance: true,
-    orientation: 'auto',
+    orientation: 'landscape',
   });
 
   const handlePrint = () => {
-    if (printConfig.orientation === 'landscape') {
-      document.body.classList.add('print-landscape-mode');
-    } else {
-      document.body.classList.remove('print-landscape-mode');
-    }
+    document.body.classList.add('print-landscape-mode');
     setPrintModalOpen(false);
     setTimeout(() => {
       window.print();
@@ -822,7 +818,24 @@ export default function CaravanDashboardHomePage() {
                   تقرير إيرادات الكرافانات والمنافذ
                 </h1>
               </div>
-              <span className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-700 shadow-sm dark:border-white/5 dark:bg-white/5 dark:text-zinc-300">
+              {/* Executive Print Report Header */}
+            <div className="hidden print:flex print:w-full print:items-center print:justify-between print:border-b-2 print:border-black print:pb-2 print:pt-1 print:mb-2">
+              <div className="flex items-center gap-3">
+                <img src="/dreampark-logo.png" alt="Dream Park" className="h-9 w-auto object-contain" />
+                <div>
+                  <h2 className="text-lg font-black text-black">دريم بارك — تقرير إيرادات ومبيعات الكرافانات والمنافذ</h2>
+                  <p className="text-[11px] font-semibold text-black mt-0.5">
+                    الفترة: {start} إلى {end} • النطاق: {topScopeLabel}
+                  </p>
+                </div>
+              </div>
+              <div className="text-left text-[10px] font-semibold text-black" dir="ltr">
+                <div>تاريخ الطباعة: {new Date().toLocaleDateString('en-GB')} {new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}</div>
+                <div>المستخدم: {authUser || 'admin'}</div>
+              </div>
+            </div>
+
+            <span className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-700 shadow-sm dark:border-white/5 dark:bg-white/5 dark:text-zinc-300">
                 <span className="relative flex h-2 w-2">
                   <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-orange-500 opacity-60" />
                   <span className="relative inline-flex h-2 w-2 rounded-full bg-orange-500" />
@@ -1240,7 +1253,7 @@ export default function CaravanDashboardHomePage() {
             </section>
 
             {/* ---------- Row 6: Detailed Data Grid (Standard & Transposed) ---------- */}
-            <div className={`break-inside-avoid ${!printConfig.table ? 'print:hidden' : ''}`}>
+            <div className={`print:break-inside-auto ${!printConfig.table ? 'print:hidden' : ''}`}>
               <CaravanGrid rows={records} showPeriod={granularity !== 'summary'} loading={loading} />
             </div>
           </div>
