@@ -39,6 +39,7 @@ import type {
 } from '@/types/reports';
 import { ThemeToggle } from '@/components/dashboard/ThemeToggle';
 import { CaravanGrid } from '@/components/reports/caravans/CaravanGrid';
+import { VoidsAlertWidget } from '@/components/reports/caravans/VoidsAlertWidget';
 import { BranchSelect } from '@/components/reports/caravans/BranchSelect';
 import { ParkMap } from '@/components/reports/caravans/ParkMap';
 import { CaptureRateCard, DuelCard, TopItemsWidget } from '@/components/reports/caravans/OperationalWidgets';
@@ -1252,8 +1253,9 @@ export default function CaravanDashboardHomePage() {
               />
             </section>
 
-            {/* ---------- Row 6: Detailed Data Grid (Standard & Transposed) ---------- */}
-            <div className={`print:break-inside-auto ${!printConfig.table ? 'print:hidden' : ''}`}>
+            {/* ---------- Row 6: Voids Alert Widget & Detailed Data Grid ---------- */}
+            <div className={`space-y-4 print:space-y-3 print:break-inside-auto ${!printConfig.table ? 'print:hidden' : ''}`}>
+              <VoidsAlertWidget rows={records} />
               <CaravanGrid rows={records} showPeriod={granularity !== 'summary'} loading={loading} />
             </div>
           </div>

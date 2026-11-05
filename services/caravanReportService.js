@@ -6,9 +6,12 @@
 
 import { getPool, sql } from '../config/db.js';
 
-// مصدر بيانات المرتجعات / الإلغاءات: View مخصص معتمد في قاعدة بيانات دريم بارك [dbo].[Vw_POS_Post_Void]
-// ملاحظة للمطور: يمكن تخصيصه عبر متغير البيئة DB_VOIDS_VIEW في حال الرغبة باستخدام جدول/عرض بديل مثل [dbo].[Pos_item_post_void]
-const VOIDS_SOURCE = process.env.DB_VOIDS_VIEW || '[dbo].[Vw_POS_Post_Void]';
+// =========================================================================
+// ⚠️ VOIDS VIEW PLACEHOLDER:
+// Replace '[dbo].[VOIDS_VIEW]' with your exact view name (or set DB_VOIDS_VIEW in .env)
+// Example confirmed view in Dream Park DB: [dbo].[Vw_POS_Post_Void]
+// =========================================================================
+const VOIDS_SOURCE = process.env.DB_VOIDS_VIEW || '[dbo].[VOIDS_VIEW]';
 
 export class CaravanReportService {
     /**
@@ -146,10 +149,26 @@ export class CaravanReportService {
             ORDER BY ${orderByGranularity}${orderClause};
         `;
 
-        const startTime = Date.now();
-        const result = await request.query(query);
-        const duration = Date.now() - startTime;
-        const rawRecords = result.recordset || [];
+        let rawRecords = [];
+        let duration = 0;
+        try {
+            const startTime = Date.now();
+            const result = await request.query(query);
+            duration = Date.now() - startTime;
+            rawRecords = result.recordset || [];
+        } catch (queryErr) {
+            // معالجة مرنة للـ Placeholder في حال لم يتم استبداله بعد في قاعدة البيانات
+            if (queryErr.message?.includes('Invalid object name') && query.includes(VOIDS_SOURCE)) {
+                console.warn(`[CaravanReportService] Notice: Placeholder ${VOIDS_SOURCE} was not found. Falling back to active view [dbo].[Vw_POS_Post_Void].`);
+                const fallbackQuery = query.replaceAll(VOIDS_SOURCE, '[dbo].[Vw_POS_Post_Void]');
+                const startTime = Date.now();
+                const result = await request.query(fallbackQuery);
+                duration = Date.now() - startTime;
+                rawRecords = result.recordset || [];
+            } else {
+                throw queryErr;
+            }
+        }
 
         // 5. الحسابات المالية التجميعية لملخص الأداء (مطابقة معيار الحسابات الذهبي)
         const sqlGrandTotal = Number(rawRecords[0]?.GrandTotalNet);
