@@ -64,8 +64,8 @@ export async function exportCaravanExcel(req, res) {
 
         // 2. ترويسة أعمدة الجدول (Table Columns Header)
         const headers = isTimeAggregated
-            ? ['كود المنفذ', 'اسم المنفذ / الكرفان', 'الفترة', 'عدد الطلبات (Cover)', 'المحصل نقداً (Cash)', 'الفيزا (Visa)', 'الآجل (C/L)', 'الإجمالي المحقق (Total)']
-            : ['كود المنفذ', 'اسم المنفذ / الكرفان', 'عدد الطلبات (Cover)', 'المحصل نقداً (Cash)', 'الفيزا (Visa)', 'الآجل (C/L)', 'الإجمالي المحقق (Total)', 'متوسط الفاتورة (Avg Ticket)'];
+            ? ['كود المنفذ', 'اسم المنفذ / الكرفان', 'الفترة', 'عدد الطلبات (Cover)', 'المحصل نقداً (Cash)', 'الفيزا (Visa)', 'الآجل (C/L)', 'الإجمالي المحقق (Total)', 'المرتجعات (Voids)', 'فارق التسوية (Variance)']
+            : ['كود المنفذ', 'اسم المنفذ / الكرفان', 'عدد الطلبات (Cover)', 'المحصل نقداً (Cash)', 'الفيزا (Visa)', 'الآجل (C/L)', 'الإجمالي المحقق (Total)', 'متوسط الفاتورة (Avg Ticket)', 'المرتجعات (Voids)', 'فارق التسوية (Variance)'];
 
         const headerRow = worksheet.addRow(headers);
         headerRow.height = 30;
@@ -85,8 +85,8 @@ export async function exportCaravanExcel(req, res) {
         const startRowIndex = 5;
         report.records.forEach((item, index) => {
             const rowValues = isTimeAggregated
-                ? [item.branchCode, item.name, item.period, item.cover, item.cash, item.visa, item.creditLine, item.total]
-                : [item.branchCode, item.name, item.cover, item.cash, item.visa, item.creditLine, item.total, item.avgTicket];
+                ? [item.branchCode, item.name, item.period, item.cover, item.cash, item.visa, item.creditLine, item.total, item.totalVoids || 0, item.variance || 0]
+                : [item.branchCode, item.name, item.cover, item.cash, item.visa, item.creditLine, item.total, item.avgTicket, item.totalVoids || 0, item.variance || 0];
 
             const row = worksheet.addRow(rowValues);
             row.height = 22;
@@ -138,7 +138,9 @@ export async function exportCaravanExcel(req, res) {
                     { formula: `SUM(E${startRowIndex}:E${endRowIndex})` },
                     { formula: `SUM(F${startRowIndex}:F${endRowIndex})` },
                     { formula: `SUM(G${startRowIndex}:G${endRowIndex})` },
-                    { formula: `SUM(H${startRowIndex}:H${endRowIndex})` }
+                    { formula: `SUM(H${startRowIndex}:H${endRowIndex})` },
+                    { formula: `SUM(I${startRowIndex}:I${endRowIndex})` },
+                    { formula: `SUM(J${startRowIndex}:J${endRowIndex})` }
                 ]
                 : [
                     'الإجمالي العام المحقق',
@@ -148,7 +150,9 @@ export async function exportCaravanExcel(req, res) {
                     { formula: `SUM(E${startRowIndex}:E${endRowIndex})` },
                     { formula: `SUM(F${startRowIndex}:F${endRowIndex})` },
                     { formula: `SUM(G${startRowIndex}:G${endRowIndex})` },
-                    { formula: `IF(C${endRowIndex + 1}>0, G${endRowIndex + 1}/C${endRowIndex + 1}, 0)` }
+                    { formula: `IF(C${endRowIndex + 1}>0, G${endRowIndex + 1}/C${endRowIndex + 1}, 0)` },
+                    { formula: `SUM(I${startRowIndex}:I${endRowIndex})` },
+                    { formula: `SUM(J${startRowIndex}:J${endRowIndex})` }
                 ];
 
             const summaryRow = worksheet.addRow(summaryRowValues);
@@ -191,7 +195,9 @@ export async function exportCaravanExcel(req, res) {
             { width: 20 }, // Cash أو Visa
             { width: 20 }, // Visa أو C/L
             { width: 24 }, // Total أو C/L
-            { width: 22 }  // AvgTicket أو Total
+            { width: 22 }, // AvgTicket أو Total
+            { width: 20 }, // Voids
+            { width: 20 }  // Variance
         ];
 
         // 6. إرسال تدفق الملف إلى المتصفح مباشرة

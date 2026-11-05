@@ -6,6 +6,10 @@
 
 import { getPool, sql } from '../config/db.js';
 
+// مصدر بيانات المرتجعات / الإلغاءات: View مخصص معتمد في قاعدة بيانات دريم بارك [dbo].[Vw_POS_Post_Void]
+// ملاحظة للمطور: يمكن تخصيصه عبر متغير البيئة DB_VOIDS_VIEW في حال الرغبة باستخدام جدول/عرض بديل مثل [dbo].[Pos_item_post_void]
+const VOIDS_SOURCE = process.env.DB_VOIDS_VIEW || '[dbo].[Vw_POS_Post_Void]';
+
 export class CaravanReportService {
     /**
      * استرجاع قائمة جميع منافذ وكرفانات دريم بارك النشطة (Type = 4)
@@ -69,43 +73,76 @@ export class CaravanReportService {
         let selectPeriod = '';
         let groupByPeriod = '';
         let orderByGranularity = '';
+        let voidsPeriodMatch = '';
 
         if (granularity === 'month') {
             selectPeriod = `CONVERT(VARCHAR(7), p.[Doc_Date], 120) AS [Period],`;
             groupByPeriod = `, CONVERT(VARCHAR(7), p.[Doc_Date], 120)`;
-            orderByGranularity = `[Period] ASC, `;
+            orderByGranularity = `p.[Period] ASC, `;
+            voidsPeriodMatch = ` AND CONVERT(VARCHAR(7), v.[Doc_Date], 120) = p.[Period]`;
         } else if (granularity === 'day') {
             selectPeriod = `CONVERT(VARCHAR(10), p.[Doc_Date], 120) AS [Period],`;
             groupByPeriod = `, CONVERT(VARCHAR(10), p.[Doc_Date], 120)`;
-            orderByGranularity = `[Period] ASC, `;
+            orderByGranularity = `p.[Period] ASC, `;
+            voidsPeriodMatch = ` AND CONVERT(VARCHAR(10), v.[Doc_Date], 120) = p.[Period]`;
         }
 
         const query = `
             SELECT 
                 b.[Code] AS [Branch_Code],
                 b.[Aname] AS [Name],
-                ${selectPeriod}
-                SUM(ISNULL(p.[cover], 0)) AS [Cover],
-                ROUND(SUM(ISNULL(p.[Cash], 0)), 2) AS [Cash],
-                ROUND(SUM(ISNULL(p.[Visa], 0) + ISNULL(p.[Visa2], 0) + ISNULL(p.[Visa3], 0)), 2) AS [Visa],
-                ROUND(SUM(ISNULL(p.[C/L], 0)), 2) AS [C/L],
-                ROUND(SUM(ISNULL(p.[NetOfInv], 0)), 2) AS [Total],
-                ROUND(SUM(ISNULL(p.[TotalInv], 0)), 2) AS [TotalInv],
-                ROUND(SUM(ISNULL(p.[serves_tax], 0)), 2) AS [ServiceCharge],
-                ROUND(SUM(ISNULL(p.[Sels_Tax], 0)), 2) AS [SalesTax],
-                ROUND(SUM(SUM(ISNULL(p.[NetOfInv], 0))) OVER (), 2) AS [GrandTotalNet],
-                ROUND(SUM(SUM(ISNULL(p.[Cash], 0))) OVER (), 2) AS [GrandTotalCash],
-                ROUND(SUM(SUM(ISNULL(p.[C/L], 0))) OVER (), 2) AS [GrandTotalCL],
-                SUM(SUM(ISNULL(p.[cover], 0))) OVER () AS [GrandTotalCover]
+                ${granularity !== 'summary' ? 'p.[Period],' : ''}
+                p.[Cover],
+                p.[Cash],
+                p.[Visa],
+                p.[CL] AS [C/L],
+                p.[Total],
+                p.[TotalInv],
+                p.[ServiceCharge],
+                p.[SalesTax],
+                -- فارق التسوية المحسوب: (النقدية + الفيزا + الآجل) - صافي الإيراد الشامل (المطلوب تحصيله)
+                ROUND((p.[Cash] + p.[Visa] + p.[CL]) - p.[Total], 2) AS [Variance],
+                -- إجمالي المرتجعات / الإلغاءات المسترجعة عبر OUTER APPLY
+                ISNULL(v.[TotalVoids], 0) AS [TotalVoids],
+                ISNULL(v.[VoidCount], 0) AS [VoidCount],
+                ROUND(SUM(p.[Total]) OVER (), 2) AS [GrandTotalNet],
+                ROUND(SUM(p.[Cash]) OVER (), 2) AS [GrandTotalCash],
+                ROUND(SUM(p.[CL]) OVER (), 2) AS [GrandTotalCL],
+                SUM(p.[Cover]) OVER () AS [GrandTotalCover]
             FROM [dbo].[Branchs] b WITH (NOLOCK)
-            INNER JOIN [dbo].[POS_Post] p WITH (NOLOCK) 
-                ON p.[Branch_Code] = b.[Code]
+            INNER JOIN (
+                SELECT 
+                    p.[Branch_Code],
+                    ${selectPeriod}
+                    SUM(ISNULL(p.[cover], 0)) AS [Cover],
+                    ROUND(SUM(ISNULL(p.[Cash], 0)), 2) AS [Cash],
+                    ROUND(SUM(ISNULL(p.[Visa], 0) + ISNULL(p.[Visa2], 0) + ISNULL(p.[Visa3], 0)), 2) AS [Visa],
+                    ROUND(SUM(ISNULL(p.[C/L], 0)), 2) AS [CL],
+                    ROUND(SUM(ISNULL(p.[NetOfInv], 0)), 2) AS [Total],
+                    ROUND(SUM(ISNULL(p.[TotalInv], 0)), 2) AS [TotalInv],
+                    ROUND(SUM(ISNULL(p.[serves_tax], 0)), 2) AS [ServiceCharge],
+                    ROUND(SUM(ISNULL(p.[Sels_Tax], 0)), 2) AS [SalesTax]
+                FROM [dbo].[POS_Post] p WITH (NOLOCK)
+                WHERE p.[Doc_Date] >= CAST(@startDate AS DATE)
+                  AND p.[Doc_Date] < DATEADD(DAY, 1, CAST(@endDate AS DATE))
+                  AND ISNULL(p.[Void], 0) <> 1
+                GROUP BY p.[Branch_Code] ${groupByPeriod}
+            ) p ON p.[Branch_Code] = b.[Code]
+            /* ========================================================================= */
+            /* ⚠️ VOIDS DATA SOURCE: Placeholder / Confirmed View: [dbo].[Vw_POS_Post_Void] */
+            /* ========================================================================= */
+            OUTER APPLY (
+                SELECT 
+                    ROUND(SUM(ISNULL(v.[total_Void], 0)), 2) AS [TotalVoids],
+                    SUM(ISNULL(v.[count_void], 0)) AS [VoidCount]
+                FROM ${VOIDS_SOURCE} v WITH (NOLOCK)
+                WHERE v.[Branch_Code] = b.[Code]
+                  AND v.[Doc_Date] >= CAST(@startDate AS DATE)
+                  AND v.[Doc_Date] < DATEADD(DAY, 1, CAST(@endDate AS DATE))
+                  ${voidsPeriodMatch}
+            ) v
             WHERE b.[Type] = 4
               ${branchClause}
-              AND p.[Doc_Date] >= CAST(@startDate AS DATE)
-              AND p.[Doc_Date] < DATEADD(DAY, 1, CAST(@endDate AS DATE))
-              AND ISNULL(p.[Void], 0) <> 1
-            GROUP BY b.[Code], b.[Aname] ${groupByPeriod}
             ORDER BY ${orderByGranularity}${orderClause};
         `;
 
@@ -128,16 +165,20 @@ export class CaravanReportService {
         let totalNetRevenue = 0;
         let totalServiceCharge = 0;
         let totalSalesTax = 0;
+        let totalVoids = 0;
+        let totalVariance = 0;
 
         for (const row of rawRecords) {
             totalSales += Number(row.Total) || 0;
             totalCash += Number(row.Cash) || 0;
             totalVisa += Number(row.Visa) || 0;
-            totalCL += Number(row['C/L']) || 0;
+            totalCL += Number(row['C/L'] ?? row.CL) || 0;
             totalCover += Number(row.Cover) || 0;
             totalNetRevenue += Number(row.TotalInv) || 0;
             totalServiceCharge += Number(row.ServiceCharge) || 0;
             totalSalesTax += Number(row.SalesTax) || 0;
+            totalVoids += Number(row.TotalVoids) || 0;
+            totalVariance += Number(row.Variance) || 0;
         }
 
         totalSales = Math.round(totalSales * 100) / 100;
@@ -147,6 +188,9 @@ export class CaravanReportService {
         totalNetRevenue = Math.round(totalNetRevenue * 100) / 100;
         totalServiceCharge = Math.round(totalServiceCharge * 100) / 100;
         totalSalesTax = Math.round(totalSalesTax * 100) / 100;
+        totalVoids = Math.round(totalVoids * 100) / 100;
+        totalVariance = Math.round(totalVariance * 100) / 100;
+        if (Math.abs(totalVariance) < 0.005) totalVariance = 0;
 
         // مواءمة الفوارق العشرية الناتجة عن تجميع الكسور المقربة (0.01 EGP) مع الإجمالي المحاسبي الموحد
         if (rawRecords.length > 0 && Number.isFinite(sqlGrandTotal) && sqlGrandTotal > 0) {
@@ -163,22 +207,38 @@ export class CaravanReportService {
         const records = rawRecords.map(r => {
             const itemTotal = Number(r.Total) || 0;
             const itemCover = Number(r.Cover) || 0;
-            const itemNetRev = Number(r.TotalInv) || (itemTotal - (Number(r.SalesTax) || 0) - (Number(r.ServiceCharge) || 0)) || Number(r.Cash) || 0;
+            const itemCash = Number(r.Cash) || 0;
+            const itemVisa = Number(r.Visa) || 0;
+            const itemCL = Number(r['C/L'] ?? r.CL) || 0;
+            const itemNetRev = Number(r.TotalInv) || (itemTotal - (Number(r.SalesTax) || 0) - (Number(r.ServiceCharge) || 0)) || itemCash;
             const itemServ = Number(r.ServiceCharge) || 0;
             const itemTax = Number(r.SalesTax) || 0;
+            const itemVoids = Number(r.TotalVoids) || 0;
+            const itemVoidCount = Number(r.VoidCount) || 0;
+
+            const totalCollected = Math.round((itemCash + itemVisa + itemCL) * 100) / 100;
+            let variance = Math.round((totalCollected - itemTotal) * 100) / 100;
+            if (Math.abs(variance) < 0.005) {
+                variance = 0;
+            }
+
             return {
-                branchCode: r.Branch_Code,
+                branchCode: String(r.Branch_Code),
                 name: r.Name,
                 period: r.Period || null,
                 cover: itemCover,
-                cash: Number(r.Cash) || 0,
-                visa: Number(r.Visa) || 0,
-                creditLine: Number(r['C/L']) || 0,
+                cash: itemCash,
+                visa: itemVisa,
+                creditLine: itemCL,
                 total: itemTotal,
                 netRevenue: Math.round(itemNetRev * 100) / 100,
                 serviceCharge: Math.round(itemServ * 100) / 100,
                 salesTax: Math.round(itemTax * 100) / 100,
                 grandTotal: itemTotal,
+                totalCollected,
+                totalVoids: Math.round(itemVoids * 100) / 100,
+                voidCount: itemVoidCount,
+                variance,
                 marketShare: totalSales > 0 ? Math.round((itemTotal / totalSales) * 1000) / 10 : 0,
                 avgTicket: itemCover > 0 ? Math.round((itemTotal / itemCover) * 100) / 100 : 0
             };
@@ -196,6 +256,8 @@ export class CaravanReportService {
                 totalNetRevenue,
                 totalServiceCharge,
                 totalSalesTax,
+                totalVoids,
+                totalVariance,
                 cashPct: totalSales > 0 ? Math.round((totalCash / totalSales) * 1000) / 10 : 0,
                 visaPct: totalSales > 0 ? Math.round((totalVisa / totalSales) * 1000) / 10 : 0,
                 clPct: totalSales > 0 ? Math.round((totalCL / totalSales) * 1000) / 10 : 0,

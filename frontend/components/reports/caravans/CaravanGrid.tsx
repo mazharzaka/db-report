@@ -10,6 +10,9 @@ import {
   RotateCw,
   Table as TableIcon,
   Sparkles,
+  CheckCircle2,
+  AlertTriangle,
+  ShieldAlert,
 } from 'lucide-react';
 import type { CaravanRecord } from '@/types/reports';
 import { fmtInt, fmtMoney } from './charts';
@@ -26,6 +29,8 @@ type ColKey =
   | 'visa'
   | 'creditLine'
   | 'total'
+  | 'totalVoids'
+  | 'variance'
   | 'marketShare'
   | 'avgTicket';
 
@@ -56,6 +61,8 @@ const BASE_COLS: Col[] = [
   { key: 'visa', header: 'فيزا (Visa)', numeric: true, sumFormat: 'money' },
   { key: 'creditLine', header: 'آجل (C/L)', numeric: true, sumFormat: 'money' },
   { key: 'total', header: 'الإجمالي الشامل (Grand Total)', numeric: true, sumFormat: 'money' },
+  { key: 'totalVoids', header: 'المرتجعات (Voids)', numeric: true, sumFormat: 'money', tooltip: 'إجمالي المبالغ الملغاة والمرتجعة' },
+  { key: 'variance', header: 'فارق التسوية (Variance)', numeric: true, sumFormat: 'money', tooltip: 'فارق تسوية النقدية: (كاش + فيزا + آجل) - صافي الإيراد الشامل' },
   { key: 'marketShare', header: 'الحصة السوقية', numeric: true },
   { key: 'avgTicket', header: 'متوسط الفاتورة', numeric: true },
 ];
@@ -102,8 +109,10 @@ export function CaravanGrid({ rows, showPeriod, loading, className = '' }: Props
         const val = r.netRevenue ?? (r.total - (r.salesTax || 0) - (r.serviceCharge || 0));
         return a + (Number(val) || 0);
       }
-      if (k === 'serviceCharge') return a + (Number(r.serviceCharge || r.creditLine) || 0);
+      if (k === 'serviceCharge') return a + (Number(r.serviceCharge) || 0);
       if (k === 'salesTax') return a + (Number(r.salesTax) || 0);
+      if (k === 'totalVoids') return a + (Number(r.totalVoids) || 0);
+      if (k === 'variance') return a + (Number(r.variance) || 0);
       return a + (Number(r[k]) || 0);
     }, 0);
   };
@@ -116,6 +125,8 @@ export function CaravanGrid({ rows, showPeriod, loading, className = '' }: Props
   const grandCash = sum('cash');
   const grandVisa = sum('visa');
   const grandCL = sum('creditLine');
+  const grandVoids = sum('totalVoids');
+  const grandVariance = Math.round(sum('variance') * 100) / 100;
 
   const toggleSort = (k: ColKey) => {
     if (k === sortKey) setAsc(!asc);
@@ -156,6 +167,54 @@ export function CaravanGrid({ rows, showPeriod, loading, className = '' }: Props
         return <span className="font-medium text-slate-800 dark:text-zinc-200">{fmtInt(r.cover)}</span>;
       case 'total':
         return <span className="font-mono font-extrabold text-slate-900 dark:text-slate-100">{fmtMoney(r.total)}</span>;
+      case 'totalVoids': {
+        const voids = Number(r.totalVoids) || 0;
+        return (
+          <span
+            className={`font-mono font-semibold transition-colors ${
+              voids > 0
+                ? 'text-rose-600 dark:text-rose-400 print:text-black print:font-bold'
+                : 'text-slate-400 dark:text-zinc-500 print:text-black'
+            }`}
+          >
+            {fmtMoney(voids)}
+          </span>
+        );
+      }
+      case 'variance': {
+        const v = Math.round((Number(r.variance) || 0) * 100) / 100;
+        if (Math.abs(v) < 0.005) {
+          // If Variance === 0: Subtle green text/indicator (Perfect Match)
+          return (
+            <span className="inline-flex items-center gap-1 font-mono font-bold text-emerald-700 bg-emerald-50 dark:bg-emerald-950/40 dark:text-emerald-400 border border-emerald-200/80 dark:border-emerald-800/40 px-2 py-0.5 rounded-md text-xs print:border-none print:bg-transparent print:text-black">
+              <span>0.00</span>
+              <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-sans print:hidden">✓ مطابق</span>
+            </span>
+          );
+        }
+        if (v < 0) {
+          // If Variance < 0 (Shortage/عجز): Light red background with bold dark red text
+          return (
+            <span className="inline-flex items-center gap-1.5 font-mono font-extrabold text-red-700 bg-red-50 dark:bg-red-950/50 dark:text-red-300 border border-red-200 dark:border-red-900/60 px-2.5 py-0.5 rounded-md text-xs print:border-none print:bg-transparent print:text-black print:font-extrabold">
+              <span className="print:hidden">{fmtMoney(v)}</span>
+              <span className="hidden print:inline font-bold">({fmtMoney(Math.abs(v))}) - عجز</span>
+              <span className="text-[10px] font-semibold bg-red-100 text-red-800 dark:bg-red-900/60 dark:text-red-200 px-1 rounded print:hidden">
+                عجز
+              </span>
+            </span>
+          );
+        }
+        // If Variance > 0 (Overage/زيادة): Light yellow/orange background with dark text
+        return (
+          <span className="inline-flex items-center gap-1.5 font-mono font-bold text-amber-800 bg-amber-50 dark:bg-amber-950/50 dark:text-amber-200 border border-amber-200 dark:border-amber-900/60 px-2.5 py-0.5 rounded-md text-xs print:border-none print:bg-transparent print:text-black print:font-bold">
+            <span className="print:hidden">+{fmtMoney(v)}</span>
+            <span className="hidden print:inline font-bold">+{fmtMoney(v)} زيادة</span>
+            <span className="text-[10px] font-semibold bg-amber-100 text-amber-800 dark:bg-amber-900/60 dark:text-amber-200 px-1 rounded print:hidden">
+              زيادة
+            </span>
+          </span>
+        );
+      }
       case 'marketShare':
         return (
           <span className="inline-flex rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-800 font-mono border border-slate-200 dark:bg-slate-800 dark:text-zinc-200 dark:border-white/5">
@@ -182,6 +241,35 @@ export function CaravanGrid({ rows, showPeriod, loading, className = '' }: Props
     if (c.key === 'netRevenue') return fmtMoney(grandNet);
     if (c.key === 'serviceCharge') return fmtMoney(grandService);
     if (c.key === 'salesTax') return fmtMoney(grandTax);
+    if (c.key === 'totalVoids') {
+      return (
+        <span className="font-mono font-bold text-rose-600 dark:text-rose-400 print:text-black">
+          {fmtMoney(grandVoids)}
+        </span>
+      );
+    }
+    if (c.key === 'variance') {
+      if (Math.abs(grandVariance) < 0.005) {
+        return (
+          <span className="font-mono text-emerald-700 dark:text-emerald-400 font-bold print:text-black">
+            0.00 ✓ مطابق
+          </span>
+        );
+      }
+      if (grandVariance < 0) {
+        return (
+          <span className="font-mono text-red-700 dark:text-red-400 font-extrabold print:text-black">
+            <span className="print:hidden">{fmtMoney(grandVariance)} (عجز)</span>
+            <span className="hidden print:inline">({fmtMoney(Math.abs(grandVariance))}) عجز</span>
+          </span>
+        );
+      }
+      return (
+        <span className="font-mono text-amber-800 dark:text-amber-300 font-bold print:text-black">
+          +{fmtMoney(grandVariance)} (زيادة)
+        </span>
+      );
+    }
     if (c.sumFormat === 'int') return fmtInt(sum(c.key));
     if (c.sumFormat === 'money') return fmtMoney(sum(c.key));
     return '';
@@ -246,6 +334,75 @@ export function CaravanGrid({ rows, showPeriod, loading, className = '' }: Props
       color: 'text-slate-900 dark:text-slate-100 font-extrabold text-sm',
     },
     {
+      key: 'totalVoids',
+      label: 'إجمالي المرتجعات (Total Voids)',
+      getValue: (r: CaravanRecord) => (
+        <span
+          className={`font-mono font-semibold ${
+            (r.totalVoids || 0) > 0 ? 'text-rose-600 dark:text-rose-400 print:text-black' : 'text-slate-400 dark:text-zinc-500 print:text-black'
+          }`}
+        >
+          {fmtMoney(r.totalVoids || 0)}
+        </span>
+      ),
+      totalValue: (
+        <span className="font-mono font-bold text-rose-600 dark:text-rose-400 print:text-black">
+          {fmtMoney(grandVoids)}
+        </span>
+      ),
+      color: 'text-rose-600 dark:text-rose-400 font-bold',
+    },
+    {
+      key: 'variance',
+      label: 'فارق التسوية (Reconciliation Variance)',
+      getValue: (r: CaravanRecord) => {
+        const v = Math.round((Number(r.variance) || 0) * 100) / 100;
+        if (Math.abs(v) < 0.005) {
+          return (
+            <span className="inline-flex items-center gap-1 font-mono font-bold text-emerald-700 bg-emerald-50 dark:bg-emerald-950/40 dark:text-emerald-400 border border-emerald-200/80 dark:border-emerald-800/40 px-2 py-0.5 rounded-md text-xs print:border-none print:bg-transparent print:text-black">
+              0.00 ✓ مطابق
+            </span>
+          );
+        }
+        if (v < 0) {
+          return (
+            <span className="inline-flex items-center gap-1.5 font-mono font-extrabold text-red-700 bg-red-50 dark:bg-red-950/50 dark:text-red-300 border border-red-200 dark:border-red-900/60 px-2 py-0.5 rounded-md text-xs print:border-none print:bg-transparent print:text-black">
+              <span className="print:hidden">{fmtMoney(v)} (عجز)</span>
+              <span className="hidden print:inline">({fmtMoney(Math.abs(v))}) عجز</span>
+            </span>
+          );
+        }
+        return (
+          <span className="inline-flex items-center gap-1.5 font-mono font-bold text-amber-800 bg-amber-50 dark:bg-amber-950/50 dark:text-amber-200 border border-amber-200 dark:border-amber-900/60 px-2 py-0.5 rounded-md text-xs print:border-none print:bg-transparent print:text-black">
+            <span className="print:hidden">+{fmtMoney(v)} (زيادة)</span>
+            <span className="hidden print:inline">+{fmtMoney(v)} زيادة</span>
+          </span>
+        );
+      },
+      totalValue: (
+        <span className="font-mono font-bold">
+          {Math.abs(grandVariance) < 0.005 ? (
+            '0.00 ✓'
+          ) : grandVariance < 0 ? (
+            <span className="text-red-700 dark:text-red-400 print:text-black">
+              <span className="print:hidden">{fmtMoney(grandVariance)} عجز</span>
+              <span className="hidden print:inline">({fmtMoney(Math.abs(grandVariance))}) عجز</span>
+            </span>
+          ) : (
+            <span className="text-amber-800 dark:text-amber-300 print:text-black">
+              +{fmtMoney(grandVariance)} زيادة
+            </span>
+          )}
+        </span>
+      ),
+      color:
+        Math.abs(grandVariance) < 0.005
+          ? 'text-emerald-700 dark:text-emerald-400 font-bold'
+          : grandVariance < 0
+          ? 'text-red-700 dark:text-red-400 font-extrabold'
+          : 'text-amber-800 dark:text-amber-300 font-bold',
+    },
+    {
       key: 'avgTicket',
       label: 'متوسط الفاتورة (Average Ticket)',
       getValue: (r: CaravanRecord) => fmtMoney(r.avgTicket),
@@ -269,7 +426,9 @@ export function CaravanGrid({ rows, showPeriod, loading, className = '' }: Props
       <div className="flex flex-col gap-3 border-b border-slate-200 dark:border-white/5 p-4 sm:flex-row sm:items-center sm:justify-between print:hidden">
         <div>
           <div className="flex items-center gap-2">
-            <h3 className="text-base font-bold text-slate-900 dark:text-white">تفاصيل إيرادات الكرافانات والمنافذ</h3>
+            <h3 className="text-base font-bold text-slate-900 dark:text-white">
+              تسوية النقدية وتفاصيل الإيرادات (Cash Reconciliation & Outlets)
+            </h3>
             <span className="rounded-full bg-orange-50 border border-orange-200 px-3 py-0.5 text-xs font-medium text-orange-700 dark:bg-violet-500/10 dark:border-violet-500/20 dark:text-violet-300">
               {viewMode === 'standard' ? 'عرض قياسي أفقي' : 'عرض معكوس (مقارنة المنافذ)'}
             </span>
@@ -283,7 +442,7 @@ export function CaravanGrid({ rows, showPeriod, loading, className = '' }: Props
               </span>
             )}
             {' • '}
-            <span>جميع المعايير المالية موضحة بالكامل دون اختصار</span>
+            <span>مراقبة فروق التسوية (Variance) والمرتجعات (Voids) لضبط سلوك الكاشير</span>
           </p>
         </div>
 
@@ -372,7 +531,7 @@ export function CaravanGrid({ rows, showPeriod, loading, className = '' }: Props
       {/* ========================================================================= */}
       {viewMode === 'standard' ? (
         <div className={`overflow-x-auto scroll-smooth max-h-[620px] print:max-h-none ${loading ? 'opacity-60' : ''}`}>
-          <table className="w-full border-collapse text-xs text-right">
+          <table className="w-full border-collapse text-xs text-right print:w-full print:table-fixed">
             <thead className="sticky top-0 z-20 bg-slate-100 dark:bg-zinc-950 shadow-xs border-b border-slate-200 dark:border-white/5">
               <tr>
                 {cols.map((c, colIndex) => {
@@ -381,23 +540,25 @@ export function CaravanGrid({ rows, showPeriod, loading, className = '' }: Props
                     <th
                       key={c.key}
                       onClick={() => toggleSort(c.key)}
-                      className={`cursor-pointer select-none whitespace-nowrap px-4 py-3 font-bold transition hover:text-slate-900 dark:hover:text-white ${
+                      className={`cursor-pointer select-none whitespace-nowrap px-4 py-3 font-bold transition hover:text-slate-900 dark:hover:text-white print:px-2 print:py-2 print:text-black ${
                         isFirstCol
-                          ? 'sticky right-0 z-30 bg-slate-100 text-slate-900 shadow-[2px_0_5px_rgba(0,0,0,0.06)] dark:bg-zinc-950 dark:text-slate-100 dark:shadow-[2px_0_5px_rgba(0,0,0,0.4)]'
+                          ? 'sticky right-0 z-30 bg-slate-100 text-slate-900 shadow-[2px_0_5px_rgba(0,0,0,0.06)] dark:bg-zinc-950 dark:text-slate-100 dark:shadow-[2px_0_5px_rgba(0,0,0,0.4)] print:shadow-none print:bg-transparent'
                           : 'text-slate-600 dark:text-zinc-400'
                       } ${c.numeric ? 'text-left' : 'text-right'}`}
                     >
                       <span className={`inline-flex items-center gap-1.5 ${c.numeric ? 'flex-row-reverse' : ''}`}>
                         {c.header}
-                        {sortKey === c.key ? (
-                          asc ? (
-                            <ArrowUp className="h-3.5 w-3.5 text-orange-600 dark:text-violet-300" />
+                        <span className="print:hidden">
+                          {sortKey === c.key ? (
+                            asc ? (
+                              <ArrowUp className="h-3.5 w-3.5 text-orange-600 dark:text-violet-300" />
+                            ) : (
+                              <ArrowDown className="h-3.5 w-3.5 text-orange-600 dark:text-violet-300" />
+                            )
                           ) : (
-                            <ArrowDown className="h-3.5 w-3.5 text-orange-600 dark:text-violet-300" />
-                          )
-                        ) : (
-                          <ArrowUpDown className="h-3 w-3 opacity-30" />
-                        )}
+                            <ArrowUpDown className="h-3 w-3 opacity-30" />
+                          )}
+                        </span>
                       </span>
                     </th>
                   );
@@ -427,9 +588,9 @@ export function CaravanGrid({ rows, showPeriod, loading, className = '' }: Props
                         return (
                           <td
                             key={c.key}
-                            className={`whitespace-nowrap px-4 py-3 ${
+                            className={`whitespace-nowrap px-4 py-3 print:px-2 print:py-1.5 ${
                               isFirstCol
-                                ? 'sticky right-0 z-10 bg-white text-slate-900 font-bold shadow-[2px_0_5px_rgba(0,0,0,0.04)] dark:bg-[#18181b] dark:text-slate-100 dark:shadow-[2px_0_5px_rgba(0,0,0,0.3)]'
+                                ? 'sticky right-0 z-10 bg-white text-slate-900 font-bold shadow-[2px_0_5px_rgba(0,0,0,0.04)] dark:bg-[#18181b] dark:text-slate-100 dark:shadow-[2px_0_5px_rgba(0,0,0,0.3)] print:shadow-none print:bg-transparent'
                                 : 'text-slate-800 dark:text-zinc-300'
                             } ${c.numeric ? 'text-left tabular-nums' : 'text-right'}`}
                             dir={c.numeric ? 'ltr' : undefined}
@@ -445,16 +606,16 @@ export function CaravanGrid({ rows, showPeriod, loading, className = '' }: Props
             </tbody>
 
             {view.length > 0 && (
-              <tfoot className="sticky bottom-0 z-20 bg-slate-100 font-bold border-t border-slate-200 dark:bg-zinc-950 dark:border-white/10 shadow-inner">
+              <tfoot className="sticky bottom-0 z-20 bg-slate-100 font-bold border-t border-slate-200 dark:bg-zinc-950 dark:border-white/10 shadow-inner print:shadow-none print:bg-transparent">
                 <tr>
                   {cols.map((c, idx) => {
                     const isFirstCol = idx === 0;
                     return (
                       <td
                         key={c.key}
-                        className={`whitespace-nowrap px-4 py-3.5 text-slate-900 dark:text-slate-100 ${
+                        className={`whitespace-nowrap px-4 py-3.5 text-slate-900 dark:text-slate-100 print:px-2 print:py-2 ${
                           isFirstCol
-                            ? 'sticky right-0 z-30 bg-slate-100 font-extrabold text-orange-600 shadow-[2px_0_5px_rgba(0,0,0,0.06)] dark:bg-zinc-950 dark:text-[#c4b5fd] dark:shadow-[2px_0_5px_rgba(0,0,0,0.4)]'
+                            ? 'sticky right-0 z-30 bg-slate-100 font-extrabold text-orange-600 shadow-[2px_0_5px_rgba(0,0,0,0.06)] dark:bg-zinc-950 dark:text-[#c4b5fd] dark:shadow-[2px_0_5px_rgba(0,0,0,0.4)] print:shadow-none print:bg-transparent print:text-black'
                             : ''
                         } ${c.numeric ? 'text-left tabular-nums' : 'text-right'}`}
                         dir={c.numeric ? 'ltr' : undefined}
@@ -473,24 +634,24 @@ export function CaravanGrid({ rows, showPeriod, loading, className = '' }: Props
         /* MODE 2: TRANSPOSED / INVERTED VIEW (Metrics as Rows, Outlets as Columns) */
         /* ========================================================================= */
         <div className={`overflow-x-auto scroll-smooth max-h-[640px] print:max-h-none ${loading ? 'opacity-60' : ''}`}>
-          <table className="w-full border-collapse text-xs text-right">
+          <table className="w-full border-collapse text-xs text-right print:w-full">
             <thead className="sticky top-0 z-20 bg-slate-100 dark:bg-zinc-950 shadow-xs border-b border-slate-200 dark:border-white/5">
               <tr>
-                <th className="sticky right-0 z-30 min-w-[200px] bg-slate-100 px-4 py-3 font-bold text-slate-900 shadow-[2px_0_5px_rgba(0,0,0,0.06)] dark:bg-zinc-950 dark:text-slate-100 dark:shadow-[2px_0_5px_rgba(0,0,0,0.4)]">
+                <th className="sticky right-0 z-30 min-w-[200px] bg-slate-100 px-4 py-3 font-bold text-slate-900 shadow-[2px_0_5px_rgba(0,0,0,0.06)] dark:bg-zinc-950 dark:text-slate-100 dark:shadow-[2px_0_5px_rgba(0,0,0,0.4)] print:shadow-none print:bg-transparent print:text-black">
                   البيان المالي / المعيار
                 </th>
-                <th className="min-w-[150px] bg-slate-200/50 px-4 py-3 text-left font-bold text-orange-700 border-x border-slate-200 dark:bg-white/5 dark:text-violet-300 dark:border-white/5" dir="ltr">
+                <th className="min-w-[150px] bg-slate-200/50 px-4 py-3 text-left font-bold text-orange-700 border-x border-slate-200 dark:bg-white/5 dark:text-violet-300 dark:border-white/5 print:text-black print:bg-transparent" dir="ltr">
                   الإجمالي الموحد (Total)
                 </th>
                 {view.map((r, i) => (
                   <th
                     key={`${r.branchCode}-${i}`}
-                    className="min-w-[140px] px-4 py-3 font-bold text-slate-800 dark:text-zinc-200 text-left whitespace-nowrap"
+                    className="min-w-[140px] px-4 py-3 font-bold text-slate-800 dark:text-zinc-200 text-left whitespace-nowrap print:text-black print:px-2"
                     dir="ltr"
                   >
                     <div className="flex flex-col items-start gap-0.5" dir="rtl">
-                      <span className="font-bold text-slate-900 dark:text-white">{r.name}</span>
-                      <span className="font-mono text-[10px] text-slate-500 dark:text-zinc-400">#{r.branchCode}</span>
+                      <span className="font-bold text-slate-900 dark:text-white print:text-black">{r.name}</span>
+                      <span className="font-mono text-[10px] text-slate-500 dark:text-zinc-400 print:text-black">#{r.branchCode}</span>
                     </div>
                   </th>
                 ))}
@@ -508,13 +669,13 @@ export function CaravanGrid({ rows, showPeriod, loading, className = '' }: Props
                     }`}
                   >
                     {/* Fixed First Column: Metric Name */}
-                    <td className="sticky right-0 z-10 min-w-[200px] bg-white px-4 py-3 font-bold text-slate-900 shadow-[2px_0_5px_rgba(0,0,0,0.04)] whitespace-nowrap dark:bg-[#18181b] dark:text-zinc-200 dark:shadow-[2px_0_5px_rgba(0,0,0,0.3)]">
+                    <td className="sticky right-0 z-10 min-w-[200px] bg-white px-4 py-3 font-bold text-slate-900 shadow-[2px_0_5px_rgba(0,0,0,0.04)] whitespace-nowrap dark:bg-[#18181b] dark:text-zinc-200 dark:shadow-[2px_0_5px_rgba(0,0,0,0.3)] print:shadow-none print:bg-transparent print:text-black">
                       {m.label}
                     </td>
 
                     {/* Consolidated Total Column */}
                     <td
-                      className="min-w-[150px] bg-slate-50 px-4 py-3 text-left font-semibold text-orange-700 tabular-nums border-x border-slate-200 whitespace-nowrap dark:bg-white/5 dark:text-violet-300 dark:border-white/5"
+                      className="min-w-[150px] bg-slate-50 px-4 py-3 text-left font-semibold text-orange-700 tabular-nums border-x border-slate-200 whitespace-nowrap dark:bg-white/5 dark:text-violet-300 dark:border-white/5 print:bg-transparent print:text-black"
                       dir="ltr"
                     >
                       {m.totalValue}
@@ -524,7 +685,7 @@ export function CaravanGrid({ rows, showPeriod, loading, className = '' }: Props
                     {view.map((r, i) => (
                       <td
                         key={`${r.branchCode}-${m.key}-${i}`}
-                        className={`min-w-[140px] px-4 py-3 text-left tabular-nums whitespace-nowrap ${m.color}`}
+                        className={`min-w-[140px] px-4 py-3 text-left tabular-nums whitespace-nowrap ${m.color} print:text-black print:px-2`}
                         dir="ltr"
                       >
                         {m.getValue(r)}
@@ -544,12 +705,12 @@ export function CaravanGrid({ rows, showPeriod, loading, className = '' }: Props
           <Sparkles className="h-3.5 w-3.5 text-orange-600 dark:text-violet-300" />
           <span>
             {viewMode === 'transposed'
-              ? 'العرض المعكوس يتيح مقارنة أفقية متزامنة بين جميع المنافذ عبر كافة المعايير المالية.'
+              ? 'العرض المعكوس يتيح مقارنة أفقية متزامنة بين جميع المنافذ عبر كافة المعايير المالية والتسويات.'
               : 'العمود الأول مثبت أثناء التمرير لتسهيل قراءة كافة المعايير بدون اقتطاع.'}
           </span>
         </span>
         <span className="text-[11px] text-slate-400 font-mono">
-          CSS: @page landscape 10mm configured
+          A4 Landscape B&W Optimized
         </span>
       </div>
     </div>

@@ -144,13 +144,13 @@
   /* 1. Page Setup: Strict A4 Landscape with 1cm Margins */
   @page {
     size: A4 landscape;
-    margin: 1cm;
+    margin: 0.8cm;
   }
 
   body.print-landscape-mode {
     @page {
       size: A4 landscape;
-      margin: 1cm;
+      margin: 0.8cm;
     }
   }
 
@@ -318,11 +318,11 @@
     border-collapse: collapse !important;
     border: 1.5px solid #000000 !important;
     background-color: #ffffff !important;
-    font-size: 8pt !important;
+    font-size: 7.5pt !important;
     line-height: 1.2 !important;
     page-break-inside: auto !important;
     break-inside: auto !important;
-    zoom: 94%;
+    zoom: 90%;
   }
 
   th,
@@ -453,5 +453,15 @@
   .print\:hidden {
     display: none !important;
     visibility: hidden !important;
+  }
+
+  /* 10. Financial Variance B&W Ink-Saving Typography */
+  [class*="bg-red-"],
+  [class*="bg-amber-"],
+  [class*="bg-emerald-"],
+  [class*="bg-rose-"] {
+    background-color: transparent !important;
+    background-image: none !important;
+    border-color: transparent !important;
   }
 }

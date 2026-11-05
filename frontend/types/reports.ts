@@ -18,6 +18,10 @@ export interface CaravanRecord {
   serviceCharge?: number;
   salesTax?: number;
   grandTotal?: number;
+  totalCollected?: number;
+  totalVoids?: number;
+  voidCount?: number;
+  variance?: number;
 }
 
 export interface PriceTier {
