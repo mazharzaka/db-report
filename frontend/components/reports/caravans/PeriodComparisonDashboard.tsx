@@ -552,7 +552,7 @@ export function PeriodComparisonDashboard({
                   return (
                     <tr
                       key={item.itemCode}
-                      className="transition-colors hover:bg-slate-100/60 dark:hover:bg-white/5"
+                      className="group transition-colors duration-150 hover:bg-orange-50/40 dark:hover:bg-slate-800/50"
                     >
                       {/* Item Details */}
                       <td className="py-3 px-3 font-semibold text-slate-800 dark:text-zinc-200">
@@ -725,7 +725,7 @@ export function PeriodComparisonDashboard({
         <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-white/5 dark:bg-[#18181b]">
           <div className="mb-4">
             <h4 className="text-base font-bold text-slate-900 dark:text-slate-100">
-              أداء المنافذ بين الفترتين
+              أداء المحلات بين الفترتين
             </h4>
             <p className="mt-0.5 text-xs text-slate-500 dark:text-zinc-400">
               مقارنة العائد وعدد الشيكات لكل كرفان مشمول في التقرير
@@ -736,7 +736,7 @@ export function PeriodComparisonDashboard({
             <table className="w-full text-right text-sm">
               <thead>
                 <tr className="border-b border-slate-200 text-xs text-slate-600 dark:border-white/5 dark:text-zinc-400">
-                  <th className="pb-3 font-semibold">المنفذ / الكرفان</th>
+                  <th className="pb-3 font-semibold">المحل / الكرفان</th>
                   <th className="pb-3 font-semibold">إيراد الفترة A</th>
                   <th className="pb-3 font-semibold">إيراد الفترة B</th>
                   <th className="pb-3 text-center font-semibold">

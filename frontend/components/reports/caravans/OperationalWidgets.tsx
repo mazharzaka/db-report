@@ -94,8 +94,8 @@ export function TopItemsWidget({
           className="flex shrink-0 items-center gap-1 self-start rounded-full bg-slate-100 p-1 border border-slate-200 dark:bg-zinc-950 dark:border-white/5"
         >
           {([
-            { id: 'revenue', label: 'القيمة' },
             { id: 'quantity', label: 'الكمية' },
+            { id: 'revenue', label: 'القيمة' },
           ] as { id: ItemMetric; label: string }[]).map((o) => (
             <button
               key={o.id}
@@ -115,14 +115,31 @@ export function TopItemsWidget({
       </div>
 
       {/* ---------- Content / Items List ---------- */}
-      {displayedItems.length === 0 ? (
-        <div className="flex flex-1 flex-col items-center justify-center py-10 text-center text-sm text-slate-400 dark:text-zinc-400">
-          {loading ? (
-            <div className="flex items-center gap-2">
-              <span className="h-4 w-4 animate-spin rounded-full border-2 border-orange-500 border-t-transparent" />
-              <span>جاري التحميل...</span>
+      {loading ? (
+        <div className="space-y-3">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div
+              key={i}
+              className="rounded-2xl border border-slate-100 bg-slate-50/80 p-3.5 dark:border-white/5 dark:bg-zinc-950/60 animate-pulse"
+            >
+              <div className="mb-2 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  <div className="h-5 w-5 rounded-full bg-slate-200 dark:bg-slate-800" />
+                  <div className="h-4 w-32 rounded bg-slate-200 dark:bg-slate-800" />
+                </div>
+                <div className="h-4 w-12 rounded bg-slate-200 dark:bg-slate-800" />
+              </div>
+              <div className="h-1.5 w-full rounded bg-slate-200 dark:bg-slate-800" />
+              <div className="mt-2 flex items-center justify-between">
+                <div className="h-3 w-20 rounded bg-slate-200 dark:bg-slate-800" />
+                <div className="h-3 w-24 rounded bg-slate-200 dark:bg-slate-800" />
+              </div>
             </div>
-          ) : isSlow ? (
+          ))}
+        </div>
+      ) : displayedItems.length === 0 ? (
+        <div className="flex flex-1 flex-col items-center justify-center py-10 text-center text-sm text-slate-400 dark:text-zinc-400">
+          {isSlow ? (
             <div className="space-y-1">
               <p className="font-semibold text-slate-700 dark:text-zinc-300">لا توجد أصناف راكدة</p>
               <p className="text-xs text-slate-500 dark:text-zinc-400">جميع الأصناف النشطة تحركت بشكل جيد خلال هذه الفترة</p>
@@ -132,7 +149,7 @@ export function TopItemsWidget({
           )}
         </div>
       ) : (
-        <ol className={`space-y-3 transition-opacity ${loading ? 'opacity-60' : ''}`}>
+        <ol className="space-y-3">
           {displayedItems.map((it, idx) => {
             const value = metric === 'revenue' ? it.revenue : it.qty;
             const isZeroSold = it.qty === 0;
@@ -140,7 +157,7 @@ export function TopItemsWidget({
             return (
               <li
                 key={`${it.itemCode}-${idx}`}
-                className="rounded-2xl border border-slate-100 bg-slate-50/80 p-3.5 transition-colors dark:border-white/5 dark:bg-zinc-950/60"
+                className="rounded-2xl border border-slate-100 bg-slate-50/80 p-3.5 transition-colors duration-150 hover:bg-orange-50/40 dark:border-white/5 dark:bg-zinc-950/60 dark:hover:bg-slate-800/40"
               >
                 <div className="mb-2 flex items-center justify-between gap-3 text-sm">
                   <div className="flex min-w-0 items-center gap-2">
@@ -232,15 +249,42 @@ export function DuelCard({ duel, loading }: { duel: { a: DuelSide; b: DuelSide }
     <section className="flex h-full flex-col rounded-3xl border border-slate-200/80 bg-white p-6 shadow-sm dark:border-white/5 dark:bg-[#18181b]">
       <div className="mb-4">
         <h3 className="text-base font-bold text-slate-900 dark:text-white">مواجهة المتصدّرَين</h3>
-        <p className="mt-0.5 text-xs text-slate-500 dark:text-zinc-400">أعلى منفذين إيراداً خلال الفترة</p>
+        <p className="mt-0.5 text-xs text-slate-500 dark:text-zinc-400">أعلى محلين إيراداً خلال الفترة</p>
       </div>
 
-      {!duel ? (
+      {loading ? (
+        <div className="flex flex-1 flex-col justify-between py-2 animate-pulse">
+          <div className="flex items-stretch gap-4">
+            <div className="flex-1 space-y-3">
+              <div className="h-5 w-28 rounded bg-slate-200 dark:bg-slate-800" />
+              <div className="h-7 w-32 rounded bg-slate-200 dark:bg-slate-800" />
+              <div className="space-y-1.5 pt-1">
+                <div className="h-3.5 w-full rounded bg-slate-200 dark:bg-slate-800" />
+                <div className="h-3.5 w-full rounded bg-slate-200 dark:bg-slate-800" />
+                <div className="h-3.5 w-3/4 rounded bg-slate-200 dark:bg-slate-800" />
+              </div>
+            </div>
+            <div className="flex flex-col items-center justify-center">
+              <div className="h-8 w-8 rounded-full bg-slate-200 dark:bg-slate-800" />
+            </div>
+            <div className="flex-1 space-y-3">
+              <div className="h-5 w-28 rounded bg-slate-200 dark:bg-slate-800 ml-auto" />
+              <div className="h-7 w-32 rounded bg-slate-200 dark:bg-slate-800 ml-auto" />
+              <div className="space-y-1.5 pt-1">
+                <div className="h-3.5 w-full rounded bg-slate-200 dark:bg-slate-800" />
+                <div className="h-3.5 w-full rounded bg-slate-200 dark:bg-slate-800" />
+                <div className="h-3.5 w-3/4 rounded bg-slate-200 dark:bg-slate-800 ml-auto" />
+              </div>
+            </div>
+          </div>
+          <div className="mt-5 h-2.5 w-full rounded-full bg-slate-200 dark:bg-slate-800" />
+        </div>
+      ) : !duel ? (
         <div className="flex flex-1 items-center justify-center py-10 text-sm text-slate-400 dark:text-zinc-400">
-          {loading ? 'جاري التحميل...' : 'يلزم منفذان على الأقل للمقارنة'}
+          يلزم محلان على الأقل للمقارنة
         </div>
       ) : (
-        <div className={`transition-opacity ${loading ? 'opacity-60' : ''}`}>
+        <div>
           <div className="flex items-stretch gap-4">
             <DuelColumn side={duel.a} winner tone="indigo" />
             <div className="flex flex-col items-center justify-center">
@@ -260,7 +304,7 @@ export function DuelCard({ duel, loading }: { duel: { a: DuelSide; b: DuelSide }
               <div className="h-full bg-orange-500 dark:bg-[#c4b5fd] transition-all duration-500" style={{ width: `${duel.a.share}%` }} />
               <div className="h-full bg-slate-300 dark:bg-slate-600 transition-all duration-500" style={{ width: `${duel.b.share}%` }} />
             </div>
-            <p className="mt-1.5 text-center text-[11px] text-slate-500 dark:text-zinc-400">حصة كل منفذ من إجمالي المنفذين</p>
+            <p className="mt-1.5 text-center text-[11px] text-slate-500 dark:text-zinc-400">حصة كل محل من إجمالي المحلين</p>
           </div>
         </div>
       )}
@@ -303,35 +347,54 @@ export function CaptureRateCard({
         </span>
       </div>
 
-      <div className={`mt-4 transition-opacity ${loading ? 'opacity-60' : ''}`}>
-        <p className="text-sm text-slate-500 dark:text-zinc-400">متوسط إنفاق الزائر في المطاعم والكرفانات</p>
-        <p className="mt-1 text-2xl font-extrabold tabular-nums text-slate-900 dark:text-white" dir="ltr" style={{ textAlign: 'right' }}>
-          {fmtMoney(avgSpend)}
-        </p>
-      </div>
+      {loading ? (
+        <div className="mt-4 flex flex-1 flex-col justify-between animate-pulse">
+          <div className="space-y-2">
+            <div className="h-4 w-44 rounded bg-slate-200 dark:bg-slate-800" />
+            <div className="h-8 w-36 rounded bg-slate-200 dark:bg-slate-800" />
+          </div>
+          <div className="mt-4 space-y-2.5 border-t border-slate-100 pt-4 dark:border-white/5">
+            <div className="h-4 w-full rounded bg-slate-200 dark:bg-slate-800" />
+            <div className="h-4 w-full rounded bg-slate-200 dark:bg-slate-800" />
+            <div className="h-4 w-full rounded bg-slate-200 dark:bg-slate-800" />
+          </div>
+          <div className="mt-auto pt-4 border-t border-slate-100 dark:border-white/5">
+            <div className="h-3.5 w-48 rounded bg-slate-200 dark:bg-slate-800" />
+          </div>
+        </div>
+      ) : (
+        <>
+          <div className="mt-4">
+            <p className="text-sm text-slate-500 dark:text-zinc-400">متوسط إنفاق الزائر في المطاعم والكرفانات</p>
+            <p className="mt-1 text-2xl font-extrabold tabular-nums text-slate-900 dark:text-white" dir="ltr" style={{ textAlign: 'right' }}>
+              {fmtMoney(avgSpend)}
+            </p>
+          </div>
 
-      <dl className="mt-4 space-y-2.5 border-t border-slate-100 pt-4 text-sm tabular-nums dark:border-white/5">
-        <div className="flex items-center justify-between">
-          <dt className="text-slate-500 dark:text-zinc-400">إجمالي الزوار</dt>
-          <dd className="font-semibold text-slate-900 dark:text-white">{fmtInt(guests)}</dd>
-        </div>
-        <div className="flex items-center justify-between">
-          <dt className="text-slate-500 dark:text-zinc-400">صافي إيراد المنافذ</dt>
-          <dd className="font-semibold text-slate-900 dark:text-white" dir="ltr">{fmtMoney(caravanRevenue)}</dd>
-        </div>
-        <div className="flex items-center justify-between">
-          <dt className="text-slate-500 dark:text-zinc-400">إجمالي المبيعات (قبل الخصم)</dt>
-          <dd className="font-semibold text-slate-900 dark:text-white" dir="ltr">{fmtMoney(grossRevenue)}</dd>
-        </div>
-      </dl>
+          <dl className="mt-4 space-y-2.5 border-t border-slate-100 pt-4 text-sm tabular-nums dark:border-white/5">
+            <div className="flex items-center justify-between">
+              <dt className="text-slate-500 dark:text-zinc-400">إجمالي الزوار</dt>
+              <dd className="font-semibold text-slate-900 dark:text-white">{fmtInt(guests)}</dd>
+            </div>
+            <div className="flex items-center justify-between">
+              <dt className="text-slate-500 dark:text-zinc-400">صافي إيراد المحلات</dt>
+              <dd className="font-semibold text-slate-900 dark:text-white" dir="ltr">{fmtMoney(caravanRevenue)}</dd>
+            </div>
+            <div className="flex items-center justify-between">
+              <dt className="text-slate-500 dark:text-zinc-400">إجمالي المبيعات (قبل الخصم)</dt>
+              <dd className="font-semibold text-slate-900 dark:text-white" dir="ltr">{fmtMoney(grossRevenue)}</dd>
+            </div>
+          </dl>
 
-      <div className="mt-auto pt-4 flex items-center justify-between border-t border-slate-100 text-[11px] text-slate-500 dark:border-white/5 dark:text-zinc-400">
-        <span>مؤشر الاستحواذ والإنفاق التقديري</span>
-        <span className="inline-flex items-center gap-1.5 font-medium text-orange-600 dark:text-orange-400">
-          <span className="h-1.5 w-1.5 rounded-full bg-orange-500" />
-          محدّث تشغيلياً
-        </span>
-      </div>
+          <div className="mt-auto pt-4 flex items-center justify-between border-t border-slate-100 text-[11px] text-slate-500 dark:border-white/5 dark:text-zinc-400">
+            <span>مؤشر الاستحواذ والإنفاق التقديري</span>
+            <span className="inline-flex items-center gap-1.5 font-medium text-orange-600 dark:text-orange-400">
+              <span className="h-1.5 w-1.5 rounded-full bg-orange-500" />
+              محدّث تشغيلياً
+            </span>
+          </div>
+        </>
+      )}
     </section>
   );
 }

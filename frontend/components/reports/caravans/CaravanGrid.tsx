@@ -50,7 +50,7 @@ interface Props {
 }
 
 const BASE_COLS: Col[] = [
-  { key: 'name', header: 'المنفذ / الكرافان', numeric: false },
+  { key: 'name', header: 'المحل / الكرافان', numeric: false },
   { key: 'branchCode', header: 'الكود', numeric: false },
   { key: 'period', header: 'الفترة', numeric: false },
   { key: 'netRevenue', header: 'صافي الإيراد (Net)', numeric: true, sumFormat: 'money' },
@@ -430,7 +430,7 @@ export function CaravanGrid({ rows, showPeriod, loading, className = '' }: Props
               تسوية النقدية وتفاصيل الإيرادات (Cash Reconciliation & Outlets)
             </h3>
             <span className="rounded-full bg-orange-50 border border-orange-200 px-3 py-0.5 text-xs font-medium text-orange-700 dark:bg-violet-500/10 dark:border-violet-500/20 dark:text-violet-300">
-              {viewMode === 'standard' ? 'عرض قياسي أفقي' : 'عرض معكوس (مقارنة المنافذ)'}
+              {viewMode === 'standard' ? 'عرض قياسي أفقي' : 'عرض معكوس (مقارنة المحلات)'}
             </span>
           </div>
           <p className="mt-0.5 text-xs text-slate-500 dark:text-zinc-400">
@@ -540,7 +540,7 @@ export function CaravanGrid({ rows, showPeriod, loading, className = '' }: Props
                     <th
                       key={c.key}
                       onClick={() => toggleSort(c.key)}
-                      className={`cursor-pointer select-none whitespace-nowrap px-4 py-3 font-bold transition hover:text-slate-900 dark:hover:text-white print:px-2 print:py-2 print:text-black ${
+                      className={`cursor-pointer select-none whitespace-nowrap px-4 py-3.5 font-bold tracking-tight transition hover:text-slate-900 dark:hover:text-white print:px-2 print:py-2 print:text-black ${
                         isFirstCol
                           ? 'sticky right-0 z-30 bg-slate-100 text-slate-900 shadow-[2px_0_5px_rgba(0,0,0,0.06)] dark:bg-zinc-950 dark:text-slate-100 dark:shadow-[2px_0_5px_rgba(0,0,0,0.4)] print:shadow-none print:bg-transparent'
                           : 'text-slate-600 dark:text-zinc-400'
@@ -570,7 +570,7 @@ export function CaravanGrid({ rows, showPeriod, loading, className = '' }: Props
               {view.length === 0 ? (
                 <tr>
                   <td colSpan={cols.length} className="py-16 text-center text-sm text-slate-400 dark:text-zinc-400">
-                    {loading ? 'جاري استرجاع تفاصيل المنافذ...' : 'لا توجد بيانات للفترة المحددة'}
+                    {loading ? 'جاري استرجاع تفاصيل المحلات...' : 'لا توجد بيانات للفترة المحددة'}
                   </td>
                 </tr>
               ) : (
@@ -579,7 +579,7 @@ export function CaravanGrid({ rows, showPeriod, loading, className = '' }: Props
                   return (
                     <tr
                       key={`${r.branchCode}-${r.period ?? ''}-${i}`}
-                      className={`transition-colors hover:bg-slate-100/60 dark:hover:bg-white/5 ${
+                      className={`group transition-colors duration-150 hover:bg-orange-50/40 dark:hover:bg-slate-800/50 ${
                         isEven ? 'bg-white dark:bg-zinc-950/40' : 'bg-slate-50/50 dark:bg-zinc-950/70'
                       }`}
                     >
@@ -588,11 +588,11 @@ export function CaravanGrid({ rows, showPeriod, loading, className = '' }: Props
                         return (
                           <td
                             key={c.key}
-                            className={`whitespace-nowrap px-4 py-3 print:px-2 print:py-1.5 ${
+                            className={`whitespace-nowrap px-4 py-3.5 print:px-2 print:py-1.5 ${
                               isFirstCol
-                                ? 'sticky right-0 z-10 bg-white text-slate-900 font-bold shadow-[2px_0_5px_rgba(0,0,0,0.04)] dark:bg-[#18181b] dark:text-slate-100 dark:shadow-[2px_0_5px_rgba(0,0,0,0.3)] print:shadow-none print:bg-transparent'
+                                ? 'sticky right-0 z-10 bg-white group-hover:bg-slate-50/90 dark:group-hover:bg-slate-800 text-slate-900 font-bold shadow-[2px_0_5px_rgba(0,0,0,0.04)] dark:bg-[#18181b] dark:text-slate-100 dark:shadow-[2px_0_5px_rgba(0,0,0,0.3)] print:shadow-none print:bg-transparent transition-colors duration-150'
                                 : 'text-slate-800 dark:text-zinc-300'
-                            } ${c.numeric ? 'text-left tabular-nums' : 'text-right'}`}
+                            } ${c.numeric ? 'text-left font-mono tabular-nums tracking-tight font-medium' : 'text-right'}`}
                             dir={c.numeric ? 'ltr' : undefined}
                           >
                             {renderCell(r, c)}
@@ -705,7 +705,7 @@ export function CaravanGrid({ rows, showPeriod, loading, className = '' }: Props
           <Sparkles className="h-3.5 w-3.5 text-orange-600 dark:text-violet-300" />
           <span>
             {viewMode === 'transposed'
-              ? 'العرض المعكوس يتيح مقارنة أفقية متزامنة بين جميع المنافذ عبر كافة المعايير المالية والتسويات.'
+              ? 'العرض المعكوس يتيح مقارنة أفقية متزامنة بين جميع المحلات عبر كافة المعايير المالية والتسويات.'
               : 'العمود الأول مثبت أثناء التمرير لتسهيل قراءة كافة المعايير بدون اقتطاع.'}
           </span>
         </span>

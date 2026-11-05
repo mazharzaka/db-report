@@ -349,7 +349,7 @@ export function ItemSalesPerformance({
             <tr>
               <th
                 onClick={() => toggleSort('code')}
-                className="cursor-pointer px-4 py-3 font-bold transition hover:text-slate-900 dark:hover:text-white select-none whitespace-nowrap"
+                className="cursor-pointer px-4 py-3.5 font-bold tracking-tight transition hover:text-slate-900 dark:hover:text-white select-none whitespace-nowrap"
               >
                 <span className="inline-flex items-center gap-1">
                   كود وتصنيف الصنف
@@ -362,7 +362,7 @@ export function ItemSalesPerformance({
               </th>
               <th
                 onClick={() => toggleSort('name')}
-                className="cursor-pointer px-4 py-3 font-bold transition hover:text-slate-900 dark:hover:text-white select-none whitespace-nowrap"
+                className="cursor-pointer px-4 py-3.5 font-bold tracking-tight transition hover:text-slate-900 dark:hover:text-white select-none whitespace-nowrap"
               >
                 <span className="inline-flex items-center gap-1">
                   اسم الصنف / المنتج
@@ -375,7 +375,7 @@ export function ItemSalesPerformance({
               </th>
               <th
                 onClick={() => toggleSort('quantity')}
-                className="cursor-pointer px-4 py-3 font-bold text-left transition hover:text-slate-900 dark:hover:text-white select-none whitespace-nowrap"
+                className="cursor-pointer px-4 py-3.5 font-bold tracking-tight text-left transition hover:text-slate-900 dark:hover:text-white select-none whitespace-nowrap"
                 dir="ltr"
               >
                 <span className="inline-flex items-center gap-1 flex-row-reverse">
@@ -387,15 +387,15 @@ export function ItemSalesPerformance({
                   )}
                 </span>
               </th>
-              <th className="px-4 py-3 font-bold whitespace-nowrap">
+              <th className="px-4 py-3.5 font-bold whitespace-nowrap">
                 سعر البيع وتفاصيل الشرائح
               </th>
-              <th className="px-4 py-3 font-bold text-left whitespace-nowrap" dir="ltr">
+              <th className="px-4 py-3.5 font-bold text-left whitespace-nowrap" dir="ltr">
                 متوسط السعر
               </th>
               <th
                 onClick={() => toggleSort('revenue')}
-                className="cursor-pointer px-4 py-3 font-bold text-left transition hover:text-slate-900 dark:hover:text-white select-none whitespace-nowrap"
+                className="cursor-pointer px-4 py-3.5 font-bold tracking-tight text-left transition hover:text-slate-900 dark:hover:text-white select-none whitespace-nowrap"
                 dir="ltr"
               >
                 <span className="inline-flex items-center gap-1 flex-row-reverse">
@@ -407,12 +407,12 @@ export function ItemSalesPerformance({
                   )}
                 </span>
               </th>
-              <th className="px-4 py-3 font-bold text-left whitespace-nowrap" dir="ltr">
+              <th className="px-4 py-3.5 font-bold text-left whitespace-nowrap" dir="ltr">
                 إيراد الفترة السابقة
               </th>
               <th
                 onClick={() => toggleSort('growth')}
-                className="cursor-pointer px-4 py-3 font-bold text-left transition hover:text-slate-900 dark:hover:text-white select-none whitespace-nowrap"
+                className="cursor-pointer px-4 py-3.5 font-bold tracking-tight text-left transition hover:text-slate-900 dark:hover:text-white select-none whitespace-nowrap"
                 dir="ltr"
               >
                 <span className="inline-flex items-center gap-1 flex-row-reverse">
@@ -448,11 +448,11 @@ export function ItemSalesPerformance({
                 return (
                   <tr
                     key={item.itemCode}
-                    className={`transition-colors hover:bg-slate-100/60 dark:hover:bg-white/5 ${
+                    className={`group transition-colors duration-150 hover:bg-orange-50/40 dark:hover:bg-slate-800/50 ${
                       isEven ? 'bg-white dark:bg-zinc-950/40' : 'bg-slate-50/50 dark:bg-zinc-950/70'
                     }`}
                   >
-                    <td className="px-4 py-3 font-mono text-slate-600 dark:text-zinc-400 whitespace-nowrap">
+                    <td className="px-4 py-3.5 font-mono text-slate-600 dark:text-zinc-400 whitespace-nowrap">
                       <div className="flex items-center gap-1.5">
                         <span className="rounded-md bg-slate-100 px-2 py-0.5 text-[11px] text-slate-700 dark:bg-slate-800 dark:text-zinc-300">
                           {item.itemCode}
@@ -481,13 +481,13 @@ export function ItemSalesPerformance({
                         )}
                       </div>
                     </td>
-                    <td className="px-4 py-3 font-bold text-slate-900 dark:text-white whitespace-nowrap">
+                    <td className="px-4 py-3.5 font-bold text-slate-900 dark:text-white whitespace-nowrap">
                       {item.itemName}
                     </td>
-                    <td className="px-4 py-3 text-left font-semibold text-slate-800 dark:text-slate-200 tabular-nums" dir="ltr">
+                    <td className="px-4 py-3.5 text-left font-semibold text-slate-800 dark:text-slate-200 tabular-nums" dir="ltr">
                       {fmtInt(totalQty)} قطعة
                     </td>
-                    <td className="px-4 py-3 align-middle">
+                    <td className="px-4 py-3.5 align-middle">
                       {hasTiers && item.priceTiers ? (
                         <div className="flex flex-col gap-1 py-0.5">
                           {item.priceTiers.map((tier, tIdx) => (
@@ -509,7 +509,7 @@ export function ItemSalesPerformance({
                         </div>
                       )}
                     </td>
-                    <td className="px-4 py-3 text-left tabular-nums whitespace-nowrap" dir="ltr">
+                    <td className="px-4 py-3.5 text-left tabular-nums whitespace-nowrap" dir="ltr">
                       {item.hasPriceChange && item.weightedAvgPrice ? (
                         <span className="font-extrabold text-amber-600 dark:text-amber-400">
                           {fmtMoney(item.weightedAvgPrice)}
@@ -518,13 +518,13 @@ export function ItemSalesPerformance({
                         <span className="text-slate-400 dark:text-slate-600 font-bold select-none">—</span>
                       )}
                     </td>
-                    <td className="px-4 py-3 text-left font-extrabold text-orange-600 dark:text-[#c4b5fd] tabular-nums" dir="ltr">
+                    <td className="px-4 py-3.5 text-left font-extrabold text-orange-600 dark:text-[#c4b5fd] tabular-nums" dir="ltr">
                       {fmtMoney(totalRev)}
                     </td>
-                    <td className="px-4 py-3 text-left text-slate-500 dark:text-zinc-400 tabular-nums" dir="ltr">
+                    <td className="px-4 py-3.5 text-left text-slate-500 dark:text-zinc-400 tabular-nums" dir="ltr">
                       {fmtMoney(item.prevNetRevenue)}
                     </td>
-                    <td className="px-4 py-3 text-left tabular-nums whitespace-nowrap" dir="ltr">
+                    <td className="px-4 py-3.5 text-left tabular-nums whitespace-nowrap" dir="ltr">
                       {item.growthPct !== null ? (
                         <span
                           className={`inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 text-xs font-semibold ${

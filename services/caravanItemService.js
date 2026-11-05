@@ -837,13 +837,13 @@ export class CaravanItemService {
                 SELECT * FROM (
                     SELECT TOP 5 *, 'TOP' AS [bucket]
                     FROM AggregatedItems
-                    ORDER BY ${orderCol} DESC
+                    ORDER BY [TotalQuantity] DESC, [TotalRevenue] DESC
                 ) t
                 UNION ALL
                 SELECT * FROM (
                     SELECT TOP 5 *, 'SLOW' AS [bucket]
                     FROM AggregatedItems
-                    ORDER BY TotalRevenue ASC, TotalQuantity ASC
+                    ORDER BY [TotalQuantity] ASC, [TotalRevenue] ASC
                 ) s;
             `;
 

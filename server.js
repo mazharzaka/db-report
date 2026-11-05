@@ -1,3 +1,9 @@
+function getYesterdayDateString() {
+  const d = new Date();
+  d.setDate(d.getDate() - 1);
+  return d.toISOString().split("T")[0];
+}
+
 /**
  * @file server.js
  * @description Decoupled Express Backend Microservice for Dream Park & Zoo Financial Reporting.
@@ -87,7 +93,7 @@ async function handleCaravanReport(req, res) {
     branches = branches.map((b) => b.trim()).filter(Boolean);
 
     const report = await CaravanReportService.getReportData({
-      startDate: startDate ? String(startDate).trim() : "2026-01-01",
+      startDate: startDate ? String(startDate).trim() : getYesterdayDateString(),
       endDate: endDate
         ? String(endDate).trim()
         : new Date().toISOString().split("T")[0],
@@ -205,7 +211,7 @@ app.get("/api/reports/caravans/items-performance", async (req, res) => {
       : [];
 
     const data = await CaravanItemService.getItemsPerformance({
-      startDate: String(startDate || "2026-01-01").trim(),
+      startDate: String(startDate || getYesterdayDateString()).trim(),
       endDate: String(endDate || new Date().toISOString().split("T")[0]).trim(),
       prevStartDate: prevStartDate ? String(prevStartDate).trim() : undefined,
       prevEndDate: prevEndDate ? String(prevEndDate).trim() : undefined,

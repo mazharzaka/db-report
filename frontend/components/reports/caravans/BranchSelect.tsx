@@ -107,7 +107,7 @@ export function BranchSelect({ options, value, onChange }: Props) {
   };
 
   const label = allSelected
-    ? 'جميع الفروع والمنافذ'
+    ? 'جميع الفروع والمحلات'
     : value.length === 1
     ? options.find((o) => String(o.Code) === value[0])?.Name ?? 'فرع واحد'
     : `تم تحديد ${value.length} فروع`;
@@ -150,7 +150,7 @@ export function BranchSelect({ options, value, onChange }: Props) {
               ref={searchRef}
               value={query}
               onChange={(e) => { setQuery(e.target.value); setActive(0); }}
-              placeholder="ابحث باسم المنفذ أو الكود..."
+              placeholder="ابحث باسم المحل أو الكود..."
               aria-controls={listId}
               aria-activedescendant={`${listId}-${active}`}
               className="w-full rounded-lg bg-slate-50 py-2 pl-3 pr-9 text-sm text-slate-700 outline-none dark:bg-zinc-950 dark:text-slate-200"
@@ -169,7 +169,7 @@ export function BranchSelect({ options, value, onChange }: Props) {
                 active === 0 ? 'bg-slate-100 dark:bg-zinc-950' : ''
               } ${allSelected ? 'text-violet-300 font-bold' : 'text-slate-700 dark:text-slate-200'}`}
             >
-              <span>جميع الفروع والمنافذ</span>
+              <span>جميع الفروع والمحلات</span>
               {allSelected && <Check className="h-4 w-4" />}
             </li>
 
@@ -214,7 +214,7 @@ export function BranchSelect({ options, value, onChange }: Props) {
           </ul>
 
           <div className="flex items-center justify-between border-t border-slate-100 px-3 py-2 text-xs text-slate-400 dark:border-white/10">
-            <span className="tabular-nums">{options.length} منفذ</span>
+            <span className="tabular-nums">{options.length} محل</span>
             <button
               type="button"
               onClick={close}

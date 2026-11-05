@@ -44,7 +44,7 @@ export function ParkMap({ outlets, selected, onSelect }: Props) {
   const hoveredPos = hovered ? positions[hovered.branchCode] : null;
 
   if (outlets.length === 0) {
-    return <div className="flex h-[380px] items-center justify-center text-sm text-slate-400">لا توجد بيانات للمنافذ</div>;
+    return <div className="flex h-[380px] items-center justify-center text-sm text-slate-400">لا توجد بيانات للمحلات</div>;
   }
 
   return (
@@ -54,7 +54,7 @@ export function ParkMap({ outlets, selected, onSelect }: Props) {
           viewBox={`0 0 ${PARK_W} ${PARK_H}`}
           className="block h-auto w-full"
           role="group"
-          aria-label="خريطة المنافذ داخل الحديقة"
+          aria-label="خريطة المحلات داخل الحديقة"
         >
           {/* Decorative park base (self-contained, no external assets) */}
           <rect x="12" y="12" width={PARK_W - 24} height={PARK_H - 24} rx="28" className="fill-slate-50 stroke-slate-200 dark:fill-zinc-950 dark:stroke-white/5" strokeWidth="2" />
@@ -123,7 +123,7 @@ export function ParkMap({ outlets, selected, onSelect }: Props) {
                 <div className="flex justify-between gap-2"><span className="text-slate-400">الأكثر مبيعاً</span><span className="truncate">{hovered.signature.itemName}</span></div>
               )}
             </div>
-            <p className="mt-2 text-[10px] text-violet-300">اضغط لتصفية التقرير على هذا المنفذ</p>
+            <p className="mt-2 text-[10px] text-violet-300">اضغط لتصفية التقرير على هذا المحل</p>
           </div>
         )}
       </div>

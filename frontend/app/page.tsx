@@ -38,6 +38,7 @@ import type {
   PrintSectionsConfig,
 } from '@/types/reports';
 import { ThemeToggle } from '@/components/dashboard/ThemeToggle';
+import { FinancialDatePicker } from '@/components/ui/FinancialDatePicker';
 import { CaravanGrid } from '@/components/reports/caravans/CaravanGrid';
 import { VoidsAlertWidget } from '@/components/reports/caravans/VoidsAlertWidget';
 import { BranchSelect } from '@/components/reports/caravans/BranchSelect';
@@ -81,11 +82,11 @@ interface LocalBranchStat {
 }
 
 const PRESETS: { id: Exclude<PresetId, 'custom'>; label: string }[] = [
-  { id: 'today', label: 'اليوم' },
   { id: 'yesterday', label: 'أمس' },
+  { id: 'today', label: 'اليوم' },
   { id: 'month', label: 'الشهر الحالي' },
   { id: 'quarter', label: 'الربع الحالي' },
-  { id: 'year', label: 'سنة 2026' },
+  { id: 'year', label: 'السنة الحالية' },
 ];
 
 const COMP_PRESETS: { id: Exclude<CompPresetId, 'custom'>; label: string }[] = [
@@ -134,8 +135,10 @@ function presetRange(id: Exclude<PresetId, 'custom'>): { start: string; end: str
       return { start: ymd(new Date(now.getFullYear(), now.getMonth(), 1)), end: ymd(now) };
     case 'quarter':
       return { start: ymd(new Date(now.getFullYear(), Math.floor(now.getMonth() / 3) * 3, 1)), end: ymd(now) };
-    case 'year':
-      return { start: '2026-01-01', end: '2026-10-25' };
+    case 'year': {
+      const startOfYear = new Date(now.getFullYear(), 0, 1);
+      return { start: ymd(startOfYear), end: ymd(now) };
+    }
   }
 }
 
@@ -433,8 +436,8 @@ export default function CaravanDashboardHomePage() {
   const [viewMode, setViewMode] = useState<ViewMode>('standard');
 
   // Standard Report Date Filters
-  const initial = presetRange('year');
-  const [preset, setPreset] = useState<PresetId>('year');
+  const initial = presetRange('yesterday');
+  const [preset, setPreset] = useState<PresetId>('yesterday');
   const [start, setStart] = useState(initial.start);
   const [end, setEnd] = useState(initial.end);
   const [granularity, setGranularity] = useState<Granularity>('summary');
@@ -495,6 +498,7 @@ export default function CaravanDashboardHomePage() {
   });
 
   const handlePrint = () => {
+    if (isLoading) return;
     document.body.classList.add('print-landscape-mode');
     setPrintModalOpen(false);
     setTimeout(() => {
@@ -512,7 +516,22 @@ export default function CaravanDashboardHomePage() {
       .catch(() => undefined);
   }, []);
 
+  const resetStaleData = () => {
+    setKpisData(null);
+    setSummary(null);
+    setPrevSummary(null);
+    setRecords([]);
+    setTrend([]);
+    setBranchStats([]);
+    setTopItems([]);
+    setSlowItems([]);
+    setItemsData(null);
+    setGuests(0);
+    setSpendPerGuest(0);
+  };
+
   const applyPreset = (id: Exclude<PresetId, 'custom'>) => {
+    resetStaleData();
     const r = presetRange(id);
     setPreset(id);
     setStart(r.start);
@@ -535,6 +554,7 @@ export default function CaravanDashboardHomePage() {
     const ctrl = new AbortController();
     setKpisLoading(true);
     setKpisError(null);
+    setKpisData(null);
 
     const params = new URLSearchParams({
       startDate: start,
@@ -574,6 +594,10 @@ export default function CaravanDashboardHomePage() {
     abortRef.current = ctrl;
     setLoading(true);
     setError(null);
+    setRecords([]);
+    setSummary(null);
+    setTrend([]);
+    setBranchStats([]);
 
     try {
       const s = parseYmd(start);
@@ -614,6 +638,11 @@ export default function CaravanDashboardHomePage() {
     const ctrl = new AbortController();
     setItemsLoading(true);
     setItemsError(null);
+    setItemsData(null);
+    setTopItems([]);
+    setSlowItems([]);
+    setGuests(0);
+    setSpendPerGuest(0);
     const params = new URLSearchParams({
       startDate: start,
       endDate: end,
@@ -673,6 +702,7 @@ export default function CaravanDashboardHomePage() {
   const loadComparison = useCallback(async () => {
     setComparisonLoading(true);
     setComparisonError(null);
+    setComparisonData(null);
     try {
       const params = new URLSearchParams({
         periodAStart: compStartA,
@@ -709,22 +739,25 @@ export default function CaravanDashboardHomePage() {
 
   // Dynamic scope label
   const topScopeLabel = useMemo(() => {
-    if (selected.length === 0) return 'عبر جميع كرافانات ومنافذ الحديقة (القطاع الكامل)';
+    if (selected.length === 0) return 'عبر جميع كرافانات ومحلات الحديقة (القطاع الكامل)';
     if (selected.length === 1) {
       const match = branchOptions.find((o) => String(o.Code) === selected[0]);
-      return `منفذ محدد: ${match?.Name ?? selected[0]}`;
+      return `محل محدد: ${match?.Name ?? selected[0]}`;
     }
-    return `${selected.length} منافذ محددة: ${selected
+    return `${selected.length} محلات محددة: ${selected
       .map((c) => branchOptions.find((o) => String(o.Code) === c)?.Name ?? c)
       .slice(0, 3)
       .join('، ')}${selected.length > 3 ? '...' : ''}`;
   }, [selected, branchOptions]);
 
   const exportExcel = () => {
+    if (isLoading) return;
     const params = new URLSearchParams({ startDate: start, endDate: end, granularity });
     if (selected.length > 0) params.set('branches', selected.join(','));
     window.location.href = `/api/caravans/export?${params.toString()}`;
   };
+
+  const isLoading = loading || kpisLoading || itemsLoading || (viewMode === 'comparison' && comparisonLoading);
 
   const comparisonStats = useMemo<OutletMetricStat[]>(() => {
     const list = outlets.length > 0 ? outlets : (itemsData?.outlets ?? []);
@@ -816,7 +849,7 @@ export default function CaravanDashboardHomePage() {
               <div className="flex items-center gap-3">
                 <img src="/dreampark-logo.png" alt="Dream Park" className="h-10 w-auto object-contain drop-shadow" />
                 <h1 className="text-2xl font-extrabold text-slate-900 dark:text-white sm:text-3xl">
-                  تقرير إيرادات الكرافانات والمنافذ
+                  إيرادات الكرفانات والمحلات
                 </h1>
               </div>
               {/* Executive Print Report Header */}
@@ -824,7 +857,7 @@ export default function CaravanDashboardHomePage() {
               <div className="flex items-center gap-3">
                 <img src="/dreampark-logo.png" alt="Dream Park" className="h-9 w-auto object-contain" />
                 <div>
-                  <h2 className="text-lg font-black text-black">دريم بارك — تقرير إيرادات ومبيعات الكرافانات والمنافذ</h2>
+                  <h2 className="text-lg font-black text-black">دريم بارك — تقرير إيرادات ومبيعات الكرفانات والمحلات</h2>
                   <p className="text-[11px] font-semibold text-black mt-0.5">
                     الفترة: {start} إلى {end} • النطاق: {topScopeLabel}
                   </p>
@@ -878,22 +911,24 @@ export default function CaravanDashboardHomePage() {
 
               <button
                 onClick={() => setRefreshTick((t) => t + 1)}
-                disabled={loading || comparisonLoading}
+                disabled={isLoading}
                 aria-label="تحديث"
-                className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 shadow-sm transition hover:text-orange-600 hover:bg-slate-50 dark:border-white/5 dark:bg-[#09090b] dark:text-zinc-300 dark:hover:text-orange-400 dark:hover:bg-slate-800 disabled:opacity-50"
+                className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 shadow-sm transition hover:text-orange-600 hover:bg-slate-50 dark:border-white/5 dark:bg-[#09090b] dark:text-zinc-300 dark:hover:text-orange-400 dark:hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <RefreshCw className={`h-4 w-4 ${loading || comparisonLoading ? 'animate-spin' : ''}`} />
+                <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
               </button>
               <button
                 onClick={exportExcel}
-                className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-orange-600 px-3 text-xs font-semibold text-white shadow-sm transition hover:bg-orange-700 active:scale-95"
+                disabled={isLoading}
+                className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-orange-600 px-3 text-xs font-semibold text-white shadow-sm transition hover:bg-orange-700 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:pointer-events-none"
               >
                 <FileSpreadsheet className="h-4 w-4" />
                 تصدير Excel
               </button>
               <button
                 onClick={() => setPrintModalOpen(true)}
-                className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 dark:border-white/5 dark:bg-[#09090b] dark:text-zinc-300 dark:hover:bg-slate-800 active:scale-95"
+                disabled={isLoading}
+                className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 dark:border-white/5 dark:bg-[#09090b] dark:text-zinc-300 dark:hover:bg-slate-800 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:pointer-events-none"
               >
                 <Printer className="h-4 w-4" />
                 طباعة
@@ -919,25 +954,17 @@ export default function CaravanDashboardHomePage() {
                     {p.label}
                   </button>
                 ))}
-                <div className="flex items-center gap-1.5 pr-2" dir="ltr">
-                  <input
-                    type="date"
-                    value={start}
-                    max={end}
-                    aria-label="من تاريخ"
-                    onChange={(e) => { setStart(e.target.value); setPreset('custom'); }}
-                    className="rounded-lg border border-slate-200 bg-slate-50 px-2 py-1 text-xs tabular-nums text-slate-900 outline-none focus:border-orange-500 dark:border-white/5 dark:bg-[#09090b] dark:text-white dark:focus:border-orange-400"
-                  />
-                  <span className="text-slate-400 dark:text-zinc-400">→</span>
-                  <input
-                    type="date"
-                    value={end}
-                    min={start}
-                    aria-label="إلى تاريخ"
-                    onChange={(e) => { setEnd(e.target.value); setPreset('custom'); }}
-                    className="rounded-lg border border-slate-200 bg-slate-50 px-2 py-1 text-xs tabular-nums text-slate-900 outline-none focus:border-orange-500 dark:border-white/5 dark:bg-[#09090b] dark:text-white dark:focus:border-orange-400"
-                  />
-                </div>
+                <FinancialDatePicker
+                  startDate={start}
+                  endDate={end}
+                  onChange={(newStart, newEnd) => {
+                    resetStaleData();
+                    setStart(newStart);
+                    setEnd(newEnd);
+                    setPreset('custom');
+                  }}
+                  disabled={isLoading}
+                />
               </div>
 
               <div className="flex flex-wrap items-center gap-3">
@@ -967,55 +994,47 @@ export default function CaravanDashboardHomePage() {
                 </div>
 
                 <div className="flex items-center gap-3">
-                  <span className="text-xs font-bold text-slate-500 dark:text-zinc-400">تصفية المنافذ:</span>
+                  <span className="text-xs font-bold text-slate-500 dark:text-zinc-400">تصفية المحلات:</span>
                   <BranchSelect options={branchOptions} value={selected} onChange={setSelected} />
                 </div>
               </div>
 
               {/* Dual Period Date Pickers */}
               <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 p-2.5 dark:border-white/5 dark:bg-[#09090b]">
-                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-orange-500 text-xs font-bold text-white">A</span>
-                  <span className="text-xs font-bold text-slate-700 dark:text-zinc-300">الفترة الحالية (A):</span>
-                  <div className="flex flex-1 items-center gap-1.5" dir="ltr">
-                    <input
-                      type="date"
-                      value={compStartA}
-                      max={compEndA}
-                      onChange={(e) => { setCompStartA(e.target.value); setCompPreset('custom'); }}
-                      className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs tabular-nums text-slate-900 outline-none focus:border-orange-500 dark:border-white/5 dark:bg-[#18181b] dark:text-white dark:focus:border-orange-400"
-                    />
-                    <span className="text-slate-400 dark:text-zinc-400">→</span>
-                    <input
-                      type="date"
-                      value={compEndA}
-                      min={compStartA}
-                      onChange={(e) => { setCompEndA(e.target.value); setCompPreset('custom'); }}
-                      className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs tabular-nums text-slate-900 outline-none focus:border-orange-500 dark:border-white/5 dark:bg-[#18181b] dark:text-white dark:focus:border-orange-400"
-                    />
+                <div className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 p-2.5 dark:border-white/5 dark:bg-[#09090b]">
+                  <div className="flex items-center gap-2">
+                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-orange-500 text-xs font-bold text-white">A</span>
+                    <span className="text-xs font-bold text-slate-700 dark:text-zinc-300">الفترة الحالية (A):</span>
                   </div>
+                  <FinancialDatePicker
+                    startDate={compStartA}
+                    endDate={compEndA}
+                    onChange={(s, e) => {
+                      setComparisonData(null);
+                      setCompStartA(s);
+                      setCompEndA(e);
+                      setCompPreset('custom');
+                    }}
+                    disabled={comparisonLoading}
+                  />
                 </div>
 
-                <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50/80 p-2.5 dark:border-white/5 dark:bg-[#09090b]/80">
-                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-slate-400 text-xs font-bold text-white dark:bg-slate-600">B</span>
-                  <span className="text-xs font-bold text-slate-700 dark:text-zinc-300">فترة المقارنة (B):</span>
-                  <div className="flex flex-1 items-center gap-1.5" dir="ltr">
-                    <input
-                      type="date"
-                      value={compStartB}
-                      max={compEndB}
-                      onChange={(e) => { setCompStartB(e.target.value); setCompPreset('custom'); }}
-                      className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs tabular-nums text-slate-900 outline-none focus:border-orange-500 dark:border-white/5 dark:bg-[#18181b] dark:text-white dark:focus:border-orange-400"
-                    />
-                    <span className="text-slate-400 dark:text-zinc-400">→</span>
-                    <input
-                      type="date"
-                      value={compEndB}
-                      min={compStartB}
-                      onChange={(e) => { setCompEndB(e.target.value); setCompPreset('custom'); }}
-                      className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs tabular-nums text-slate-900 outline-none focus:border-orange-500 dark:border-white/5 dark:bg-[#18181b] dark:text-white dark:focus:border-orange-400"
-                    />
+                <div className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50/80 p-2.5 dark:border-white/5 dark:bg-[#09090b]/80">
+                  <div className="flex items-center gap-2">
+                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-slate-400 text-xs font-bold text-white dark:bg-slate-600">B</span>
+                    <span className="text-xs font-bold text-slate-700 dark:text-zinc-300">فترة المقارنة (B):</span>
                   </div>
+                  <FinancialDatePicker
+                    startDate={compStartB}
+                    endDate={compEndB}
+                    onChange={(s, e) => {
+                      setComparisonData(null);
+                      setCompStartB(s);
+                      setCompEndB(e);
+                      setCompPreset('custom');
+                    }}
+                    disabled={comparisonLoading}
+                  />
                 </div>
               </div>
             </div>
@@ -1063,7 +1082,7 @@ export default function CaravanDashboardHomePage() {
             <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-white/5 dark:bg-[#18181b] print:hidden">
               <div className="mb-4">
                 <h3 className="text-base font-bold text-slate-900 dark:text-white">خريطة الكرافانات — انقر للمقارنة الفردية</h3>
-                <p className="mt-0.5 text-xs text-slate-500 dark:text-zinc-400">اضغط على أي منفذ بالخريطة لعزل ومقارنة أدائه بين الفترتين A و B فورياً</p>
+                <p className="mt-0.5 text-xs text-slate-500 dark:text-zinc-400">اضغط على أي محل بالخريطة لعزل ومقارنة أدائه بين الفترتين A و B فورياً</p>
               </div>
               <ParkMap
                 outlets={outlets.length > 0 ? outlets : (itemsData?.allOutlets ?? itemsData?.outlets ?? [])}
@@ -1092,7 +1111,7 @@ export default function CaravanDashboardHomePage() {
                     ? `ضريبة المبيعات: ${fmtMoney(kpisData.selsTax.current)} | سابقة: ${fmtMoney(kpisData.revenue.previous)}`
                     : `الفترة السابقة: ${fmtMoney(kpisData ? kpisData.revenue.previous : (prevSummary?.totalSales ?? 0))}`
                 }
-                loading={kpisLoading}
+                loading={isLoading || kpisLoading}
               />
               <KpiCard
                 title="التحصيل والسيولة النقدية"
@@ -1107,7 +1126,7 @@ export default function CaravanDashboardHomePage() {
                     ? `نقدية: ${fmtMoney(kpisData.cash.current)} | ضرائب وخدمات: ${fmtMoney(kpisData.taxesServices.current)}`
                     : `${(kpisData ? (kpisData.cash.sharePct ?? 0) : (summary?.cashPct ?? 0)).toFixed(1)}% نقدية | ${(kpisData ? (kpisData.visa.sharePct ?? 0) : (summary?.visaPct ?? 0)).toFixed(1)}% فيزا`
                 }
-                loading={kpisLoading}
+                loading={isLoading || kpisLoading}
               />
               <KpiCard
                 title="معدل النمو للفترة المقارنة"
@@ -1126,7 +1145,7 @@ export default function CaravanDashboardHomePage() {
                     ? `فارق السيولة: ${kpisData.revenue.delta >= 0 ? '+' : ''}${fmtMoney(kpisData.revenue.delta)}`
                     : `الفترة السابقة: ${fmtMoney(kpisData?.revenue.previous ?? 0)}`
                 }
-                loading={kpisLoading}
+                loading={isLoading || kpisLoading}
               />
               <KpiCard
                 title="عدد الشيكات ومتوسط الفاتورة"
@@ -1137,7 +1156,7 @@ export default function CaravanDashboardHomePage() {
                 delta={kpisData ? kpisData.aov.growthPct : pctDelta(overallAov, prevSummary?.avgTicket ?? 0)}
                 badge="—"
                 footnote={`متوسط الفاتورة: ${fmtMoney(kpisData ? kpisData.aov.current : overallAov)}`}
-                loading={kpisLoading}
+                loading={isLoading || kpisLoading}
               />
             </div>
 
@@ -1193,8 +1212,8 @@ export default function CaravanDashboardHomePage() {
               {/* Col 1-6: Outlets Comparison Bar Chart */}
               <Card
                 className="lg:col-span-6"
-                title="مقارنة أداء الفروع والمنافذ"
-                subtitle={`أعلى ${Math.min(comparisonStats.length, MAX_BRANCHES_IN_CHART)} منافذ مرتبة حسب ${barMetric === 'revenue' ? 'صافي الإيراد' : 'عدد العمليات'}`}
+                title="مقارنة أداء الفروع والمحلات"
+                subtitle={`أعلى ${Math.min(comparisonStats.length, MAX_BRANCHES_IN_CHART)} محلات مرتبة حسب ${barMetric === 'revenue' ? 'صافي الإيراد' : 'عدد العمليات'}`}
                 action={
                   <Segmented
                     options={[
@@ -1207,7 +1226,11 @@ export default function CaravanDashboardHomePage() {
                 }
               >
                 <div className="h-[360px]" dir="ltr">
-                  {comparisonStats.length > 0 ? (
+                  {loading ? (
+                    <div className="flex h-full items-center justify-center">
+                      <div className="h-8 w-8 animate-spin rounded-full border-2 border-orange-500 border-t-transparent" />
+                    </div>
+                  ) : comparisonStats.length > 0 ? (
                     <BranchComparisonChart stats={comparisonStats} metric={barMetric} />
                   ) : (
                     <div className="flex h-full items-center justify-center text-sm text-zinc-400">لا توجد بيانات</div>
@@ -1222,7 +1245,11 @@ export default function CaravanDashboardHomePage() {
                 subtitle="مسار المبيعات مقسّماً (صافي الإيراد، النقدية، الفيزا)"
               >
                 <div className="h-[360px]" dir="ltr">
-                  {trend.length > 0 ? (
+                  {loading ? (
+                    <div className="flex h-full items-center justify-center">
+                      <div className="h-8 w-8 animate-spin rounded-full border-2 border-orange-500 border-t-transparent" />
+                    </div>
+                  ) : trend.length > 0 ? (
                     <RevenueTrendChart points={trend} />
                   ) : (
                     <div className="flex h-full items-center justify-center text-sm text-zinc-400">لا توجد بيانات</div>
@@ -1243,8 +1270,8 @@ export default function CaravanDashboardHomePage() {
             {/* ---------- Row 5: Interactive 2D Park Map ---------- */}
             <section className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm dark:border-white/5 dark:bg-[#18181b]/90 print:hidden">
               <div className="mb-4">
-                <h3 className="text-base font-bold text-slate-900 dark:text-white">خريطة المنافذ ونشاط المبيعات</h3>
-                <p className="mt-0.5 text-xs text-slate-500 dark:text-zinc-400">اللون يعبّر عن سرعة المبيعات مقارنةً بمتوسط المنافذ — اضغط على منفذ لتصفية التقرير والجدول</p>
+                <h3 className="text-base font-bold text-slate-900 dark:text-white">خريطة المحلات ونشاط المبيعات</h3>
+                <p className="mt-0.5 text-xs text-slate-500 dark:text-zinc-400">اللون يعبّر عن سرعة المبيعات مقارنةً بمتوسط المحلات — اضغط على محل لتصفية التقرير والجدول</p>
               </div>
               <ParkMap
                 outlets={outlets.length > 0 ? outlets : (itemsData?.allOutlets ?? itemsData?.outlets ?? [])}
