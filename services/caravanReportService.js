@@ -11,7 +11,7 @@ import { getPool, sql } from '../config/db.js';
 // Replace '[dbo].[VOIDS_VIEW]' with your exact view name (or set DB_VOIDS_VIEW in .env)
 // Example confirmed view in Dream Park DB: [dbo].[Vw_POS_Post_Void]
 // =========================================================================
-const VOIDS_SOURCE = process.env.DB_VOIDS_VIEW || '[dbo].[VOIDS_VIEW]';
+const VOIDS_SOURCE = '[dbo].[Pos_item_post_void]';
 
 export class CaravanReportService {
     /**
@@ -132,13 +132,13 @@ export class CaravanReportService {
                 GROUP BY p.[Branch_Code] ${groupByPeriod}
             ) p ON p.[Branch_Code] = b.[Code]
             /* ========================================================================= */
-            /* ⚠️ VOIDS DATA SOURCE: Placeholder / Confirmed View: [dbo].[Vw_POS_Post_Void] */
+            /* VOIDS DATA SOURCE: Precise Gross Value from [dbo].[Pos_item_post_void]   */
             /* ========================================================================= */
             OUTER APPLY (
                 SELECT 
-                    ROUND(SUM(ISNULL(v.[total_Void], 0)), 2) AS [TotalVoids],
-                    SUM(ISNULL(v.[count_void], 0)) AS [VoidCount]
-                FROM ${VOIDS_SOURCE} v WITH (NOLOCK)
+                    ROUND(SUM(ISNULL(v.[Item_Qunt] * v.[Item_Price] * (1.0 + ISNULL(v.[item_Sels_Tax_P], 0) / 100.0 + ISNULL(v.[item_Serves_Tax_P], 0) / 100.0), 0)), 2) AS [TotalVoids],
+                    COUNT(*) AS [VoidCount]
+                FROM [dbo].[Pos_item_post_void] v WITH (NOLOCK)
                 WHERE v.[Branch_Code] = b.[Code]
                   AND v.[Doc_Date] >= CAST(@startDate AS DATE)
                   AND v.[Doc_Date] < DATEADD(DAY, 1, CAST(@endDate AS DATE))
@@ -149,25 +149,72 @@ export class CaravanReportService {
             ORDER BY ${orderByGranularity}${orderClause};
         `;
 
+        // Prepare Void Details Query for Expandable Sub-Tables
+        const detailsReq = pool.request();
+        detailsReq.input('startDate', sql.VarChar, startDate);
+        detailsReq.input('endDate', sql.VarChar, endDate);
+        if (Array.isArray(branches) && branches.length > 0) {
+            branches.forEach((code, index) => {
+                detailsReq.input(`dbranch_${index}`, sql.VarChar, String(code).trim());
+            });
+        }
+        const detailsBranchClause = Array.isArray(branches) && branches.length > 0
+            ? ` AND v.[Branch_Code] IN (${branches.map((_, i) => `@dbranch_${i}`).join(', ')})`
+            : '';
+
+        const voidDetailsQuery = `
+            SELECT 
+                v.[Branch_Code] AS [branchCode],
+                ${granularity === 'month' ? "CONVERT(VARCHAR(7), v.[Doc_Date], 120) AS [period]," : granularity === 'day' ? "CONVERT(VARCHAR(10), v.[Doc_Date], 120) AS [period]," : ""}
+                v.[item_Code] AS [itemCode],
+                ISNULL(v.[item_name], v.[items_name]) AS [itemName],
+                CONVERT(VARCHAR(10), v.[Doc_Date], 120) AS [docDate],
+                CONVERT(VARCHAR(8), ISNULL(v.[Inv_Time], v.[item_time]), 108) AS [docTime],
+                ISNULL(v.[Item_Qunt], 1) AS [quantity],
+                ROUND(v.[Item_Price] * (1.0 + ISNULL(v.[item_Sels_Tax_P], 0) / 100.0 + ISNULL(v.[item_Serves_Tax_P], 0) / 100.0), 2) AS [price],
+                ROUND(v.[Item_Qunt] * v.[Item_Price] * (1.0 + ISNULL(v.[item_Sels_Tax_P], 0) / 100.0 + ISNULL(v.[item_Serves_Tax_P], 0) / 100.0), 2) AS [total]
+            FROM [dbo].[Pos_item_post_void] v WITH (NOLOCK)
+            INNER JOIN [dbo].[Branchs] b WITH (NOLOCK) ON b.[Code] = v.[Branch_Code]
+            WHERE b.[Type] = 4
+              AND v.[Doc_Date] >= CAST(@startDate AS DATE)
+              AND v.[Doc_Date] < DATEADD(DAY, 1, CAST(@endDate AS DATE))
+              ${detailsBranchClause}
+            ORDER BY v.[Doc_Date] DESC, v.[Inv_Time] DESC;
+        `;
+
         let rawRecords = [];
+        let rawVoidDetails = [];
         let duration = 0;
         try {
             const startTime = Date.now();
-            const result = await request.query(query);
+            const [result, detailsResult] = await Promise.all([
+                request.query(query),
+                detailsReq.query(voidDetailsQuery).catch(err => {
+                    console.warn('[CaravanReportService] Void details query failed:', err.message);
+                    return { recordset: [] };
+                })
+            ]);
             duration = Date.now() - startTime;
             rawRecords = result.recordset || [];
+            rawVoidDetails = detailsResult.recordset || [];
         } catch (queryErr) {
-            // معالجة مرنة للـ Placeholder في حال لم يتم استبداله بعد في قاعدة البيانات
-            if (queryErr.message?.includes('Invalid object name') && query.includes(VOIDS_SOURCE)) {
-                console.warn(`[CaravanReportService] Notice: Placeholder ${VOIDS_SOURCE} was not found. Falling back to active view [dbo].[Vw_POS_Post_Void].`);
-                const fallbackQuery = query.replaceAll(VOIDS_SOURCE, '[dbo].[Vw_POS_Post_Void]');
-                const startTime = Date.now();
-                const result = await request.query(fallbackQuery);
-                duration = Date.now() - startTime;
-                rawRecords = result.recordset || [];
-            } else {
-                throw queryErr;
-            }
+            throw queryErr;
+        }
+
+        // Map void details by branch (and period if present)
+        const voidMap = new Map();
+        for (const vd of rawVoidDetails) {
+            const key = granularity !== 'summary' ? `${vd.branchCode}-${vd.period}` : String(vd.branchCode);
+            if (!voidMap.has(key)) voidMap.set(key, []);
+            voidMap.get(key).push({
+                itemCode: String(vd.itemCode),
+                itemName: String(vd.itemName || 'صنف غير محدد'),
+                docDate: String(vd.docDate),
+                docTime: vd.docTime ? String(vd.docTime) : undefined,
+                quantity: Number(vd.quantity) || 1,
+                price: Number(vd.price) || 0,
+                total: Number(vd.total) || 0,
+            });
         }
 
         // 5. الحسابات المالية التجميعية لملخص الأداء (مطابقة معيار الحسابات الذهبي)
@@ -241,6 +288,9 @@ export class CaravanReportService {
                 variance = 0;
             }
 
+            const rowKey = granularity !== 'summary' ? `${r.Branch_Code}-${r.Period}` : String(r.Branch_Code);
+            const voidDetails = voidMap.get(rowKey) || [];
+
             return {
                 branchCode: String(r.Branch_Code),
                 name: r.Name,
@@ -257,6 +307,7 @@ export class CaravanReportService {
                 totalCollected,
                 totalVoids: Math.round(itemVoids * 100) / 100,
                 voidCount: itemVoidCount,
+                voidDetails,
                 variance,
                 marketShare: totalSales > 0 ? Math.round((itemTotal / totalSales) * 1000) / 10 : 0,
                 avgTicket: itemCover > 0 ? Math.round((itemTotal / itemCover) * 100) / 100 : 0

@@ -964,6 +964,7 @@ export default function CaravanDashboardHomePage() {
                     setPreset('custom');
                   }}
                   disabled={isLoading}
+                  showQuickPresets={false}
                 />
               </div>
 
@@ -1016,6 +1017,7 @@ export default function CaravanDashboardHomePage() {
                       setCompPreset('custom');
                     }}
                     disabled={comparisonLoading}
+                    showQuickPresets={false}
                   />
                 </div>
 
@@ -1034,6 +1036,7 @@ export default function CaravanDashboardHomePage() {
                       setCompPreset('custom');
                     }}
                     disabled={comparisonLoading}
+                    showQuickPresets={false}
                   />
                 </div>
               </div>

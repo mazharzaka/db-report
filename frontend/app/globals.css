@@ -464,4 +464,30 @@
     background-image: none !important;
     border-color: transparent !important;
   }
+
+  /* 11. Nested Void Details Sub-Table Printing (A4 Landscape Optimized) */
+  .void-details-expanded-row {
+    background-color: #ffffff !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+  .void-details-expanded-row table {
+    width: 100% !important;
+    border: 1.5px solid #000000 !important;
+    margin: 4px 0 !important;
+    font-size: 7pt !important;
+    background-color: #ffffff !important;
+  }
+  .void-details-expanded-row th {
+    background-color: #f3f4f6 !important;
+    color: #000000 !important;
+    font-weight: 800 !important;
+    border: 1px solid #000000 !important;
+    padding: 3px 5px !important;
+  }
+  .void-details-expanded-row td {
+    border: 1px solid #000000 !important;
+    color: #000000 !important;
+    padding: 3px 5px !important;
+  }
 }

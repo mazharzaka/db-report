@@ -21,7 +21,18 @@ export interface CaravanRecord {
   totalCollected?: number;
   totalVoids?: number;
   voidCount?: number;
+  voidDetails?: VoidDetailItem[];
   variance?: number;
+}
+
+export interface VoidDetailItem {
+  itemCode: string;
+  itemName: string;
+  docDate: string;
+  docTime?: string;
+  quantity: number;
+  price: number;
+  total: number;
 }
 
 export interface PriceTier {
