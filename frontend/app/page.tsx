@@ -488,6 +488,7 @@ export default function CaravanDashboardHomePage() {
 
   // Print Configuration Modal State
   const [printModalOpen, setPrintModalOpen] = useState(false);
+  const [showVoidsInPrint, setShowVoidsInPrint] = useState(false);
   const [printConfig, setPrintConfig] = useState<PrintSectionsConfig>({
     kpis: true,
     charts: true,
@@ -925,6 +926,15 @@ export default function CaravanDashboardHomePage() {
                 <FileSpreadsheet className="h-4 w-4" />
                 تصدير Excel
               </button>
+              <label className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 dark:border-white/5 dark:bg-[#09090b] dark:text-zinc-300 dark:hover:bg-slate-800 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={showVoidsInPrint}
+                  onChange={(e) => setShowVoidsInPrint(e.target.checked)}
+                  className="h-3.5 w-3.5 rounded border-slate-300 text-orange-600 focus:ring-orange-500 dark:border-zinc-700 dark:bg-zinc-900"
+                />
+                <span>إظهار تفاصيل المرتجعات في الطباعة</span>
+              </label>
               <button
                 onClick={() => setPrintModalOpen(true)}
                 disabled={isLoading}
@@ -1286,7 +1296,7 @@ export default function CaravanDashboardHomePage() {
             {/* ---------- Row 6: Voids Alert Widget & Detailed Data Grid ---------- */}
             <div className={`space-y-4 print:space-y-3 print:break-inside-auto ${!printConfig.table ? 'print:hidden' : ''}`}>
               <VoidsAlertWidget rows={records} />
-              <CaravanGrid rows={records} showPeriod={granularity !== 'summary'} loading={loading} />
+              <CaravanGrid rows={records} showPeriod={granularity !== 'summary'} loading={loading} showVoidsInPrint={showVoidsInPrint} onTogglePrintVoids={setShowVoidsInPrint} />
             </div>
           </div>
         )}

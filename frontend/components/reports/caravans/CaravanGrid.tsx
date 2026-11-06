@@ -50,6 +50,8 @@ interface Props {
   showPeriod: boolean;
   loading: boolean;
   className?: string;
+  showVoidsInPrint?: boolean;
+  onTogglePrintVoids?: (val: boolean) => void;
 }
 
 const BASE_COLS: Col[] = [
@@ -70,7 +72,14 @@ const BASE_COLS: Col[] = [
   { key: 'avgTicket', header: 'متوسط الفاتورة', numeric: true },
 ];
 
-export function CaravanGrid({ rows, showPeriod, loading, className = '' }: Props) {
+export function CaravanGrid({
+  rows,
+  showPeriod,
+  loading,
+  className = '',
+  showVoidsInPrint: propShowVoidsInPrint,
+  onTogglePrintVoids,
+}: Props) {
   const [query, setQuery] = useState('');
   const [sortKey, setSortKey] = useState<ColKey>('total');
   const [asc, setAsc] = useState(false);
@@ -78,6 +87,13 @@ export function CaravanGrid({ rows, showPeriod, loading, className = '' }: Props
   const [menuOpen, setMenuOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'standard' | 'transposed'>('standard');
   const [expandedVoids, setExpandedVoids] = useState<Record<string, boolean>>({});
+  const [localShowVoidsInPrint, setLocalShowVoidsInPrint] = useState(false);
+
+  const showVoidsInPrint = propShowVoidsInPrint !== undefined ? propShowVoidsInPrint : localShowVoidsInPrint;
+  const setShowVoidsInPrint = (val: boolean) => {
+    setLocalShowVoidsInPrint(val);
+    onTogglePrintVoids?.(val);
+  };
 
   const toggleVoidDetails = (key: string) => {
     setExpandedVoids((prev) => ({
@@ -487,6 +503,17 @@ export function CaravanGrid({ rows, showPeriod, loading, className = '' }: Props
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
+          {/* Smart Print Control Checkbox */}
+          <label className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs font-semibold text-slate-700 shadow-xs cursor-pointer select-none transition hover:bg-slate-100 dark:border-white/10 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800">
+            <input
+              type="checkbox"
+              checked={showVoidsInPrint}
+              onChange={(e) => setShowVoidsInPrint(e.target.checked)}
+              className="h-3.5 w-3.5 rounded border-slate-300 text-orange-600 focus:ring-orange-500 dark:border-zinc-700 dark:bg-zinc-900"
+            />
+            <span>إظهار تفاصيل المرتجعات في الطباعة</span>
+          </label>
+
           {/* View Mode Toggle: Standard vs Transposed */}
           <div className="inline-flex rounded-xl bg-slate-100 border border-slate-200 dark:bg-slate-800 dark:border-white/5 p-1">
             <button
@@ -622,7 +649,14 @@ export function CaravanGrid({ rows, showPeriod, loading, className = '' }: Props
                   return (
                     <React.Fragment key={`${rowKey}-${i}`}>
                       <tr
+                        onClick={() => {
+                          if (Number(r.totalVoids) > 0) {
+                            toggleVoidDetails(rowKey);
+                          }
+                        }}
                         className={`group transition-colors duration-150 hover:bg-orange-50/40 dark:hover:bg-slate-800/50 ${
+                          Number(r.totalVoids) > 0 ? 'cursor-pointer' : ''
+                        } ${
                           isEven ? 'bg-white dark:bg-zinc-950/40' : 'bg-slate-50/50 dark:bg-zinc-950/70'
                         }`}
                       >
@@ -646,7 +680,7 @@ export function CaravanGrid({ rows, showPeriod, loading, className = '' }: Props
 
                       {/* Expandable Void Details Sub-Table (Neutral Surface with Verification Sum Footer) */}
                       {isExpanded && (
-                        <tr className="void-details-expanded-row bg-slate-50/90 dark:bg-[#151518] border-b border-slate-200 dark:border-white/10 print:bg-white print:border-black">
+                        <tr className={`void-details-expanded-row bg-slate-50/90 dark:bg-[#141416] border-b border-slate-200 dark:border-white/10 ${showVoidsInPrint ? 'print:table-row print:bg-white print:border-black' : 'print:hidden'}`}>
                           <td colSpan={cols.length} className="p-0">
                             <div className="p-3 sm:px-6 py-3.5 space-y-2.5">
                               {/* Sub-Header */}
