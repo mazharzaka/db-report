@@ -363,7 +363,7 @@ export function FinancialDatePicker({
             } disabled:opacity-50 disabled:cursor-not-allowed`}
           >
             <CalendarIcon className="h-3.5 w-3.5 text-orange-600 dark:text-orange-400 shrink-0" />
-            <span className="font-sans text-[11px] font-normal text-slate-500 dark:text-zinc-400">من:</span>
+            <span className="font-sans text-[11px] font-medium text-slate-500 dark:text-zinc-400">من تاريخ:</span>
             <span className="tabular-nums tracking-tight font-semibold">
               {activePicker ? draftStart : startDate}
             </span>
@@ -385,7 +385,7 @@ export function FinancialDatePicker({
             } disabled:opacity-50 disabled:cursor-not-allowed`}
           >
             <CalendarIcon className="h-3.5 w-3.5 text-orange-600 dark:text-orange-400 shrink-0" />
-            <span className="font-sans text-[11px] font-normal text-slate-500 dark:text-zinc-400">إلى:</span>
+            <span className="font-sans text-[11px] font-medium text-slate-500 dark:text-zinc-400">إلى تاريخ:</span>
             <span className="tabular-nums tracking-tight font-semibold">
               {activePicker ? draftEnd : endDate}
             </span>

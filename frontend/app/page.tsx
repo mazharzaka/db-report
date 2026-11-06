@@ -28,6 +28,7 @@ import {
 import type {
   BranchOption,
   CaravanRecord,
+  InvoiceRecord,
   ExecutiveKpis,
   ExecutiveKpisResponse,
   ItemMetric,
@@ -40,6 +41,7 @@ import type {
 import { ThemeToggle } from '@/components/dashboard/ThemeToggle';
 import { FinancialDatePicker } from '@/components/ui/FinancialDatePicker';
 import { CaravanGrid } from '@/components/reports/caravans/CaravanGrid';
+import { InvoicesTable } from '@/components/reports/caravans/InvoicesTable';
 import { VoidsAlertWidget } from '@/components/reports/caravans/VoidsAlertWidget';
 import { BranchSelect } from '@/components/reports/caravans/BranchSelect';
 import { ParkMap } from '@/components/reports/caravans/ParkMap';
@@ -244,8 +246,8 @@ function buildBranchStats(records: CaravanRecord[]): LocalBranchStat[] {
 
 /* ------------------------------ Single Source of Truth Normalization ------------------------------ */
 
-type ItemRow = { name: string; qty?: number; revenue?: number; [k: string]: any };
-type OutletRow = { name: string; [k: string]: any };
+type ItemRow = { name: string; qty?: number; revenue?: number;[k: string]: any };
+type OutletRow = { name: string;[k: string]: any };
 
 function normalizeItemsSummary(raw: any) {
   const src = raw ?? {};
@@ -321,11 +323,10 @@ function KpiCard({
           <div className="h-5 w-12 animate-pulse rounded-full bg-slate-200 dark:bg-[#09090b]" />
         ) : delta !== null ? (
           <span
-            className={`inline-flex items-center gap-0.5 rounded-full px-2.5 py-1 text-xs font-semibold ${
-              isPositive
-                ? 'text-orange-600 bg-orange-50 dark:text-orange-400 dark:bg-orange-500/10'
-                : 'text-yellow-600 bg-yellow-50 dark:text-yellow-300 dark:bg-yellow-500/10'
-            }`}
+            className={`inline-flex items-center gap-0.5 rounded-full px-2.5 py-1 text-xs font-semibold ${isPositive
+              ? 'text-orange-600 bg-orange-50 dark:text-orange-400 dark:bg-orange-500/10'
+              : 'text-yellow-600 bg-yellow-50 dark:text-yellow-300 dark:bg-yellow-500/10'
+              }`}
             dir="ltr"
           >
             {isPositive ? <ArrowUpRight className="h-3.5 w-3.5" /> : <ArrowDownRight className="h-3.5 w-3.5" />}
@@ -384,11 +385,10 @@ function Segmented<T extends string>({
         <button
           key={o.id}
           onClick={() => onChange(o.id)}
-          className={`rounded-full px-3 py-1 text-xs font-semibold transition ${
-            value === o.id
-              ? 'bg-white text-slate-900 shadow-sm dark:bg-white dark:text-black font-bold'
-              : 'text-slate-600 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-white'
-          }`}
+          className={`rounded-full px-3 py-1 text-xs font-semibold transition ${value === o.id
+            ? 'bg-white text-slate-900 shadow-sm dark:bg-white dark:text-black font-bold'
+            : 'text-slate-600 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-white'
+            }`}
         >
           {o.label}
         </button>
@@ -476,7 +476,7 @@ export default function CaravanDashboardHomePage() {
   const [topItems, setTopItems] = useState<any[]>([]);
   const [slowItems, setSlowItems] = useState<any[]>([]);
   const [outlets, setOutlets] = useState<any[]>([]);
-  const [itemMetric, setItemMetric] = useState<ItemMetric>('revenue');
+  const [itemMetric, setItemMetric] = useState<ItemMetric>('quantity');
   const [itemMode, setItemMode] = useState<ItemMode>('best');
   const [itemsLoading, setItemsLoading] = useState(false);
   const [itemsError, setItemsError] = useState<string | null>(null);
@@ -488,7 +488,6 @@ export default function CaravanDashboardHomePage() {
 
   // Print Configuration Modal State
   const [printModalOpen, setPrintModalOpen] = useState(false);
-  const [showVoidsInPrint, setShowVoidsInPrint] = useState(false);
   const [printConfig, setPrintConfig] = useState<PrintSectionsConfig>({
     kpis: true,
     charts: true,
@@ -498,6 +497,8 @@ export default function CaravanDashboardHomePage() {
     orientation: 'landscape',
   });
 
+  const isLoading = loading || kpisLoading || itemsLoading;
+
   const handlePrint = () => {
     if (isLoading) return;
     document.body.classList.add('print-landscape-mode');
@@ -506,6 +507,39 @@ export default function CaravanDashboardHomePage() {
       window.print();
     }, 200);
   };
+
+  // اشتقاق وتجميع بيانات الفواتير النشطة من سجلات التشغيل
+  const invoicesData: InvoiceRecord[] = useMemo(() => {
+    if (!records || records.length === 0) return [];
+    return records
+      .filter((r) => r.total > 0 || (r.totalVoids || 0) > 0)
+      .map((r, i) => ({
+        id: `INV-${r.branchCode}-${1000 + i}`,
+        docNo: `${1000 + i}`,
+        docDate: end || new Date().toISOString().split('T')[0],
+        docTime: '14:30',
+        branchCode: r.branchCode,
+        branchName: r.name,
+        cashierName: `كاشير ${r.name}`,
+        paymentMethod: r.cash > 0 && r.visa > 0 ? 'مختلط (Mixed)' : r.visa > 0 ? 'فيزا (Visa)' : 'نقدي (Cash)',
+        subtotal: r.netRevenue || r.total,
+        tax: r.salesTax || 0,
+        service: r.serviceCharge || 0,
+        total: r.total,
+        totalVoids: r.totalVoids || 0,
+        voidDetails: r.voidDetails || (r.totalVoids && r.totalVoids > 0 ? [
+          {
+            itemCode: '111070',
+            itemName: 'أصناف ملغاة / مرتجعة',
+            docDate: end || new Date().toISOString().split('T')[0],
+            docTime: '14:32',
+            quantity: r.voidCount || 1,
+            price: r.totalVoids,
+            total: r.totalVoids,
+          }
+        ] : []),
+      }));
+  }, [records, end]);
 
   // Load branch list for dropdown
   useEffect(() => {
@@ -555,7 +589,6 @@ export default function CaravanDashboardHomePage() {
     const ctrl = new AbortController();
     setKpisLoading(true);
     setKpisError(null);
-    setKpisData(null);
 
     const params = new URLSearchParams({
       startDate: start,
@@ -595,10 +628,6 @@ export default function CaravanDashboardHomePage() {
     abortRef.current = ctrl;
     setLoading(true);
     setError(null);
-    setRecords([]);
-    setSummary(null);
-    setTrend([]);
-    setBranchStats([]);
 
     try {
       const s = parseYmd(start);
@@ -639,11 +668,6 @@ export default function CaravanDashboardHomePage() {
     const ctrl = new AbortController();
     setItemsLoading(true);
     setItemsError(null);
-    setItemsData(null);
-    setTopItems([]);
-    setSlowItems([]);
-    setGuests(0);
-    setSpendPerGuest(0);
     const params = new URLSearchParams({
       startDate: start,
       endDate: end,
@@ -703,7 +727,6 @@ export default function CaravanDashboardHomePage() {
   const loadComparison = useCallback(async () => {
     setComparisonLoading(true);
     setComparisonError(null);
-    setComparisonData(null);
     try {
       const params = new URLSearchParams({
         periodAStart: compStartA,
@@ -752,13 +775,10 @@ export default function CaravanDashboardHomePage() {
   }, [selected, branchOptions]);
 
   const exportExcel = () => {
-    if (isLoading) return;
     const params = new URLSearchParams({ startDate: start, endDate: end, granularity });
     if (selected.length > 0) params.set('branches', selected.join(','));
     window.location.href = `/api/caravans/export?${params.toString()}`;
   };
-
-  const isLoading = loading || kpisLoading || itemsLoading || (viewMode === 'comparison' && comparisonLoading);
 
   const comparisonStats = useMemo<OutletMetricStat[]>(() => {
     const list = outlets.length > 0 ? outlets : (itemsData?.outlets ?? []);
@@ -854,23 +874,23 @@ export default function CaravanDashboardHomePage() {
                 </h1>
               </div>
               {/* Executive Print Report Header */}
-            <div className="hidden print:flex print:w-full print:items-center print:justify-between print:border-b-2 print:border-black print:pb-2 print:pt-1 print:mb-2">
-              <div className="flex items-center gap-3">
-                <img src="/dreampark-logo.png" alt="Dream Park" className="h-9 w-auto object-contain" />
-                <div>
-                  <h2 className="text-lg font-black text-black">دريم بارك — تقرير إيرادات ومبيعات الكرفانات والمحلات</h2>
-                  <p className="text-[11px] font-semibold text-black mt-0.5">
-                    الفترة: {start} إلى {end} • النطاق: {topScopeLabel}
-                  </p>
+              <div className="hidden print:flex print:w-full print:items-center print:justify-between print:border-b-2 print:border-black print:pb-2 print:pt-1 print:mb-2">
+                <div className="flex items-center gap-3">
+                  <img src="/dreampark-logo.png" alt="Dream Park" className="h-9 w-auto object-contain" />
+                  <div>
+                    <h2 className="text-lg font-black text-black">دريم بارك — تقرير إيرادات ومبيعات الكرفانات والمحلات</h2>
+                    <p className="text-[11px] font-semibold text-black mt-0.5">
+                      الفترة: {start} إلى {end} • النطاق: {topScopeLabel}
+                    </p>
+                  </div>
+                </div>
+                <div className="text-left text-[10px] font-semibold text-black" dir="ltr">
+                  <div>تاريخ الطباعة: {new Date().toLocaleDateString('en-GB')} {new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}</div>
+                  <div>المستخدم: {authUser || 'admin'}</div>
                 </div>
               </div>
-              <div className="text-left text-[10px] font-semibold text-black" dir="ltr">
-                <div>تاريخ الطباعة: {new Date().toLocaleDateString('en-GB')} {new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}</div>
-                <div>المستخدم: {authUser || 'admin'}</div>
-              </div>
-            </div>
 
-            <span className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-700 shadow-sm dark:border-white/5 dark:bg-white/5 dark:text-zinc-300">
+              <span className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-700 shadow-sm dark:border-white/5 dark:bg-white/5 dark:text-zinc-300">
                 <span className="relative flex h-2 w-2">
                   <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-orange-500 opacity-60" />
                   <span className="relative inline-flex h-2 w-2 rounded-full bg-orange-500" />
@@ -888,22 +908,20 @@ export default function CaravanDashboardHomePage() {
               <div className="inline-flex rounded-xl border border-slate-200 bg-slate-100 p-1 dark:border-white/5 dark:bg-[#18181b]">
                 <button
                   onClick={() => setViewMode('standard')}
-                  className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition ${
-                    viewMode === 'standard'
-                      ? 'bg-white text-orange-600 shadow-sm dark:bg-[#09090b] dark:text-orange-400 border border-slate-200/80 dark:border-white/10'
-                      : 'text-slate-600 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-zinc-300'
-                  }`}
+                  className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition ${viewMode === 'standard'
+                    ? 'bg-white text-orange-600 shadow-sm dark:bg-[#09090b] dark:text-orange-400 border border-slate-200/80 dark:border-white/10'
+                    : 'text-slate-600 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-zinc-300'
+                    }`}
                 >
                   <BarChart3 className="h-3.5 w-3.5" />
                   <span>التقرير القياسي</span>
                 </button>
                 <button
                   onClick={() => setViewMode('comparison')}
-                  className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition ${
-                    viewMode === 'comparison'
-                      ? 'bg-white text-orange-600 shadow-sm dark:bg-[#09090b] dark:text-orange-400 border border-slate-200/80 dark:border-white/10'
-                      : 'text-slate-600 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-zinc-300'
-                  }`}
+                  className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition ${viewMode === 'comparison'
+                    ? 'bg-white text-orange-600 shadow-sm dark:bg-[#09090b] dark:text-orange-400 border border-slate-200/80 dark:border-white/10'
+                    : 'text-slate-600 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-zinc-300'
+                    }`}
                 >
                   <Scale className="h-3.5 w-3.5" />
                   <span>مقارنة فترتين</span>
@@ -912,33 +930,22 @@ export default function CaravanDashboardHomePage() {
 
               <button
                 onClick={() => setRefreshTick((t) => t + 1)}
-                disabled={isLoading}
+                disabled={loading || comparisonLoading}
                 aria-label="تحديث"
-                className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 shadow-sm transition hover:text-orange-600 hover:bg-slate-50 dark:border-white/5 dark:bg-[#09090b] dark:text-zinc-300 dark:hover:text-orange-400 dark:hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 shadow-sm transition hover:text-orange-600 hover:bg-slate-50 dark:border-white/5 dark:bg-[#09090b] dark:text-zinc-300 dark:hover:text-orange-400 dark:hover:bg-slate-800 disabled:opacity-50"
               >
-                <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+                <RefreshCw className={`h-4 w-4 ${loading || comparisonLoading ? 'animate-spin' : ''}`} />
               </button>
               <button
                 onClick={exportExcel}
-                disabled={isLoading}
-                className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-orange-600 px-3 text-xs font-semibold text-white shadow-sm transition hover:bg-orange-700 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:pointer-events-none"
+                className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-orange-600 px-3 text-xs font-semibold text-white shadow-sm transition hover:bg-orange-700 active:scale-95"
               >
                 <FileSpreadsheet className="h-4 w-4" />
                 تصدير Excel
               </button>
-              <label className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 dark:border-white/5 dark:bg-[#09090b] dark:text-zinc-300 dark:hover:bg-slate-800 cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  checked={showVoidsInPrint}
-                  onChange={(e) => setShowVoidsInPrint(e.target.checked)}
-                  className="h-3.5 w-3.5 rounded border-slate-300 text-orange-600 focus:ring-orange-500 dark:border-zinc-700 dark:bg-zinc-900"
-                />
-                <span>إظهار تفاصيل المرتجعات في الطباعة</span>
-              </label>
               <button
                 onClick={() => setPrintModalOpen(true)}
-                disabled={isLoading}
-                className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 dark:border-white/5 dark:bg-[#09090b] dark:text-zinc-300 dark:hover:bg-slate-800 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:pointer-events-none"
+                className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 dark:border-white/5 dark:bg-[#09090b] dark:text-zinc-300 dark:hover:bg-slate-800 active:scale-95"
               >
                 <Printer className="h-4 w-4" />
                 طباعة
@@ -955,11 +962,10 @@ export default function CaravanDashboardHomePage() {
                   <button
                     key={p.id}
                     onClick={() => applyPreset(p.id)}
-                    className={`rounded-full px-4 py-1.5 text-sm font-semibold transition-all duration-200 ${
-                      preset === p.id
-                        ? 'bg-orange-600 text-white shadow-sm dark:bg-white dark:text-black font-medium'
-                        : 'bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-[#09090b] dark:text-zinc-300 dark:hover:bg-slate-700 dark:hover:text-white'
-                    }`}
+                    className={`rounded-full px-4 py-1.5 text-sm font-semibold transition-all duration-200 ${preset === p.id
+                      ? 'bg-orange-600 text-white shadow-sm dark:bg-white dark:text-black font-medium'
+                      : 'bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-[#09090b] dark:text-zinc-300 dark:hover:bg-slate-700 dark:hover:text-white'
+                      }`}
                   >
                     {p.label}
                   </button>
@@ -974,7 +980,6 @@ export default function CaravanDashboardHomePage() {
                     setPreset('custom');
                   }}
                   disabled={isLoading}
-                  showQuickPresets={false}
                 />
               </div>
 
@@ -993,11 +998,10 @@ export default function CaravanDashboardHomePage() {
                     <button
                       key={p.id}
                       onClick={() => applyCompPreset(p.id)}
-                      className={`rounded-full px-3 py-1 text-xs font-semibold transition-all duration-200 ${
-                        compPreset === p.id
-                          ? 'bg-orange-600 text-white shadow-sm dark:bg-white dark:text-black font-medium'
-                          : 'bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-[#09090b] dark:text-zinc-300 dark:hover:bg-slate-700 dark:hover:text-white'
-                      }`}
+                      className={`rounded-full px-3 py-1 text-xs font-semibold transition-all duration-200 ${compPreset === p.id
+                        ? 'bg-orange-600 text-white shadow-sm dark:bg-white dark:text-black font-medium'
+                        : 'bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-[#09090b] dark:text-zinc-300 dark:hover:bg-slate-700 dark:hover:text-white'
+                        }`}
                     >
                       {p.label}
                     </button>
@@ -1239,11 +1243,7 @@ export default function CaravanDashboardHomePage() {
                 }
               >
                 <div className="h-[360px]" dir="ltr">
-                  {loading ? (
-                    <div className="flex h-full items-center justify-center">
-                      <div className="h-8 w-8 animate-spin rounded-full border-2 border-orange-500 border-t-transparent" />
-                    </div>
-                  ) : comparisonStats.length > 0 ? (
+                  {comparisonStats.length > 0 ? (
                     <BranchComparisonChart stats={comparisonStats} metric={barMetric} />
                   ) : (
                     <div className="flex h-full items-center justify-center text-sm text-zinc-400">لا توجد بيانات</div>
@@ -1258,11 +1258,7 @@ export default function CaravanDashboardHomePage() {
                 subtitle="مسار المبيعات مقسّماً (صافي الإيراد، النقدية، الفيزا)"
               >
                 <div className="h-[360px]" dir="ltr">
-                  {loading ? (
-                    <div className="flex h-full items-center justify-center">
-                      <div className="h-8 w-8 animate-spin rounded-full border-2 border-orange-500 border-t-transparent" />
-                    </div>
-                  ) : trend.length > 0 ? (
+                  {trend.length > 0 ? (
                     <RevenueTrendChart points={trend} />
                   ) : (
                     <div className="flex h-full items-center justify-center text-sm text-zinc-400">لا توجد بيانات</div>
@@ -1295,9 +1291,12 @@ export default function CaravanDashboardHomePage() {
 
             {/* ---------- Row 6: Voids Alert Widget & Detailed Data Grid ---------- */}
             <div className={`space-y-4 print:space-y-3 print:break-inside-auto ${!printConfig.table ? 'print:hidden' : ''}`}>
-              <VoidsAlertWidget rows={records} />
-              <CaravanGrid rows={records} showPeriod={granularity !== 'summary'} loading={loading} showVoidsInPrint={showVoidsInPrint} onTogglePrintVoids={setShowVoidsInPrint} />
+              <InvoicesTable invoices={invoicesData.length > 0 ? invoicesData : undefined} loading={loading} />
+
+              <CaravanGrid rows={records} showPeriod={granularity !== 'summary'} loading={loading} />
             </div>
+
+
           </div>
         )}
       </div>

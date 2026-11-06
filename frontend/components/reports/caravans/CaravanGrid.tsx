@@ -4,18 +4,12 @@ import React, { useMemo, useState } from 'react';
 import {
   ArrowDown,
   ArrowUp,
-  ChevronDown,
-  ChevronUp,
-  RotateCcw,
   ArrowUpDown,
   Columns3,
   Search,
   RotateCw,
   Table as TableIcon,
   Sparkles,
-  CheckCircle2,
-  AlertTriangle,
-  ShieldAlert,
 } from 'lucide-react';
 import type { CaravanRecord } from '@/types/reports';
 import { fmtInt, fmtMoney } from './charts';
@@ -50,12 +44,10 @@ interface Props {
   showPeriod: boolean;
   loading: boolean;
   className?: string;
-  showVoidsInPrint?: boolean;
-  onTogglePrintVoids?: (val: boolean) => void;
 }
 
 const BASE_COLS: Col[] = [
-  { key: 'name', header: 'المحل / الكرافان', numeric: false },
+  { key: 'name', header: 'المنفذ / الكرافان', numeric: false },
   { key: 'branchCode', header: 'الكود', numeric: false },
   { key: 'period', header: 'الفترة', numeric: false },
   { key: 'netRevenue', header: 'صافي الإيراد (Net)', numeric: true, sumFormat: 'money' },
@@ -77,8 +69,6 @@ export function CaravanGrid({
   showPeriod,
   loading,
   className = '',
-  showVoidsInPrint: propShowVoidsInPrint,
-  onTogglePrintVoids,
 }: Props) {
   const [query, setQuery] = useState('');
   const [sortKey, setSortKey] = useState<ColKey>('total');
@@ -86,21 +76,6 @@ export function CaravanGrid({
   const [hidden, setHidden] = useState<Partial<Record<ColKey, boolean>>>({});
   const [menuOpen, setMenuOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'standard' | 'transposed'>('standard');
-  const [expandedVoids, setExpandedVoids] = useState<Record<string, boolean>>({});
-  const [localShowVoidsInPrint, setLocalShowVoidsInPrint] = useState(false);
-
-  const showVoidsInPrint = propShowVoidsInPrint !== undefined ? propShowVoidsInPrint : localShowVoidsInPrint;
-  const setShowVoidsInPrint = (val: boolean) => {
-    setLocalShowVoidsInPrint(val);
-    onTogglePrintVoids?.(val);
-  };
-
-  const toggleVoidDetails = (key: string) => {
-    setExpandedVoids((prev) => ({
-      ...prev,
-      [key]: !prev[key],
-    }));
-  };
 
   const cols = useMemo(
     () => BASE_COLS.filter((c) => (c.key !== 'period' || showPeriod) && !hidden[c.key]),
@@ -196,45 +171,16 @@ export function CaravanGrid({
         return <span className="font-mono font-extrabold text-slate-900 dark:text-slate-100">{fmtMoney(r.total)}</span>;
       case 'totalVoids': {
         const voids = Number(r.totalVoids) || 0;
-        const rowKey = `${r.branchCode}-${r.period ?? ''}`;
-        const isExpanded = Boolean(expandedVoids[rowKey]);
-        const hasDetails = voids > 0;
-
-        if (!hasDetails) {
-          return (
-            <span className="font-mono text-slate-400 dark:text-zinc-500 print:text-black">
-              {fmtMoney(0)}
-            </span>
-          );
-        }
-
         return (
-          <div
-            onClick={(e) => {
-              e.stopPropagation();
-              toggleVoidDetails(rowKey);
-            }}
-            className="inline-flex items-center gap-1.5 cursor-pointer group/void select-none"
-            title={isExpanded ? 'طي تفاصيل المرتجعات' : 'عرض تفاصيل الأصناف المرتجعة'}
-            dir="ltr"
+          <span
+            className={`font-mono font-semibold transition-colors ${
+              voids > 0
+                ? 'text-rose-600 dark:text-rose-400 print:text-black print:font-bold'
+                : 'text-slate-400 dark:text-zinc-500 print:text-black'
+            }`}
           >
-            <span className="font-mono font-bold text-rose-600 dark:text-rose-400 group-hover/void:underline print:text-black print:font-bold">
-              {fmtMoney(voids)}
-            </span>
-            <span
-              className={`inline-flex h-5 w-5 items-center justify-center rounded-md border transition-all ${
-                isExpanded
-                  ? 'border-slate-300 bg-slate-200/90 text-slate-800 dark:border-white/20 dark:bg-zinc-800 dark:text-zinc-200'
-                  : 'border-slate-200 bg-slate-100 text-slate-600 hover:border-slate-300 hover:bg-slate-200 dark:border-white/10 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800'
-              } print:hidden shadow-xs`}
-            >
-              {isExpanded ? (
-                <ChevronUp className="h-3.5 w-3.5" />
-              ) : (
-                <ChevronDown className="h-3.5 w-3.5" />
-              )}
-            </span>
-          </div>
+            {fmtMoney(voids)}
+          </span>
         );
       }
       case 'variance': {
@@ -486,7 +432,7 @@ export function CaravanGrid({
               تسوية النقدية وتفاصيل الإيرادات (Cash Reconciliation & Outlets)
             </h3>
             <span className="rounded-full bg-orange-50 border border-orange-200 px-3 py-0.5 text-xs font-medium text-orange-700 dark:bg-violet-500/10 dark:border-violet-500/20 dark:text-violet-300">
-              {viewMode === 'standard' ? 'عرض قياسي أفقي' : 'عرض معكوس (مقارنة المحلات)'}
+              {viewMode === 'standard' ? 'عرض قياسي أفقي' : 'عرض معكوس (مقارنة المنافذ)'}
             </span>
           </div>
           <p className="mt-0.5 text-xs text-slate-500 dark:text-zinc-400">
@@ -503,17 +449,6 @@ export function CaravanGrid({
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          {/* Smart Print Control Checkbox */}
-          <label className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs font-semibold text-slate-700 shadow-xs cursor-pointer select-none transition hover:bg-slate-100 dark:border-white/10 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800">
-            <input
-              type="checkbox"
-              checked={showVoidsInPrint}
-              onChange={(e) => setShowVoidsInPrint(e.target.checked)}
-              className="h-3.5 w-3.5 rounded border-slate-300 text-orange-600 focus:ring-orange-500 dark:border-zinc-700 dark:bg-zinc-900"
-            />
-            <span>إظهار تفاصيل المرتجعات في الطباعة</span>
-          </label>
-
           {/* View Mode Toggle: Standard vs Transposed */}
           <div className="inline-flex rounded-xl bg-slate-100 border border-slate-200 dark:bg-slate-800 dark:border-white/5 p-1">
             <button
@@ -607,7 +542,7 @@ export function CaravanGrid({
                     <th
                       key={c.key}
                       onClick={() => toggleSort(c.key)}
-                      className={`cursor-pointer select-none whitespace-nowrap px-4 py-3.5 font-bold tracking-tight transition hover:text-slate-900 dark:hover:text-white print:px-2 print:py-2 print:text-black ${
+                      className={`cursor-pointer select-none whitespace-nowrap px-4 py-3 font-bold transition hover:text-slate-900 dark:hover:text-white print:px-2 print:py-2 print:text-black ${
                         isFirstCol
                           ? 'sticky right-0 z-30 bg-slate-100 text-slate-900 shadow-[2px_0_5px_rgba(0,0,0,0.06)] dark:bg-zinc-950 dark:text-slate-100 dark:shadow-[2px_0_5px_rgba(0,0,0,0.4)] print:shadow-none print:bg-transparent'
                           : 'text-slate-600 dark:text-zinc-400'
@@ -637,147 +572,36 @@ export function CaravanGrid({
               {view.length === 0 ? (
                 <tr>
                   <td colSpan={cols.length} className="py-16 text-center text-sm text-slate-400 dark:text-zinc-400">
-                    {loading ? 'جاري استرجاع تفاصيل المحلات...' : 'لا توجد بيانات للفترة المحددة'}
+                    {loading ? 'جاري استرجاع تفاصيل المنافذ...' : 'لا توجد بيانات للفترة المحددة'}
                   </td>
                 </tr>
               ) : (
                 view.map((r, i) => {
                   const isEven = i % 2 === 0;
-                  const rowKey = `${r.branchCode}-${r.period ?? ''}`;
-                  const isExpanded = Boolean(expandedVoids[rowKey]);
-
                   return (
-                    <React.Fragment key={`${rowKey}-${i}`}>
-                      <tr
-                        onClick={() => {
-                          if (Number(r.totalVoids) > 0) {
-                            toggleVoidDetails(rowKey);
-                          }
-                        }}
-                        className={`group transition-colors duration-150 hover:bg-orange-50/40 dark:hover:bg-slate-800/50 ${
-                          Number(r.totalVoids) > 0 ? 'cursor-pointer' : ''
-                        } ${
-                          isEven ? 'bg-white dark:bg-zinc-950/40' : 'bg-slate-50/50 dark:bg-zinc-950/70'
-                        }`}
-                      >
-                        {cols.map((c, colIndex) => {
-                          const isFirstCol = colIndex === 0;
-                          return (
-                            <td
-                              key={c.key}
-                              className={`whitespace-nowrap px-4 py-3.5 print:px-2 print:py-1.5 ${
-                                isFirstCol
-                                  ? 'sticky right-0 z-10 bg-white group-hover:bg-slate-50/90 dark:group-hover:bg-slate-800 text-slate-900 font-bold shadow-[2px_0_5px_rgba(0,0,0,0.04)] dark:bg-[#18181b] dark:text-slate-100 dark:shadow-[2px_0_5px_rgba(0,0,0,0.3)] print:shadow-none print:bg-transparent transition-colors duration-150'
-                                  : 'text-slate-800 dark:text-zinc-300'
-                              } ${c.numeric ? 'text-left font-mono tabular-nums tracking-tight font-medium' : 'text-right'}`}
-                              dir={c.numeric ? 'ltr' : undefined}
-                            >
-                              {renderCell(r, c)}
-                            </td>
-                          );
-                        })}
-                      </tr>
-
-                      {/* Expandable Void Details Sub-Table (Neutral Surface with Verification Sum Footer) */}
-                      {isExpanded && (
-                        <tr className={`void-details-expanded-row bg-slate-50/90 dark:bg-[#141416] border-b border-slate-200 dark:border-white/10 ${showVoidsInPrint ? 'print:table-row print:bg-white print:border-black' : 'print:hidden'}`}>
-                          <td colSpan={cols.length} className="p-0">
-                            <div className="p-3 sm:px-6 py-3.5 space-y-2.5">
-                              {/* Sub-Header */}
-                              <div className="flex items-center justify-between text-xs text-slate-800 dark:text-zinc-200 print:text-black">
-                                <div className="flex items-center gap-2">
-                                  <span className="flex h-5 w-5 items-center justify-center rounded-md bg-slate-200/80 text-slate-700 dark:bg-zinc-800 dark:text-zinc-300 print:border print:border-black">
-                                    <RotateCcw className="h-3 w-3" />
-                                  </span>
-                                  <span className="font-bold">
-                                    تفاصيل الأصناف المرتجعة لـ {r.name}
-                                    <span className="text-slate-500 dark:text-zinc-400 font-normal mr-1">
-                                      ({r.voidDetails?.length || 0} صنف)
-                                    </span>
-                                  </span>
-                                </div>
-                                <div className="flex items-center gap-1.5 font-mono text-xs">
-                                  <span className="text-slate-500 dark:text-zinc-400 font-sans font-medium">إجمالي المرتجع المسجل:</span>
-                                  <span className="font-extrabold text-rose-600 dark:text-rose-400 tabular-nums">
-                                    {fmtMoney(r.totalVoids || 0)} ج.م
-                                  </span>
-                                </div>
-                              </div>
-
-                              {/* Nested Sub-Table: 5 Columns [اسم الصنف | كود الصنف | التاريخ والوقت | الكمية | الإجمالي] */}
-                              <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white dark:border-white/10 dark:bg-[#09090b] shadow-xs print:border print:border-black print:bg-transparent">
-                                <table className="w-full text-right text-xs print:text-[8pt]">
-                                  <thead className="bg-slate-100/90 dark:bg-[#121214] text-slate-700 dark:text-zinc-300 border-b border-slate-200 dark:border-white/10 print:bg-slate-100 print:border-b print:border-black">
-                                    <tr>
-                                      <th className="px-3.5 py-2 font-bold">اسم الصنف</th>
-                                      <th className="px-3.5 py-2 font-bold text-center">كود الصنف</th>
-                                      <th className="px-3.5 py-2 font-bold text-center">التاريخ والوقت</th>
-                                      <th className="px-3.5 py-2 font-bold text-center">الكمية</th>
-                                      <th className="px-3.5 py-2 font-bold text-left" dir="ltr">الإجمالي</th>
-                                    </tr>
-                                  </thead>
-                                  <tbody className="divide-y divide-slate-100 dark:divide-white/5 print:divide-black">
-                                    {r.voidDetails && r.voidDetails.length > 0 ? (
-                                      r.voidDetails.map((vd, vIdx) => {
-                                        const itemTotal = Number(vd.total) || (Number(vd.quantity || 1) * Number(vd.price || 0));
-                                        return (
-                                          <tr key={vIdx} className="hover:bg-slate-50/80 dark:hover:bg-white/5 transition-colors print:bg-transparent">
-                                            <td className="px-3.5 py-2 font-semibold text-slate-900 dark:text-white print:text-black">
-                                              {vd.itemName}
-                                            </td>
-                                            <td className="px-3.5 py-2 text-center font-mono text-slate-500 dark:text-zinc-400 print:text-black">
-                                              {vd.itemCode}
-                                            </td>
-                                            <td className="px-3.5 py-2 text-center font-mono text-slate-600 dark:text-zinc-300 print:text-black" dir="ltr">
-                                              {vd.docDate} {vd.docTime || ''}
-                                            </td>
-                                            <td className="px-3.5 py-2 text-center font-mono font-medium text-slate-800 dark:text-zinc-200 print:text-black">
-                                              {vd.quantity}
-                                            </td>
-                                            {/* Targeted RED text ONLY for financial value */}
-                                            <td className="px-3.5 py-2 text-left font-mono font-bold text-rose-600 dark:text-rose-400 print:text-black print:font-bold" dir="ltr">
-                                              {fmtMoney(itemTotal)}
-                                            </td>
-                                          </tr>
-                                        );
-                                      })
-                                    ) : (
-                                      <tr>
-                                        <td colSpan={5} className="py-4 text-center text-slate-400">
-                                          لا توجد تفاصيل أصناف مسجلة
-                                        </td>
-                                      </tr>
-                                    )}
-                                  </tbody>
-
-                                  {/* Verification Sum Footer */}
-                                  {r.voidDetails && r.voidDetails.length > 0 && (
-                                    <tfoot className="border-t-2 border-slate-300 bg-slate-100/90 dark:border-white/10 dark:bg-[#121214] print:border-t-2 print:border-black print:bg-slate-100 font-bold">
-                                      <tr>
-                                        <td colSpan={3} className="px-3.5 py-2.5 text-right text-xs font-bold text-slate-800 dark:text-zinc-200 print:text-black">
-                                          إجمالي تفاصيل المرتجعات (المطابقة الفورية):
-                                        </td>
-                                        <td className="px-3.5 py-2.5 text-center font-mono text-xs font-bold text-slate-800 dark:text-zinc-200 print:text-black">
-                                          {r.voidDetails.reduce((sum, vd) => sum + (Number(vd.quantity) || 1), 0)}
-                                        </td>
-                                        <td className="px-3.5 py-2.5 text-left font-mono text-sm font-black tabular-nums text-rose-600 dark:text-rose-400 print:text-black" dir="ltr">
-                                          {fmtMoney(
-                                            r.voidDetails.reduce(
-                                              (sum, vd) => sum + (Number(vd.total) || (Number(vd.quantity || 1) * Number(vd.price || 0))),
-                                              0
-                                            )
-                                          )}
-                                        </td>
-                                      </tr>
-                                    </tfoot>
-                                  )}
-                                </table>
-                              </div>
-                            </div>
+                    <tr
+                      key={`${r.branchCode}-${r.period ?? ''}-${i}`}
+                      className={`transition-colors hover:bg-slate-100/60 dark:hover:bg-white/5 ${
+                        isEven ? 'bg-white dark:bg-zinc-950/40' : 'bg-slate-50/50 dark:bg-zinc-950/70'
+                      }`}
+                    >
+                      {cols.map((c, colIndex) => {
+                        const isFirstCol = colIndex === 0;
+                        return (
+                          <td
+                            key={c.key}
+                            className={`whitespace-nowrap px-4 py-3 print:px-2 print:py-1.5 ${
+                              isFirstCol
+                                ? 'sticky right-0 z-10 bg-white text-slate-900 font-bold shadow-[2px_0_5px_rgba(0,0,0,0.04)] dark:bg-[#18181b] dark:text-slate-100 dark:shadow-[2px_0_5px_rgba(0,0,0,0.3)] print:shadow-none print:bg-transparent'
+                                : 'text-slate-800 dark:text-zinc-300'
+                            } ${c.numeric ? 'text-left font-mono tabular-nums' : 'text-right'}`}
+                            dir={c.numeric ? 'ltr' : undefined}
+                          >
+                            {renderCell(r, c)}
                           </td>
-                        </tr>
-                      )}
-                    </React.Fragment>
+                        );
+                      })}
+                    </tr>
                   );
                 })
               )}
@@ -883,7 +707,7 @@ export function CaravanGrid({
           <Sparkles className="h-3.5 w-3.5 text-orange-600 dark:text-violet-300" />
           <span>
             {viewMode === 'transposed'
-              ? 'العرض المعكوس يتيح مقارنة أفقية متزامنة بين جميع المحلات عبر كافة المعايير المالية والتسويات.'
+              ? 'العرض المعكوس يتيح مقارنة أفقية متزامنة بين جميع المنافذ عبر كافة المعايير المالية والتسويات.'
               : 'العمود الأول مثبت أثناء التمرير لتسهيل قراءة كافة المعايير بدون اقتطاع.'}
           </span>
         </span>

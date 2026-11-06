@@ -25,6 +25,23 @@ export interface CaravanRecord {
   variance?: number;
 }
 
+export interface InvoiceRecord {
+  id: string;
+  docNo: string | number;
+  docDate: string;
+  docTime?: string;
+  branchCode: string | number;
+  branchName: string;
+  cashierName?: string;
+  paymentMethod: string;
+  subtotal: number;
+  tax: number;
+  service: number;
+  total: number;
+  totalVoids?: number;
+  voidDetails?: VoidDetailItem[];
+}
+
 export interface VoidDetailItem {
   itemCode: string;
   itemName: string;
