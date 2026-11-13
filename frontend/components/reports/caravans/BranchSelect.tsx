@@ -113,7 +113,7 @@ export function BranchSelect({ options, value, onChange }: Props) {
     : `تم تحديد ${value.length} فروع`;
 
   return (
-    <div ref={rootRef} className="relative" onKeyDown={onKeyDown}>
+    <div ref={rootRef} className="relative z-50" onKeyDown={onKeyDown}>
       <button
         type="button"
         role="combobox"
@@ -122,19 +122,19 @@ export function BranchSelect({ options, value, onChange }: Props) {
         aria-controls={listId}
         aria-label="اختيار الفروع / الكرافانات"
         onClick={() => setOpen((o) => !o)}
-        className={`flex h-10 w-full min-w-[230px] items-center justify-between gap-2 rounded-xl border bg-white px-3 text-sm transition dark:bg-[#18181b] ${
+        className={`flex h-10 w-full min-w-[230px] items-center justify-between gap-2 rounded-lg border bg-white px-3 text-xs font-semibold shadow-sm ring-1 ring-slate-200/50 transition dark:border-zinc-800 dark:bg-zinc-900/80 dark:ring-white/10 ${
           open
-            ? 'border-violet-400 ring-2 ring-violet-400/20'
-            : 'border-slate-200 hover:border-slate-300 dark:border-white/10 dark:hover:border-slate-600'
+            ? 'border-orange-500 ring-2 ring-orange-500/20'
+            : 'border-slate-200/80 hover:border-slate-300 dark:hover:border-zinc-700'
         }`}
       >
         <span className="flex min-w-0 items-center gap-2">
           <Store className="h-4 w-4 shrink-0 text-slate-400" />
-          <span className="truncate font-medium text-slate-700 dark:text-slate-200">{label}</span>
+          <span className="truncate font-semibold text-slate-700 dark:text-slate-200">{label}</span>
         </span>
         <span className="flex shrink-0 items-center gap-2">
           {!allSelected && (
-            <span className="rounded-full bg-white text-black px-2 py-0.5 text-[11px] font-bold tabular-nums">
+            <span className="rounded-full bg-orange-600 text-white px-2 py-0.5 text-[11px] font-bold tabular-nums">
               {value.length}
             </span>
           )}
@@ -143,7 +143,7 @@ export function BranchSelect({ options, value, onChange }: Props) {
       </button>
 
       {open && (
-        <div className="absolute right-0 z-30 mt-2 w-full min-w-[300px] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl dark:border-white/10 dark:bg-[#18181b]">
+        <div className="absolute right-0 top-full mt-1.5 z-50 w-full min-w-[300px] overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl ring-1 ring-slate-900/10 dark:border-zinc-800 dark:bg-zinc-900 dark:ring-white/10">
           <div className="relative border-b border-slate-100 p-2 dark:border-white/10">
             <Search className="pointer-events-none absolute right-5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <input

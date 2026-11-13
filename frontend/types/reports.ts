@@ -145,6 +145,12 @@ export interface ReportSummary {
   clPct: number;
   avgTicket: number;
   rowCount: number;
+  totalVariance?: number;
+  totalVoids?: number;
+  totalNetRevenue?: number;
+  totalServiceCharge?: number;
+  totalSalesTax?: number;
+  totalQuantity?: number;
   topCaravan?: {
     name: string;
     total: number;

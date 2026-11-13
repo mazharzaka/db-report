@@ -32,6 +32,27 @@ ChartJS.register(
 export const fmtMoney = (v: number): string =>
   `${(Number(v) || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ج.م`;
 
+export function Money({
+  value,
+  className = '',
+  symbolClassName = 'text-xs opacity-50 font-normal mr-1 select-none',
+}: {
+  value: number;
+  className?: string;
+  symbolClassName?: string;
+}) {
+  const formatted = (Number(value) || 0).toLocaleString('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+  return (
+    <span className={`tabular-nums tracking-tight font-mono ${className}`} dir="ltr">
+      {formatted}
+      <span className={symbolClassName}> ج.م</span>
+    </span>
+  );
+}
+
 export const fmtInt = (v: number): string =>
   (Number(v) || 0).toLocaleString("en-US");
 

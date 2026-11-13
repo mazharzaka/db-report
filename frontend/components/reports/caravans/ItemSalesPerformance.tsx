@@ -138,7 +138,7 @@ export function ItemSalesPerformance({
 
   return (
     <section
-      className={`rounded-3xl border border-slate-200 bg-white p-6 break-inside-avoid dark:border-white/5 dark:bg-[#18181b] ${className}`}
+      className={`rounded-xl border border-slate-200/80 bg-white p-6 shadow-sm ring-1 ring-slate-900/5 backdrop-blur-md break-inside-avoid dark:border-zinc-800/80 dark:bg-zinc-900/60 dark:ring-white/10 ${className}`}
     >
       {/* Header and Summary KPIs */}
       <div className="flex flex-col gap-4 border-b border-slate-200 dark:border-white/5 pb-4">
@@ -170,43 +170,43 @@ export function ItemSalesPerformance({
 
         {/* Aggregate Metrics Bar */}
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4 dark:border-white/5 dark:bg-zinc-950/60">
+          <div className="rounded-xl border border-slate-200/80 bg-slate-50/50 p-4 shadow-2xs ring-1 ring-slate-900/5 dark:border-zinc-800/80 dark:bg-zinc-900/40 dark:ring-white/10">
             <span className="text-[11px] font-medium text-slate-500 dark:text-zinc-400 flex items-center gap-1.5">
               <Boxes className="h-3.5 w-3.5 text-slate-400" />
               الأصناف المطابقة
             </span>
-            <span className="mt-1 block text-lg font-extrabold text-slate-900 dark:text-white tabular-nums">
+            <span className="mt-1 block text-lg font-extrabold text-slate-900 dark:text-white tabular-nums tracking-tight">
               {fmtInt(summary.totalItems)} صنف
             </span>
           </div>
 
-          <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4 dark:border-white/5 dark:bg-zinc-950/60">
+          <div className="rounded-xl border border-slate-200/80 bg-slate-50/50 p-4 shadow-2xs ring-1 ring-slate-900/5 dark:border-zinc-800/80 dark:bg-zinc-900/40 dark:ring-white/10">
             <span className="text-[11px] font-medium text-slate-500 dark:text-zinc-400 flex items-center gap-1.5">
               <Package className="h-3.5 w-3.5 text-orange-600 dark:text-violet-300" />
               إجمالي الكميات المباعة
             </span>
-            <span className="mt-1 block text-lg font-extrabold text-slate-900 dark:text-white tabular-nums">
+            <span className="mt-1 block text-lg font-extrabold text-slate-900 dark:text-white tabular-nums tracking-tight">
               {fmtInt(summary.totalQuantity)} قطعة
             </span>
           </div>
 
-          <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4 dark:border-white/5 dark:bg-zinc-950/60">
+          <div className="rounded-xl border border-slate-200/80 bg-slate-50/50 p-4 shadow-2xs ring-1 ring-slate-900/5 dark:border-zinc-800/80 dark:bg-zinc-900/40 dark:ring-white/10">
             <span className="text-[11px] font-medium text-slate-500 dark:text-zinc-400 flex items-center gap-1.5">
               <Coins className="h-3.5 w-3.5 text-orange-600 dark:text-violet-300" />
               إجمالي صافي الإيرادات
             </span>
-            <span className="mt-1 block text-lg font-extrabold text-orange-600 dark:text-[#c4b5fd] tabular-nums font-mono" dir="ltr">
+            <span className="mt-1 block text-lg font-extrabold text-orange-600 dark:text-[#c4b5fd] tabular-nums tracking-tight font-mono" dir="ltr">
               {fmtMoney(summary.totalRevenue)}
             </span>
           </div>
 
-          <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4 dark:border-white/5 dark:bg-zinc-950/60">
+          <div className="rounded-xl border border-slate-200/80 bg-slate-50/50 p-4 shadow-2xs ring-1 ring-slate-900/5 dark:border-zinc-800/80 dark:bg-zinc-900/40 dark:ring-white/10">
             <span className="text-[11px] font-medium text-slate-500 dark:text-zinc-400 flex items-center gap-1.5">
               <TrendingUp className="h-3.5 w-3.5 text-slate-400" />
               معدل النمو الدوري الإجمالي
             </span>
             <span
-              className={`mt-1 block text-lg font-extrabold tabular-nums font-mono ${
+              className={`mt-1 block text-lg font-extrabold tabular-nums tracking-tight font-mono ${
                 summary.revenueGrowthPct !== null && summary.revenueGrowthPct >= 0
                   ? 'text-orange-600 dark:text-[#c4b5fd]'
                   : summary.revenueGrowthPct !== null

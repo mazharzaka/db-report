@@ -37,7 +37,7 @@ import {
   Tooltip,
   ResponsiveContainer
 } from 'recharts';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/badge';
 import {
   Table,

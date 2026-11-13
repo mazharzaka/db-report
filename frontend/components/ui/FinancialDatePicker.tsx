@@ -10,7 +10,7 @@ import {
   CalendarDays,
   AlertCircle,
   X,
-  ArrowRight,
+  ArrowLeft,
 } from 'lucide-react';
 
 interface DateRangeProps {
@@ -62,7 +62,7 @@ export function FinancialDatePicker({
   minYear = 2020,
   maxYear = 2035,
   disabled = false,
-  showQuickPresets = true,
+  showQuickPresets = false,
 }: DateRangeProps) {
   // Active calendar popover: 'start' | 'end' | null
   const [activePicker, setActivePicker] = useState<'start' | 'end' | null>(null);
@@ -272,7 +272,7 @@ export function FinancialDatePicker({
   };
 
   // Quick Preset Handlers (Instant Complete Range)
-  const applyPreset = (preset: 'yesterday' | 'this_month' | 'last_month') => {
+  const applyPreset = (preset: 'yesterday' | 'today' | 'this_month' | 'last_month' | 'this_quarter' | 'this_year') => {
     const now = new Date();
     let s = '';
     let e = '';
@@ -282,14 +282,26 @@ export function FinancialDatePicker({
       y.setDate(y.getDate() - 1);
       s = ymd(y);
       e = ymd(y);
+    } else if (preset === 'today') {
+      s = ymd(now);
+      e = ymd(now);
     } else if (preset === 'this_month') {
       const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
       s = ymd(startOfMonth);
       e = ymd(now);
+    } else if (preset === 'this_quarter') {
+      const currentQuarter = Math.floor(now.getMonth() / 3);
+      const startOfQuarter = new Date(now.getFullYear(), currentQuarter * 3, 1);
+      s = ymd(startOfQuarter);
+      e = ymd(now);
+    } else if (preset === 'this_year') {
+      const startOfYear = new Date(now.getFullYear(), 0, 1);
+      s = ymd(startOfYear);
+      e = ymd(now);
     } else if (preset === 'last_month') {
       const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
       const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0);
-      s = ymd(startOfLastMonth),
+      s = ymd(startOfLastMonth);
       e = ymd(endOfLastMonth);
     }
 
@@ -318,7 +330,7 @@ export function FinancialDatePicker({
         </span>
       )}
 
-      {/* Quick Selectors (Accounting Shortcuts) */}
+      {/* 1st: Quick Selectors (الفلاتر السريعة) */}
       {showQuickPresets && (
         <div className="flex items-center gap-1">
           <button
@@ -327,7 +339,14 @@ export function FinancialDatePicker({
             onClick={() => applyPreset('yesterday')}
             className="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-semibold text-slate-700 transition hover:border-orange-400 hover:bg-orange-50 hover:text-orange-700 dark:border-white/5 dark:bg-[#09090b] dark:text-zinc-300 dark:hover:border-orange-500/40 dark:hover:bg-orange-500/10 dark:hover:text-orange-300 disabled:opacity-50"
           >
-            أمس
+            الأمس
+          </button>
+          <button
+            type="button"
+            disabled={true}
+            className="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-semibold text-slate-700 opacity-50 cursor-not-allowed pointer-events-none dark:border-white/5 dark:bg-[#09090b] dark:text-zinc-300"
+          >
+            اليوم
           </button>
           <button
             type="button"
@@ -340,27 +359,34 @@ export function FinancialDatePicker({
           <button
             type="button"
             disabled={isTriggerDisabled}
-            onClick={() => applyPreset('last_month')}
+            onClick={() => applyPreset('this_quarter')}
             className="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-semibold text-slate-700 transition hover:border-orange-400 hover:bg-orange-50 hover:text-orange-700 dark:border-white/5 dark:bg-[#09090b] dark:text-zinc-300 dark:hover:border-orange-500/40 dark:hover:bg-orange-500/10 dark:hover:text-orange-300 disabled:opacity-50"
           >
-            الشهر السابق
+            الربع الحالي
+          </button>
+          <button
+            type="button"
+            disabled={isTriggerDisabled}
+            onClick={() => applyPreset('this_year')}
+            className="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-semibold text-slate-700 transition hover:border-orange-400 hover:bg-orange-50 hover:text-orange-700 dark:border-white/5 dark:bg-[#09090b] dark:text-zinc-300 dark:hover:border-orange-500/40 dark:hover:bg-orange-500/10 dark:hover:text-orange-300 disabled:opacity-50"
+          >
+            السنة الحالية
           </button>
         </div>
       )}
 
-      {/* Two Explicit Inputs (Side-by-Side SAP/Stripe Pattern) */}
-      <div className="flex items-center gap-1.5" dir="ltr">
-        {/* Input 1: Start Date (من تاريخ) */}
+      {/* Date Range Inputs */}
+      <div className="flex items-center gap-1.5">
+        {/* 2nd: Input 1: Start Date (من تاريخ) */}
         <div className="relative">
           <button
             type="button"
             disabled={isTriggerDisabled}
             onClick={() => (activePicker === 'start' ? setActivePicker(null) : openPicker('start'))}
-            className={`flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-mono font-bold transition shadow-xs ${
-              activePicker === 'start'
+            className={`flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-mono font-bold transition shadow-xs ${activePicker === 'start'
                 ? 'border-orange-500 bg-orange-50/70 text-orange-950 ring-2 ring-orange-500/20 dark:border-orange-400 dark:bg-orange-500/15 dark:text-orange-200'
                 : 'border-slate-200 bg-white text-slate-800 hover:border-slate-300 dark:border-white/10 dark:bg-[#09090b] dark:text-zinc-200 dark:hover:border-white/20'
-            } disabled:opacity-50 disabled:cursor-not-allowed`}
+              } disabled:opacity-50 disabled:cursor-not-allowed`}
           >
             <CalendarIcon className="h-3.5 w-3.5 text-orange-600 dark:text-orange-400 shrink-0" />
             <span className="font-sans text-[11px] font-medium text-slate-500 dark:text-zinc-400">من تاريخ:</span>
@@ -370,19 +396,19 @@ export function FinancialDatePicker({
           </button>
         </div>
 
-        <span className="text-slate-400 dark:text-zinc-600 select-none font-bold">→</span>
+        {/* 3rd: Arrow Separator Icon (Reversed for RTL flow from Start to End) */}
+        <ArrowLeft className="h-3.5 w-3.5 text-slate-400 dark:text-zinc-600 select-none shrink-0" />
 
-        {/* Input 2: End Date (إلى تاريخ) */}
+        {/* 4th: Input 2: End Date (إلى تاريخ) */}
         <div className="relative">
           <button
             type="button"
             disabled={isTriggerDisabled}
             onClick={() => (activePicker === 'end' ? setActivePicker(null) : openPicker('end'))}
-            className={`flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-mono font-bold transition shadow-xs ${
-              activePicker === 'end'
+            className={`flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-mono font-bold transition shadow-xs ${activePicker === 'end'
                 ? 'border-orange-500 bg-orange-50/70 text-orange-950 ring-2 ring-orange-500/20 dark:border-orange-400 dark:bg-orange-500/15 dark:text-orange-200'
                 : 'border-slate-200 bg-white text-slate-800 hover:border-slate-300 dark:border-white/10 dark:bg-[#09090b] dark:text-zinc-200 dark:hover:border-white/20'
-            } disabled:opacity-50 disabled:cursor-not-allowed`}
+              } disabled:opacity-50 disabled:cursor-not-allowed`}
           >
             <CalendarIcon className="h-3.5 w-3.5 text-orange-600 dark:text-orange-400 shrink-0" />
             <span className="font-sans text-[11px] font-medium text-slate-500 dark:text-zinc-400">إلى تاريخ:</span>

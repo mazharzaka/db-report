@@ -34,42 +34,42 @@ export function VoidsAlertWidget({ rows, className = '' }: VoidsAlertWidgetProps
   return (
     <section
       aria-label="تنبيه الرقابة المالية للمرتجعات"
-      className={`rounded-2xl border border-rose-200 bg-rose-50/70 p-4 shadow-xs transition-colors dark:border-rose-900/40 dark:bg-rose-950/20 print:border-black print:bg-transparent print:p-2 print:break-inside-avoid ${className}`}
+      className={`rounded-xl border border-amber-500/30 bg-amber-500/5 p-4 shadow-sm ring-1 ring-amber-500/20 backdrop-blur-md transition-colors dark:border-amber-500/30 dark:bg-amber-950/20 print:border-black print:bg-transparent print:p-2 print:break-inside-avoid ${className}`}
     >
       {/* Header Block */}
-      <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between border-b border-rose-200/80 pb-3 dark:border-rose-900/40 print:border-b print:border-black">
+      <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between border-b border-amber-500/20 pb-3 dark:border-amber-500/20 print:border-b print:border-black">
         <div className="flex items-start gap-3">
-          <div className="mt-0.5 rounded-xl bg-rose-600/10 p-2 text-rose-700 dark:bg-rose-500/20 dark:text-rose-300 print:text-black print:p-0">
+          <div className="mt-0.5 rounded-lg bg-amber-500/10 p-2 text-amber-500 dark:bg-amber-500/20 dark:text-amber-300 print:text-black print:p-0">
             <ShieldAlert className="h-5 w-5" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h3 className="text-sm font-bold text-rose-950 dark:text-rose-100 print:text-black">
+              <h3 className="text-sm font-bold text-amber-950 dark:text-amber-100 print:text-black">
                 تنبيه الرقابة المالية: رصد مرتجعات وإلغاءات نشطة (Active Voids Alert)
               </h3>
-              <span className="inline-flex items-center rounded-full bg-rose-100 px-2.5 py-0.5 text-[11px] font-bold text-rose-800 dark:bg-rose-900/50 dark:text-rose-200 print:hidden">
+              <span className="inline-flex items-center rounded-full bg-amber-950/80 px-2.5 py-0.5 text-[11px] font-bold text-amber-300 border border-amber-500/40 shadow-xs font-mono tracking-tight print:hidden">
                 {branchesWithVoids.length} منفذ متأثر
               </span>
             </div>
-            <p className="mt-0.5 text-xs text-rose-800/80 dark:text-rose-300/80 print:text-black">
+            <p className="mt-0.5 text-xs text-amber-900/80 dark:text-amber-200/80 print:text-black">
               يُعرض هذا التنبيه لوجود عمليات إلغاء/مرتجع تتطلب تدقيقاً ومطابقة مع أذونات الإلغاء المعتمدة للكاشير.
             </p>
           </div>
         </div>
 
         {/* Aggregated KPI Badges */}
-        <div className="flex flex-wrap items-center gap-2 text-xs font-mono">
-          <div className="rounded-lg bg-white/90 border border-rose-200 px-3 py-1 text-rose-900 dark:bg-zinc-900 dark:border-rose-900/40 dark:text-rose-200 print:border-black print:bg-transparent print:text-black">
+        <div className="flex flex-wrap items-center gap-2 text-xs font-mono tabular-nums tracking-tight">
+          <div className="rounded-lg bg-white/90 border border-amber-500/30 px-3 py-1 text-amber-900 dark:bg-zinc-900/80 dark:border-amber-500/40 dark:text-amber-200 print:border-black print:bg-transparent print:text-black">
             <span className="text-[10px] text-slate-500 dark:text-zinc-400 font-sans ml-1">إجمالي المرتجعات:</span>
             <span className="font-extrabold">{fmtMoney(totalVoidAmount)}</span>
           </div>
           {totalVoidCount > 0 && (
-            <div className="rounded-lg bg-white/90 border border-rose-200 px-3 py-1 text-rose-900 dark:bg-zinc-900 dark:border-rose-900/40 dark:text-rose-200 print:border-black print:bg-transparent print:text-black">
+            <div className="rounded-lg bg-white/90 border border-amber-500/30 px-3 py-1 text-amber-900 dark:bg-zinc-900/80 dark:border-amber-500/40 dark:text-amber-200 print:border-black print:bg-transparent print:text-black">
               <span className="text-[10px] text-slate-500 dark:text-zinc-400 font-sans ml-1">عدد الإلغاءات:</span>
               <span className="font-bold">{fmtInt(totalVoidCount)} عملية</span>
             </div>
           )}
-          <div className="rounded-lg bg-white/90 border border-rose-200 px-3 py-1 text-rose-900 dark:bg-zinc-900 dark:border-rose-900/40 dark:text-rose-200 print:border-black print:bg-transparent print:text-black">
+          <div className="rounded-lg bg-white/90 border border-amber-500/30 px-3 py-1 text-amber-900 dark:bg-zinc-900/80 dark:border-amber-500/40 dark:text-amber-200 print:border-black print:bg-transparent print:text-black">
             <span className="text-[10px] text-slate-500 dark:text-zinc-400 font-sans ml-1">نسبة الهدر:</span>
             <span className="font-bold">{overallVoidRatio.toFixed(1)}%</span>
           </div>

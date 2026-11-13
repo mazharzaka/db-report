@@ -159,7 +159,7 @@ export function InvoicesTable({
   // حالة التحميل الأولي
   if (loading && (!invoices || invoices.length === 0)) {
     return (
-      <div className={`rounded-3xl border border-slate-200 bg-white p-8 text-center dark:border-white/5 dark:bg-[#18181b] ${className}`}>
+      <div className={`rounded-xl border border-slate-200/80 bg-white p-8 text-center shadow-sm ring-1 ring-slate-900/5 backdrop-blur-md dark:border-zinc-800/80 dark:bg-zinc-900/60 dark:ring-white/10 ${className}`}>
         <div className="flex h-10 w-10 mx-auto animate-spin items-center justify-center rounded-full border-2 border-orange-500 border-t-transparent" />
         <p className="mt-3 text-xs font-semibold text-slate-500 dark:text-zinc-400">جاري فحص وتدقيق سجل المرتجعات...</p>
       </div>
@@ -170,9 +170,9 @@ export function InvoicesTable({
   if (!loading && voidInvoices.length === 0) {
     return (
       <div
-        className={`rounded-3xl border border-emerald-200/80 bg-emerald-50/40 p-8 text-center dark:border-emerald-900/30 dark:bg-emerald-950/10 ${className}`}
+        className={`rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-8 text-center shadow-sm ring-1 ring-emerald-500/20 backdrop-blur-md dark:border-emerald-500/20 dark:bg-emerald-950/20 ${className}`}
       >
-        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-400 shadow-xs">
+        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shadow-xs">
           <CheckCircle2 className="h-7 w-7" />
         </div>
         <h3 className="mt-3.5 text-base font-bold text-slate-900 dark:text-white">
@@ -187,7 +187,7 @@ export function InvoicesTable({
 
   return (
     <div
-      className={`rounded-3xl border border-slate-200 bg-white p-6 shadow-sm print:border-none print:shadow-none print:p-0 dark:border-white/5 dark:bg-[#18181b] ${className}`}
+      className={`rounded-xl border border-slate-200/80 bg-white p-6 shadow-sm ring-1 ring-slate-900/5 backdrop-blur-md print:border-none print:shadow-none print:p-0 dark:border-zinc-800/80 dark:bg-zinc-900/60 dark:ring-white/10 ${className}`}
     >
       {/* Header and Controls */}
       <div className="flex flex-col gap-3 border-b border-slate-200 dark:border-white/5 p-4 sm:flex-row sm:items-center sm:justify-between print:hidden">

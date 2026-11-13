@@ -186,32 +186,32 @@ export function CaravanGrid({
       case 'variance': {
         const v = Math.round((Number(r.variance) || 0) * 100) / 100;
         if (Math.abs(v) < 0.005) {
-          // If Variance === 0: Subtle green text/indicator (Perfect Match)
+          // If Variance === 0: Solid Audit Stamp (Perfect Match)
           return (
-            <span className="inline-flex items-center gap-1 font-mono font-bold text-emerald-700 bg-emerald-50 dark:bg-emerald-950/40 dark:text-emerald-400 border border-emerald-200/80 dark:border-emerald-800/40 px-2 py-0.5 rounded-md text-xs print:border-none print:bg-transparent print:text-black">
+            <span className="inline-flex items-center gap-1 font-mono font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20 px-2 py-0.5 rounded-md text-xs shadow-2xs tabular-nums tracking-tight print:border-none print:bg-transparent print:text-black">
               <span>0.00</span>
               <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-sans print:hidden">✓ مطابق</span>
             </span>
           );
         }
         if (v < 0) {
-          // If Variance < 0 (Shortage/عجز): Light red background with bold dark red text
+          // If Variance < 0 (Shortage/عجز): Strict high-contrast dark amber warning style
           return (
-            <span className="inline-flex items-center gap-1.5 font-mono font-extrabold text-red-700 bg-red-50 dark:bg-red-950/50 dark:text-red-300 border border-red-200 dark:border-red-900/60 px-2.5 py-0.5 rounded-md text-xs print:border-none print:bg-transparent print:text-black print:font-extrabold">
+            <span className="inline-flex items-center gap-1.5 font-mono font-extrabold text-amber-300 bg-amber-950/80 border border-amber-500/40 px-2.5 py-0.5 rounded-md text-xs shadow-2xs tabular-nums tracking-tight print:border-none print:bg-transparent print:text-black print:font-extrabold">
               <span className="print:hidden">{fmtMoney(v)}</span>
               <span className="hidden print:inline font-bold">({fmtMoney(Math.abs(v))}) - عجز</span>
-              <span className="text-[10px] font-semibold bg-red-100 text-red-800 dark:bg-red-900/60 dark:text-red-200 px-1 rounded print:hidden">
+              <span className="text-[10px] font-semibold bg-amber-500/20 text-amber-300 px-1 rounded print:hidden">
                 عجز
               </span>
             </span>
           );
         }
-        // If Variance > 0 (Overage/زيادة): Light yellow/orange background with dark text
+        // If Variance > 0 (Overage/زيادة): Amber audit badge
         return (
-          <span className="inline-flex items-center gap-1.5 font-mono font-bold text-amber-800 bg-amber-50 dark:bg-amber-950/50 dark:text-amber-200 border border-amber-200 dark:border-amber-900/60 px-2.5 py-0.5 rounded-md text-xs print:border-none print:bg-transparent print:text-black print:font-bold">
+          <span className="inline-flex items-center gap-1.5 font-mono font-bold text-amber-700 bg-amber-50 border border-amber-200 dark:bg-amber-500/10 dark:text-amber-400 dark:border-amber-500/30 px-2.5 py-0.5 rounded-md text-xs shadow-2xs tabular-nums tracking-tight print:border-none print:bg-transparent print:text-black print:font-bold">
             <span className="print:hidden">+{fmtMoney(v)}</span>
             <span className="hidden print:inline font-bold">+{fmtMoney(v)} زيادة</span>
-            <span className="text-[10px] font-semibold bg-amber-100 text-amber-800 dark:bg-amber-900/60 dark:text-amber-200 px-1 rounded print:hidden">
+            <span className="text-[10px] font-semibold bg-amber-100 text-amber-800 dark:bg-amber-500/20 dark:text-amber-400 px-1 rounded print:hidden">
               زيادة
             </span>
           </span>
@@ -422,7 +422,7 @@ export function CaravanGrid({
 
   return (
     <div
-      className={`rounded-3xl border border-slate-200 bg-white p-6 shadow-sm print:border-none print:shadow-none print:break-inside-auto print:p-0 dark:border-white/5 dark:bg-[#18181b] ${className}`}
+      className={`rounded-xl border border-slate-200/80 bg-white p-6 shadow-sm ring-1 ring-slate-900/5 backdrop-blur-md dark:border-zinc-800/80 dark:bg-zinc-900/60 dark:ring-white/10 print:border-none print:shadow-none print:break-inside-auto print:p-0 ${className}`}
     >
       {/* Header and Controls */}
       <div className="flex flex-col gap-3 border-b border-slate-200 dark:border-white/5 p-4 sm:flex-row sm:items-center sm:justify-between print:hidden">
@@ -592,9 +592,9 @@ export function CaravanGrid({
                             key={c.key}
                             className={`whitespace-nowrap px-4 py-3 print:px-2 print:py-1.5 ${
                               isFirstCol
-                                ? 'sticky right-0 z-10 bg-white text-slate-900 font-bold shadow-[2px_0_5px_rgba(0,0,0,0.04)] dark:bg-[#18181b] dark:text-slate-100 dark:shadow-[2px_0_5px_rgba(0,0,0,0.3)] print:shadow-none print:bg-transparent'
+                                ? 'sticky right-0 z-10 bg-white text-slate-900 font-bold shadow-[2px_0_5px_rgba(0,0,0,0.04)] dark:bg-zinc-900 dark:text-slate-100 dark:shadow-[2px_0_5px_rgba(0,0,0,0.3)] print:shadow-none print:bg-transparent'
                                 : 'text-slate-800 dark:text-zinc-300'
-                            } ${c.numeric ? 'text-left font-mono tabular-nums' : 'text-right'}`}
+                            } ${c.numeric ? 'text-left font-mono tabular-nums tracking-tight' : 'text-right'}`}
                             dir={c.numeric ? 'ltr' : undefined}
                           >
                             {renderCell(r, c)}

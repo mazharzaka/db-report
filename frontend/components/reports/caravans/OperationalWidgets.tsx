@@ -47,7 +47,7 @@ export function TopItemsWidget({
   );
 
   return (
-    <section className="flex h-full flex-col rounded-3xl border border-slate-200/80 bg-white p-6 shadow-sm dark:border-white/5 dark:bg-[#18181b]">
+    <section className="flex h-full flex-col rounded-xl border border-slate-200/80 bg-white p-5 sm:p-6 shadow-sm ring-1 ring-slate-900/5 backdrop-blur-md dark:border-zinc-800/80 dark:bg-zinc-900/60 dark:ring-white/10">
       {/* ---------- Header: Tabs & Mode Switcher ---------- */}
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
@@ -203,9 +203,9 @@ export function TopItemsWidget({
                 </div>
 
                 {/* Details Footer */}
-                <div className="mt-2 flex items-center justify-between text-xs tabular-nums font-mono text-slate-500 dark:text-zinc-400">
+                <div className="mt-2 flex items-center justify-between text-xs tabular-nums tracking-tight font-mono text-slate-500 dark:text-zinc-400">
                   <span>الكمية: <strong className="text-slate-700 dark:text-zinc-200">{fmtInt(it.qty)}</strong> وحدة</span>
-                  <span dir="ltr" className="font-bold text-slate-900 dark:text-white">
+                  <span dir="ltr" className="font-bold text-slate-900 dark:text-white tabular-nums tracking-tight">
                     {fmtMoney(it.revenue)}
                   </span>
                 </div>
@@ -230,11 +230,11 @@ function DuelColumn({ side, winner, tone }: { side: DuelSide; winner: boolean; t
       </div>
       <div>
         <p className="text-[11px] text-slate-500 dark:text-zinc-400">صافي الإيراد</p>
-        <p className={`text-lg font-extrabold tabular-nums font-mono ${accent}`} dir="ltr" style={{ textAlign: 'right' }}>{fmtMoney(side.revenue)}</p>
+        <p className={`text-lg font-extrabold tabular-nums tracking-tight font-mono ${accent}`} dir="ltr" style={{ textAlign: 'right' }}>{fmtMoney(side.revenue)}</p>
       </div>
-      <dl className="space-y-1.5 text-xs tabular-nums">
-        <div className="flex justify-between"><dt className="text-slate-500 dark:text-zinc-400">عدد الشيكات</dt><dd className="font-semibold text-slate-700 dark:text-zinc-200 font-mono">{fmtInt(side.orders)}</dd></div>
-        <div className="flex justify-between"><dt className="text-slate-500 dark:text-zinc-400">متوسط الفاتورة</dt><dd className="font-semibold text-slate-700 dark:text-zinc-200 font-mono" dir="ltr">{fmtMoney(side.avgTicket)}</dd></div>
+      <dl className="space-y-1.5 text-xs tabular-nums tracking-tight">
+        <div className="flex justify-between"><dt className="text-slate-500 dark:text-zinc-400">عدد الشيكات</dt><dd className="font-semibold text-slate-700 dark:text-zinc-200 font-mono tabular-nums tracking-tight">{fmtInt(side.orders)}</dd></div>
+        <div className="flex justify-between"><dt className="text-slate-500 dark:text-zinc-400">متوسط الفاتورة</dt><dd className="font-semibold text-slate-700 dark:text-zinc-200 font-mono tabular-nums tracking-tight" dir="ltr">{fmtMoney(side.avgTicket)}</dd></div>
         <div className="flex justify-between gap-2">
           <dt className="shrink-0 text-slate-500 dark:text-zinc-400">الصنف المميز</dt>
           <dd className="truncate font-semibold text-slate-700 dark:text-zinc-200">{side.signature?.itemName ?? '—'}</dd>
@@ -246,7 +246,7 @@ function DuelColumn({ side, winner, tone }: { side: DuelSide; winner: boolean; t
 
 export function DuelCard({ duel, loading }: { duel: { a: DuelSide; b: DuelSide } | null; loading: boolean }) {
   return (
-    <section className="flex h-full flex-col rounded-3xl border border-slate-200/80 bg-white p-6 shadow-sm dark:border-white/5 dark:bg-[#18181b]">
+    <section className="flex h-full flex-col rounded-xl border border-slate-200/80 bg-white p-5 sm:p-6 shadow-sm ring-1 ring-slate-900/5 backdrop-blur-md dark:border-zinc-800/80 dark:bg-zinc-900/60 dark:ring-white/10">
       <div className="mb-4">
         <h3 className="text-base font-bold text-slate-900 dark:text-white">مواجهة المتصدّرَين</h3>
         <p className="mt-0.5 text-xs text-slate-500 dark:text-zinc-400">أعلى محلين إيراداً خلال الفترة</p>
@@ -337,7 +337,7 @@ export function CaptureRateCard({
     : (guests > 0 ? (caravanRevenue / guests) : (Number(capture?.spendPerGuest) || 0));
 
   return (
-    <section className="flex h-full flex-col rounded-3xl border border-slate-200/80 bg-white p-6 shadow-sm dark:border-white/5 dark:bg-[#18181b]">
+    <section className="flex h-full flex-col rounded-xl border border-slate-200/80 bg-white p-5 sm:p-6 shadow-sm ring-1 ring-slate-900/5 backdrop-blur-md dark:border-zinc-800/80 dark:bg-zinc-900/60 dark:ring-white/10">
       <div className="flex items-start justify-between">
         <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-orange-50 text-orange-600 border border-orange-100 dark:bg-white/5 dark:text-orange-400 dark:border-white/5">
           <Users className="h-6 w-6 text-orange-600 dark:text-orange-400 font-bold" />
@@ -366,15 +366,15 @@ export function CaptureRateCard({
         <>
           <div className="mt-4">
             <p className="text-sm text-slate-500 dark:text-zinc-400">متوسط إنفاق الزائر في المطاعم والكرفانات</p>
-            <p className="mt-1 text-2xl font-extrabold tabular-nums text-slate-900 dark:text-white" dir="ltr" style={{ textAlign: 'right' }}>
+            <p className="mt-1 text-2xl font-extrabold tabular-nums tracking-tight font-mono text-slate-900 dark:text-white" dir="ltr" style={{ textAlign: 'right' }}>
               {fmtMoney(avgSpend)}
             </p>
           </div>
 
-          <dl className="mt-4 space-y-2.5 border-t border-slate-100 pt-4 text-sm tabular-nums dark:border-white/5">
+          <dl className="mt-4 space-y-2.5 border-t border-slate-100 pt-4 text-sm tabular-nums tracking-tight dark:border-white/5">
             <div className="flex items-center justify-between">
               <dt className="text-slate-500 dark:text-zinc-400">إجمالي الزوار</dt>
-              <dd className="font-semibold text-slate-900 dark:text-white">{fmtInt(guests)}</dd>
+              <dd className="font-semibold text-slate-900 dark:text-white font-mono tabular-nums tracking-tight">{fmtInt(guests)}</dd>
             </div>
             <div className="flex items-center justify-between">
               <dt className="text-slate-500 dark:text-zinc-400">صافي إيراد المحلات</dt>
