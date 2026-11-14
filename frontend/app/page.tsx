@@ -25,7 +25,7 @@ import {
   DuelCard,
   TopItemsWidget,
 } from '@/components/reports/caravans/OperationalWidgets';
-import { CustomerBehaviorRow } from '@/components/reports/caravans/CustomerBehaviorRow';
+import { VisitorOutletPerformanceRow } from '@/components/reports/caravans/VisitorOutletPerformanceRow';
 import { BranchComparisonChart } from '@/components/reports/caravans/BranchComparisonChart';
 import { PeriodComparisonDashboard } from '@/components/reports/caravans/PeriodComparisonDashboard';
 import { SplashScreen } from '@/components/reports/caravans/SplashScreen';
@@ -157,8 +157,8 @@ export default function CaravanDashboardHomePage() {
                   type="button"
                   onClick={() => dash.setViewMode('standard')}
                   className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-bold transition ${dash.viewMode === 'standard'
-                      ? 'bg-white text-orange-600 shadow-sm dark:bg-zinc-950 dark:text-orange-400 border border-slate-200/80 dark:border-zinc-800'
-                      : 'text-slate-600 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-zinc-300'
+                    ? 'bg-white text-orange-600 shadow-sm dark:bg-zinc-950 dark:text-orange-400 border border-slate-200/80 dark:border-zinc-800'
+                    : 'text-slate-600 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-zinc-300'
                     }`}
                 >
                   <BarChart3 className="h-3.5 w-3.5" />
@@ -168,8 +168,8 @@ export default function CaravanDashboardHomePage() {
                   type="button"
                   onClick={() => dash.setViewMode('comparison')}
                   className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-bold transition ${dash.viewMode === 'comparison'
-                      ? 'bg-white text-orange-600 shadow-sm dark:bg-zinc-950 dark:text-orange-400 border border-slate-200/80 dark:border-zinc-800'
-                      : 'text-slate-600 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-zinc-300'
+                    ? 'bg-white text-orange-600 shadow-sm dark:bg-zinc-950 dark:text-orange-400 border border-slate-200/80 dark:border-zinc-800'
+                    : 'text-slate-600 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-zinc-300'
                     }`}
                 >
                   <Scale className="h-3.5 w-3.5" />
@@ -329,26 +329,21 @@ export default function CaravanDashboardHomePage() {
                   summary={dash.summary}
                   trend={dash.trend}
                   records={dash.records}
+                  guests={dash.guests}
                   refreshTick={dash.refreshTick}
                 />
               </Suspense>
             </div>
 
             {/* --------------------------------------------------------------------- */}
-            {/* ROW 2: CUSTOMER BEHAVIOR (Micro Metrics: 50/50 AOV, Basket & Payments)*/}
+            {/* ROW 2: VISITOR & OUTLET PERFORMANCE (Micro Metrics: 50/50 Split)      */}
             {/* --------------------------------------------------------------------- */}
             <div className={`break-inside-avoid ${!dash.printConfig.kpis ? 'print:hidden' : ''}`}>
-              <CustomerBehaviorRow
-                totalUnits={dash.summary?.totalQuantity || dash.summary?.totalCover || 0}
-                totalOrders={dash.summary?.totalCover || 0}
-                avgSpend={
-                  dash.summary?.avgTicket ||
-                  (dash.summary?.totalCover && dash.summary.totalCover > 0
-                    ? dash.summary.totalSales / dash.summary.totalCover
-                    : 0)
-                }
+              <VisitorOutletPerformanceRow
                 totalRevenue={dash.summary?.totalSales ?? 0}
+                records={dash.records}
                 guests={dash.guests}
+                spendPerGuest={dash.spendPerGuest}
                 summary={dash.summary}
                 loading={dash.loading}
               />
