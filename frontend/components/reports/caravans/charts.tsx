@@ -154,7 +154,20 @@ export interface TrendPoint {
   visa: number;
 }
 
-export function RevenueTrendChart({ points }: { points: TrendPoint[] }) {
+export function RevenueTrendChart({
+  points,
+  startDate,
+  endDate,
+}: {
+  points: TrendPoint[];
+  startDate?: string;
+  endDate?: string;
+}) {
+  // Conditional rendering: If single day selected OR points array length <= 1, return null
+  if ((startDate && endDate && startDate === endDate) || !points || points.length <= 1) {
+    return null;
+  }
+
   const dark = useIsDark();
   const tick = dark ? "#94a3b8" : "#4b5563";
   const grid = dark ? "#334155" : "#e5e7eb";

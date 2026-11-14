@@ -22,10 +22,10 @@ import { InvoicesTable } from '@/components/reports/caravans/InvoicesTable';
 import { VoidsAlertWidget } from '@/components/reports/caravans/VoidsAlertWidget';
 import { ParkMap } from '@/components/reports/caravans/ParkMap';
 import {
-  CaptureRateCard,
   DuelCard,
   TopItemsWidget,
 } from '@/components/reports/caravans/OperationalWidgets';
+import { CustomerBehaviorRow } from '@/components/reports/caravans/CustomerBehaviorRow';
 import { BranchComparisonChart } from '@/components/reports/caravans/BranchComparisonChart';
 import { PeriodComparisonDashboard } from '@/components/reports/caravans/PeriodComparisonDashboard';
 import { SplashScreen } from '@/components/reports/caravans/SplashScreen';
@@ -156,11 +156,10 @@ export default function CaravanDashboardHomePage() {
                 <button
                   type="button"
                   onClick={() => dash.setViewMode('standard')}
-                  className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-bold transition ${
-                    dash.viewMode === 'standard'
+                  className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-bold transition ${dash.viewMode === 'standard'
                       ? 'bg-white text-orange-600 shadow-sm dark:bg-zinc-950 dark:text-orange-400 border border-slate-200/80 dark:border-zinc-800'
                       : 'text-slate-600 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-zinc-300'
-                  }`}
+                    }`}
                 >
                   <BarChart3 className="h-3.5 w-3.5" />
                   <span>التقرير القياسي</span>
@@ -168,11 +167,10 @@ export default function CaravanDashboardHomePage() {
                 <button
                   type="button"
                   onClick={() => dash.setViewMode('comparison')}
-                  className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-bold transition ${
-                    dash.viewMode === 'comparison'
+                  className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-bold transition ${dash.viewMode === 'comparison'
                       ? 'bg-white text-orange-600 shadow-sm dark:bg-zinc-950 dark:text-orange-400 border border-slate-200/80 dark:border-zinc-800'
                       : 'text-slate-600 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-zinc-300'
-                  }`}
+                    }`}
                 >
                   <Scale className="h-3.5 w-3.5" />
                   <span>مقارنة فترتين</span>
@@ -320,7 +318,7 @@ export default function CaravanDashboardHomePage() {
           /* ========================================================================= */
           <div className="space-y-6">
             {/* --------------------------------------------------------------------- */}
-            {/* ROW 1: EXECUTIVE PULSE (Suspense-wrapped Top KPI Cards)               */}
+            {/* ROW 1: EXECUTIVE PULSE (Suspense-wrapped Top Macro KPI Cards)         */}
             {/* --------------------------------------------------------------------- */}
             <div className={`break-inside-avoid ${!dash.printConfig.kpis ? 'print:hidden' : ''}`}>
               <Suspense fallback={<KPIsSkeleton />}>
@@ -330,9 +328,30 @@ export default function CaravanDashboardHomePage() {
                   selectedBranches={dash.effectiveBranches}
                   summary={dash.summary}
                   trend={dash.trend}
+                  records={dash.records}
                   refreshTick={dash.refreshTick}
                 />
               </Suspense>
+            </div>
+
+            {/* --------------------------------------------------------------------- */}
+            {/* ROW 2: CUSTOMER BEHAVIOR (Micro Metrics: 50/50 AOV, Basket & Payments)*/}
+            {/* --------------------------------------------------------------------- */}
+            <div className={`break-inside-avoid ${!dash.printConfig.kpis ? 'print:hidden' : ''}`}>
+              <CustomerBehaviorRow
+                totalUnits={dash.summary?.totalQuantity || dash.summary?.totalCover || 0}
+                totalOrders={dash.summary?.totalCover || 0}
+                avgSpend={
+                  dash.summary?.avgTicket ||
+                  (dash.summary?.totalCover && dash.summary.totalCover > 0
+                    ? dash.summary.totalSales / dash.summary.totalCover
+                    : 0)
+                }
+                totalRevenue={dash.summary?.totalSales ?? 0}
+                guests={dash.guests}
+                summary={dash.summary}
+                loading={dash.loading}
+              />
             </div>
 
             {dash.itemsError && (
@@ -346,111 +365,96 @@ export default function CaravanDashboardHomePage() {
             )}
 
             {/* --------------------------------------------------------------------- */}
-            {/* ROW 2: SALES DRIVERS (Top Items by Quantity & Capture Rate)          */}
+            {/* ROW 3: SALES DRIVERS (Top Items by Quantity / Value)                 */}
             {/* --------------------------------------------------------------------- */}
-            <div
-              className={`grid grid-cols-1 gap-4 lg:grid-cols-12 break-inside-avoid ${
-                !dash.printConfig.kpis ? 'print:hidden' : ''
-              }`}
-            >
-              {/* Primary Focus: Top Items defaulting to QUANTITY (الكميات) */}
-              <div className="lg:col-span-12 xl:col-span-8">
-                <TopItemsWidget
-                  items={dash.topItems.length > 0 ? dash.topItems : (dash.itemsData?.topItems ?? [])}
-                  slowItems={dash.slowItems.length > 0 ? dash.slowItems : (dash.itemsData?.slowItems ?? [])}
-                  mode={dash.itemMode}
-                  onModeChange={dash.setItemMode}
-                  metric={dash.itemMetric}
-                  onMetricChange={dash.setItemMetric}
-                  scopeLabel={dash.topScopeLabel}
-                  loading={dash.itemsLoading}
-                />
-              </div>
+            <div className={`break-inside-avoid ${!dash.printConfig.kpis ? 'print:hidden' : ''}`}>
+              <TopItemsWidget
+                items={dash.topItems.length > 0 ? dash.topItems : (dash.itemsData?.topItems ?? [])}
+                slowItems={dash.slowItems.length > 0 ? dash.slowItems : (dash.itemsData?.slowItems ?? [])}
+                mode={dash.itemMode}
+                onModeChange={dash.setItemMode}
+                metric={dash.itemMetric}
+                onMetricChange={dash.setItemMetric}
+                scopeLabel={dash.topScopeLabel}
+                loading={dash.itemsLoading}
+              />
+            </div>
 
-              {/* Park Capture Rate & Spend per Guest */}
-              <div className="lg:col-span-12 xl:col-span-4">
-                <CaptureRateCard
-                  guests={dash.guests}
-                  spendPerGuest={dash.spendPerGuest}
-                  capture={
-                    dash.itemsData?.capture ?? {
-                      caravanRevenue: dash.summary?.totalSales ?? 0,
-                      grossRevenue: dash.summary?.totalSales ?? 0,
-                      gateTickets: 0,
-                      guests: dash.guests,
-                      spendPerGuest: dash.spendPerGuest,
-                      visitDivisor: 6,
-                      gateBranchCodes: [],
+            {/* --------------------------------------------------------------------- */}
+            {/* ROW 3: DYNAMICS (Branch Comparison & Conditional Revenue Trend)       */}
+            {/* --------------------------------------------------------------------- */}
+            {(() => {
+              const isSingleDay = dash.start === dash.end;
+
+              return (
+                <div
+                  className={`grid grid-cols-1 gap-4 transition-opacity lg:grid-cols-12 break-inside-avoid ${dash.loading ? 'opacity-60' : ''
+                    } ${!dash.printConfig.charts ? 'print:hidden' : ''}`}
+                >
+                  <Card
+                    className={isSingleDay ? 'col-span-full lg:col-span-12' : 'col-span-12 lg:col-span-6'}
+                    title="مقارنة أداء الفروع والمحلات"
+                    subtitle={
+                      isSingleDay
+                        ? `جميع الفروع والمحلات (${dash.comparisonStats.length} منفذ) مرتبة حسب ${dash.barMetric === 'revenue' ? 'صافي الإيراد' : 'عدد العمليات'
+                        }`
+                        : `أعلى ${Math.min(
+                          dash.comparisonStats.length,
+                          10
+                        )} محلات مرتبة حسب ${dash.barMetric === 'revenue' ? 'صافي الإيراد' : 'عدد العمليات'
+                        }`
                     }
-                  }
-                  loading={dash.itemsLoading}
-                />
-              </div>
-            </div>
-
-            {/* --------------------------------------------------------------------- */}
-            {/* ROW 3: DYNAMICS (Branch Comparison & Revenue Trend Side-by-Side)      */}
-            {/* --------------------------------------------------------------------- */}
-            <div
-              className={`grid grid-cols-1 gap-4 transition-opacity lg:grid-cols-12 break-inside-avoid ${
-                dash.loading ? 'opacity-60' : ''
-              } ${!dash.printConfig.charts ? 'print:hidden' : ''}`}
-            >
-              <Card
-                className="lg:col-span-6"
-                title="مقارنة أداء الفروع والمحلات"
-                subtitle={`أعلى ${Math.min(
-                  dash.comparisonStats.length,
-                  MAX_BRANCHES_IN_CHART
-                )} محلات مرتبة حسب ${
-                  dash.barMetric === 'revenue' ? 'صافي الإيراد' : 'عدد العمليات'
-                }`}
-                action={
-                  <Segmented
-                    options={[
-                      { id: 'revenue', label: 'صافي الإيراد' },
-                      { id: 'orders', label: 'عدد الشيكات' },
-                    ]}
-                    value={dash.barMetric}
-                    onChange={dash.setBarMetric}
-                  />
-                }
-              >
-                <div className="h-[360px]" dir="ltr">
-                  {dash.comparisonStats.length > 0 ? (
-                    <BranchComparisonChart stats={dash.comparisonStats} metric={dash.barMetric} />
-                  ) : (
-                    <div className="flex h-full items-center justify-center text-sm text-zinc-400">
-                      لا توجد بيانات
+                    action={
+                      <Segmented
+                        options={[
+                          { id: 'revenue', label: 'صافي الإيراد' },
+                          { id: 'orders', label: 'عدد الشيكات' },
+                        ]}
+                        value={dash.barMetric}
+                        onChange={dash.setBarMetric}
+                      />
+                    }
+                  >
+                    <div className="h-[360px]" dir="ltr">
+                      {dash.comparisonStats.length > 0 ? (
+                        <BranchComparisonChart
+                          stats={dash.comparisonStats}
+                          metric={dash.barMetric}
+                          isSingleDay={isSingleDay}
+                        />
+                      ) : (
+                        <div className="flex h-full items-center justify-center text-sm text-zinc-400">
+                          لا توجد بيانات
+                        </div>
+                      )}
                     </div>
+                  </Card>
+
+                  {!isSingleDay && (
+                    <Card
+                      className="col-span-12 lg:col-span-6"
+                      title="اتجاه الإيرادات عبر الوقت"
+                      subtitle="مسار المبيعات مقسّماً (صافي الإيراد، النقدية، الفيزا)"
+                    >
+                      <div className="h-[360px]" dir="ltr">
+                        <RevenueTrendChart
+                          points={dash.trend}
+                          startDate={dash.start}
+                          endDate={dash.end}
+                        />
+                      </div>
+                    </Card>
                   )}
                 </div>
-              </Card>
-
-              <Card
-                className="lg:col-span-6"
-                title="اتجاه الإيرادات عبر الوقت"
-                subtitle="مسار المبيعات مقسّماً (صافي الإيراد، النقدية، الفيزا)"
-              >
-                <div className="h-[360px]" dir="ltr">
-                  {dash.trend.length > 0 ? (
-                    <RevenueTrendChart points={dash.trend} />
-                  ) : (
-                    <div className="flex h-full items-center justify-center text-sm text-zinc-400">
-                      لا توجد بيانات
-                    </div>
-                  )}
-                </div>
-              </Card>
-            </div>
+              );
+            })()}
 
             {/* --------------------------------------------------------------------- */}
             {/* ROW 4: FINANCIAL CONTROL (Active Voids Alert & Caravan Master Ledger) */}
             {/* --------------------------------------------------------------------- */}
             <div
-              className={`space-y-4 print:space-y-3 print:break-inside-auto ${
-                !dash.printConfig.table ? 'print:hidden' : ''
-              }`}
+              className={`space-y-4 print:space-y-3 print:break-inside-auto ${!dash.printConfig.table ? 'print:hidden' : ''
+                }`}
             >
               {/* Active Voids Alert Widget */}
               <VoidsAlertWidget rows={dash.records} />

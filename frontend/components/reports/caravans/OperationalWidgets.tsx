@@ -364,11 +364,21 @@ export function CaptureRateCard({
         </div>
       ) : (
         <>
-          <div className="mt-4">
-            <p className="text-sm text-slate-500 dark:text-zinc-400">متوسط إنفاق الزائر في المطاعم والكرفانات</p>
-            <p className="mt-1 text-2xl font-extrabold tabular-nums tracking-tight font-mono text-slate-900 dark:text-white" dir="ltr" style={{ textAlign: 'right' }}>
-              {fmtMoney(avgSpend)}
-            </p>
+          <div className="mt-4 flex items-end justify-between">
+            <div>
+              <p className="text-sm font-bold text-slate-700 dark:text-zinc-300">متوسط إنفاق الزائر</p>
+              <p className="mt-1 text-3xl font-extrabold tabular-nums tracking-tight font-mono text-slate-900 dark:text-white" dir="ltr" style={{ textAlign: 'right' }}>
+                {fmtMoney(avgSpend)}
+              </p>
+            </div>
+            {/* Subtle decorative CSS-only sparkline (mini bar chart) using Tailwind */}
+            <div className="flex items-end gap-1.5 pb-1" title="نشاط المؤشر" aria-hidden="true">
+              <span className="w-1.5 h-3 bg-emerald-500/30 rounded-t-sm" />
+              <span className="w-1.5 h-5 bg-emerald-500/50 rounded-t-sm" />
+              <span className="w-1.5 h-4 bg-emerald-500/40 rounded-t-sm" />
+              <span className="w-1.5 h-7 bg-emerald-500/70 rounded-t-sm" />
+              <span className="w-1.5 h-6 bg-emerald-500 rounded-t-sm" />
+            </div>
           </div>
 
           <dl className="mt-4 space-y-2.5 border-t border-slate-100 pt-4 text-sm tabular-nums tracking-tight dark:border-white/5">
@@ -379,10 +389,6 @@ export function CaptureRateCard({
             <div className="flex items-center justify-between">
               <dt className="text-slate-500 dark:text-zinc-400">صافي إيراد المحلات</dt>
               <dd className="font-semibold text-slate-900 dark:text-white" dir="ltr">{fmtMoney(caravanRevenue)}</dd>
-            </div>
-            <div className="flex items-center justify-between">
-              <dt className="text-slate-500 dark:text-zinc-400">إجمالي المبيعات (قبل الخصم)</dt>
-              <dd className="font-semibold text-slate-900 dark:text-white" dir="ltr">{fmtMoney(grossRevenue)}</dd>
             </div>
           </dl>
 

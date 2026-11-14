@@ -25,9 +25,11 @@ const truncate = (s: string, n: number): string =>
 export function BranchComparisonChart({
   stats,
   metric = "revenue",
+  isSingleDay = false,
 }: {
   stats: OutletMetricStat[];
   metric?: "revenue" | "orders";
+  isSingleDay?: boolean;
 }) {
   const dark = useIsDark();
   const tick = dark ? "#94a3b8" : "#4b5563";
@@ -36,6 +38,10 @@ export function BranchComparisonChart({
   const barHoverColor = dark ? "#a78bfa" : "#ea580c";
 
   const isRevenue = metric === "revenue";
+
+  // When isSingleDay is true, show ALL branches without limit.
+  // When false (date range selected), show Top 10 to fit side-by-side layout.
+  const displayedStats = isSingleDay ? stats : stats.slice(0, 10);
 
   const options: ChartOptions<"bar"> = {
     responsive: true,
@@ -57,13 +63,13 @@ export function BranchComparisonChart({
         usePointStyle: true,
         callbacks: {
           title: (items) =>
-            items[0] ? (stats[items[0].dataIndex]?.name ?? "") : "",
+            items[0] ? (displayedStats[items[0].dataIndex]?.name ?? "") : "",
           label: (c) =>
             isRevenue
               ? ` صافي الإيراد: ${fmtMoney(Number(c.parsed.y))}`
               : ` عدد العمليات: ${fmtInt(Number(c.parsed.y))} شيك`,
           footer: (items) => {
-            const s = items[0] ? stats[items[0].dataIndex] : undefined;
+            const s = items[0] ? displayedStats[items[0].dataIndex] : undefined;
             return s
               ? `متوسط الفاتورة: ${fmtMoney(s.avgTicket)} | الشيكات: ${fmtInt(s.orders)}`
               : "";
@@ -79,10 +85,10 @@ export function BranchComparisonChart({
         ticks: {
           color: tick,
           autoSkip: false,
-          maxRotation: 0,
+          maxRotation: isSingleDay ? 45 : 0,
           font: { size: 11 },
           callback(value) {
-            return truncate(stats[Number(value)]?.name ?? "", 14);
+            return truncate(displayedStats[Number(value)]?.name ?? "", isSingleDay ? 18 : 14);
           },
         },
       },
@@ -107,18 +113,18 @@ export function BranchComparisonChart({
           bottomRight: 0,
         },
         borderSkipped: false,
-        maxBarThickness: 42,
+        maxBarThickness: isSingleDay ? 36 : 42,
       },
     },
   };
 
-  const dataValues = stats.map((s) => (isRevenue ? s.revenue : s.orders));
+  const dataValues = displayedStats.map((s) => (isRevenue ? s.revenue : s.orders));
 
   return (
     <Bar
       options={options}
       data={{
-        labels: stats.map((s) => s.name),
+        labels: displayedStats.map((s) => s.name),
         datasets: [
           {
             label: isRevenue ? "صافي الإيراد" : "عدد الشيكات",

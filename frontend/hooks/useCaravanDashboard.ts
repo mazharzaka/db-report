@@ -652,17 +652,15 @@ export function useCaravanDashboard() {
   const comparisonStats = useMemo<OutletMetricStat[]>(() => {
     const list = outlets.length > 0 ? outlets : itemsData?.outlets ?? [];
     if (list.length > 0) {
-      return list
-        .map((o: any) => ({
-          code: String(o.branchCode || o.code),
-          name: String(o.name || o.branchCode || ''),
-          revenue: Number(o.revenue) || 0,
-          orders: Number(o.orders) || 0,
-          avgTicket:
-            Number(o.avgTicket) ||
-            (Number(o.orders) > 0 ? Number(o.revenue) / Number(o.orders) : 0),
-        }))
-        .slice(0, MAX_BRANCHES_IN_CHART);
+      return list.map((o: any) => ({
+        code: String(o.branchCode || o.code),
+        name: String(o.name || o.branchCode || ''),
+        revenue: Number(o.revenue) || 0,
+        orders: Number(o.orders) || 0,
+        avgTicket:
+          Number(o.avgTicket) ||
+          (Number(o.orders) > 0 ? Number(o.revenue) / Number(o.orders) : 0),
+      }));
     }
     return [];
   }, [outlets, itemsData]);

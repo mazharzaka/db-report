@@ -5,6 +5,7 @@ import {
   TrendingUp,
   Boxes,
   Receipt,
+  RotateCcw,
   Scale,
   ArrowUpRight,
   ArrowDownRight,
@@ -14,6 +15,7 @@ import type {
   ExecutiveKpis,
   ExecutiveKpisResponse,
   ReportSummary,
+  CaravanRecord,
 } from '@/types/reports';
 import { Sparkline, fmtInt, fmtMoney, Money, type TrendPoint } from './charts';
 
@@ -21,7 +23,7 @@ import { Sparkline, fmtInt, fmtMoney, Money, type TrendPoint } from './charts';
 
 export function KPIsSkeleton() {
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
       {Array.from({ length: 4 }).map((_, i) => (
         <div
           key={i}
@@ -56,6 +58,8 @@ interface KpiCardProps {
   badgeTone?: 'neutral' | 'success' | 'warning' | 'danger';
   footnote: string;
   loading?: boolean;
+  cssSparkline?: boolean;
+  isAuditTone?: boolean;
 }
 
 function KpiCard({
@@ -69,6 +73,8 @@ function KpiCard({
   badgeTone = 'neutral',
   footnote,
   loading = false,
+  cssSparkline = false,
+  isAuditTone = false,
 }: KpiCardProps) {
   const isPositive = delta !== null && delta >= 0;
 
@@ -82,20 +88,46 @@ function KpiCard({
   }
 
   return (
-    <div className="flex flex-col justify-between rounded-xl border border-slate-200/80 bg-white p-5 shadow-sm ring-1 ring-slate-900/5 backdrop-blur-md transition hover:border-slate-300 dark:border-zinc-800/80 dark:bg-zinc-900/60 dark:ring-white/10 dark:hover:border-zinc-700">
-      <div className="flex items-start justify-between">
-        <span className="text-sm font-bold text-slate-700 dark:text-zinc-200">{title}</span>
-        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-slate-100 border border-slate-200/80 text-slate-700 dark:bg-zinc-800/80 dark:border-zinc-700/60 dark:text-zinc-300">
-          <Icon className="h-5 w-5" />
-        </div>
-      </div>
+      <div
+        className={`flex flex-col justify-between rounded-xl border p-5 shadow-sm backdrop-blur-md transition ${isAuditTone
+            ? 'border-amber-500/30 bg-amber-500/5 ring-1 ring-amber-500/20 dark:border-amber-500/30 dark:bg-amber-950/20 dark:ring-amber-500/20'
+            : 'border-slate-200/80 bg-white ring-1 ring-slate-900/5 hover:border-slate-300 dark:border-zinc-800/80 dark:bg-zinc-900/60 dark:ring-white/10 dark:hover:border-zinc-700'
+          }`}
+      >
+        <div className="flex items-start justify-between">
+          <span className="text-sm font-bold text-slate-700 dark:text-zinc-200">{title}</span>
+            <div
+              className={`flex h-10 w-10 items-center justify-center rounded-lg border ${isAuditTone
+                  ? 'border-amber-500/30 bg-amber-500/10 text-amber-600 dark:border-amber-500/30 dark:bg-amber-950/40 dark:text-amber-400'
+                  : 'border-slate-200/80 bg-slate-100 text-slate-700 dark:border-zinc-700/60 dark:bg-zinc-800/80 dark:text-zinc-300'
+                }`}
+            >
+              <Icon className="h-5 w-5" />
+            </div>
+          </div>
 
-      <div className="mt-3 flex items-baseline justify-between gap-2">
-        {loading ? (
-          <div className="h-9 w-36 animate-pulse rounded-lg bg-slate-200 dark:bg-zinc-800" />
-        ) : (
-          <div className="text-3xl sm:text-4xl font-extrabold tracking-tight text-zinc-900 dark:text-white font-mono tabular-nums" dir="ltr">
-            {value}
+          <div className="mt-3 flex items-baseline justify-between gap-2">
+            {loading ? (
+              <div className="h-9 w-36 animate-pulse rounded-lg bg-slate-200 dark:bg-zinc-800" />
+            ) : (
+          <div className="flex items-end gap-2">
+            <div
+              className={`text-3xl sm:text-4xl font-extrabold tracking-tight font-mono tabular-nums ${
+                isAuditTone ? 'text-amber-600 dark:text-amber-400' : 'text-zinc-900 dark:text-white'
+              }`}
+              dir="ltr"
+            >
+              {value}
+            </div>
+            {cssSparkline && (
+              <div className="flex items-end gap-1 pb-1" title="نشاط المؤشر" aria-hidden="true">
+                <span className="w-1.5 h-3 bg-emerald-500/30 rounded-t-sm" />
+                <span className="w-1.5 h-5 bg-emerald-500/50 rounded-t-sm" />
+                <span className="w-1.5 h-4 bg-emerald-500/40 rounded-t-sm" />
+                <span className="w-1.5 h-7 bg-emerald-500/70 rounded-t-sm" />
+                <span className="w-1.5 h-6 bg-emerald-500 rounded-t-sm" />
+              </div>
+            )}
           </div>
         )}
 
@@ -125,73 +157,75 @@ function KpiCard({
       </div>
       <p className="mt-2 text-xs font-medium tabular-nums tracking-tight text-slate-600 dark:text-zinc-400">{footnote}</p>
     </div>
-  );
+          );
 }
 
-/* ------------------------------ Executive KPIs Section ------------------------------ */
+          /* ------------------------------ Executive KPIs Section ------------------------------ */
 
-interface ExecutiveKpisSectionProps {
-  startDate: string;
-  endDate: string;
-  selectedBranches: string[];
-  summary?: ReportSummary | null;
-  trend?: TrendPoint[];
-  refreshTick?: number;
+          interface ExecutiveKpisSectionProps {
+            startDate: string;
+          endDate: string;
+          selectedBranches: string[];
+          summary?: ReportSummary | null;
+          trend?: TrendPoint[];
+          records?: CaravanRecord[];
+          refreshTick?: number;
 }
 
-export function ExecutiveKpisSection({
-  startDate,
-  endDate,
-  selectedBranches,
-  summary,
-  trend = [],
-  refreshTick = 0,
+          export function ExecutiveKpisSection({
+            startDate,
+            endDate,
+            selectedBranches,
+            summary,
+            trend = [],
+            records = [],
+            refreshTick = 0,
 }: ExecutiveKpisSectionProps) {
   const [kpisData, setKpisData] = useState<ExecutiveKpis | null>(null);
-  const [totalUnits, setTotalUnits] = useState<number>(0);
-  const [unitsGrowthPct, setUnitsGrowthPct] = useState<number | null>(null);
-  const [loading, setLoading] = useState(false);
+          const [totalUnits, setTotalUnits] = useState<number>(0);
+            const [unitsGrowthPct, setUnitsGrowthPct] = useState<number | null>(null);
+            const [loading, setLoading] = useState(false);
 
-  const selectedKey = selectedBranches.join(',');
+            const selectedKey = selectedBranches.join(',');
 
   useEffect(() => {
     const ctrl = new AbortController();
-    setLoading(true);
+            setLoading(true);
 
-    const kpiParams = new URLSearchParams({
-      startDate,
-      endDate,
+            const kpiParams = new URLSearchParams({
+              startDate,
+              endDate,
     });
-    if (selectedKey) kpiParams.set('branchCode', selectedKey);
+            if (selectedKey) kpiParams.set('branchCode', selectedKey);
 
-    const itemsParams = new URLSearchParams({
-      startDate,
-      endDate,
-      limit: '1',
+            const itemsParams = new URLSearchParams({
+              startDate,
+              endDate,
+              limit: '1',
     });
-    if (selectedKey) itemsParams.set('branchCode', selectedKey);
+            if (selectedKey) itemsParams.set('branchCode', selectedKey);
 
-    // Fetch Executive KPIs and Units sold in parallel without blocking main page
-    Promise.all([
-      fetch(`/api/reports/caravans/executive-kpis?${kpiParams.toString()}`, { signal: ctrl.signal })
+            // Fetch Executive KPIs and Units sold in parallel without blocking main page
+            Promise.all([
+            fetch(`/api/reports/caravans/executive-kpis?${kpiParams.toString()}`, {signal: ctrl.signal })
         .then((res) => (res.ok ? res.json() : null))
         .catch(() => null),
-      fetch(`/api/reports/caravans/items-performance?${itemsParams.toString()}`, { signal: ctrl.signal })
+            fetch(`/api/reports/caravans/items-performance?${itemsParams.toString()}`, {signal: ctrl.signal })
         .then((res) => (res.ok ? res.json() : null))
         .catch(() => null),
-    ])
+            ])
       .then(([kpiRes, itemsRes]) => {
         if (kpiRes && kpiRes.status === 'success' && kpiRes.kpis) {
-          setKpisData(kpiRes.kpis);
+              setKpisData(kpiRes.kpis);
         }
-        if (itemsRes && itemsRes.summary) {
+            if (itemsRes && itemsRes.summary) {
           const currQty = Number(itemsRes.summary.totalQuantity) || 0;
-          const prevQty = Number(itemsRes.summary.prevQuantity) || 0;
-          setTotalUnits(currQty);
+            const prevQty = Number(itemsRes.summary.prevQuantity) || 0;
+            setTotalUnits(currQty);
           if (prevQty > 0) {
-            setUnitsGrowthPct(Math.round(((currQty - prevQty) / prevQty) * 1000) / 10);
+              setUnitsGrowthPct(Math.round(((currQty - prevQty) / prevQty) * 1000) / 10);
           } else {
-            setUnitsGrowthPct(null);
+              setUnitsGrowthPct(null);
           }
         }
       })
@@ -202,87 +236,91 @@ export function ExecutiveKpisSection({
     return () => ctrl.abort();
   }, [startDate, endDate, selectedKey, refreshTick]);
 
-  const totalRev = kpisData ? kpisData.revenue.current : (summary?.totalSales ?? 0);
-  const revGrowth = kpisData ? kpisData.revenue.growthPct : null;
-  const totalOrders = kpisData ? kpisData.orders.current : (summary?.totalCover ?? 0);
-  const aovValue = kpisData ? kpisData.aov.current : (summary?.avgTicket ?? 0);
-  const aovGrowth = kpisData ? kpisData.aov.growthPct : null;
+            const totalRev = kpisData ? kpisData.revenue.current : (summary?.totalSales ?? 0);
+            const revGrowth = kpisData ? kpisData.revenue.growthPct : null;
+            const totalOrders = kpisData ? kpisData.orders.current : (summary?.totalCover ?? 0);
+            const ordersGrowth = kpisData ? kpisData.orders.growthPct : null;
 
-  const varianceValue = summary?.totalVariance ?? 0;
-  const isVarianceZero = Math.abs(varianceValue) < 0.01;
-  const isShortage = varianceValue < -0.01;
+            // 4th Card: Total Voids (إجمالي المرتجعات)
+            const totalVoids =
+            summary?.totalVoids !== undefined
+            ? Number(summary.totalVoids)
+      : records && records.length > 0
+        ? records.reduce((acc, r) => acc + (Number(r.totalVoids) || 0), 0)
+            : 0;
+  const hasVoids = totalVoids > 0;
 
-  return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-      {/* 1. Total Revenue (Inclusive of Tax) - CRITICAL TERMINOLOGY FIX */}
-      <KpiCard
-        title="إجمالي الإيرادات (شامل الضريبة)"
-        value={<Money value={totalRev} symbolClassName="text-xs opacity-60 font-normal mr-1 select-none" />}
-        icon={TrendingUp}
-        sparkColor="violet"
-        spark={trend.map((p) => p.total)}
-        delta={revGrowth}
-        badge="شامل الضريبة"
-        footnote={
-          kpisData?.selsTax?.current !== undefined && kpisData.selsTax.current > 0
-            ? `ضريبة المبيعات: ${fmtMoney(kpisData.selsTax.current)} | السابقة: ${fmtMoney(kpisData.revenue.previous)}`
-            : `الفترة السابقة: ${fmtMoney(kpisData?.revenue.previous ?? 0)}`
+            return (
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+              {/* 1. Total Revenue (Inclusive of Tax) */}
+              <KpiCard
+                title="إجمالي الإيرادات (شامل الضريبة)"
+                value={<Money value={totalRev} symbolClassName="text-xs opacity-60 font-normal mr-1 select-none" />}
+                icon={TrendingUp}
+                sparkColor="violet"
+                spark={trend.map((p) => p.total)}
+                delta={revGrowth}
+                badge="شامل الضريبة"
+                footnote={
+                  kpisData?.selsTax?.current !== undefined && kpisData.selsTax.current > 0
+                    ? `ضريبة المبيعات: ${fmtMoney(kpisData.selsTax.current)} | السابقة: ${fmtMoney(kpisData.revenue.previous)}`
+                    : `الفترة السابقة: ${fmtMoney(kpisData?.revenue.previous ?? 0)}`
+                }
+                loading={loading}
+              />
+
+              {/* 2. Units Sold (Volume & Velocity) */}
+              <KpiCard
+                title="إجمالي الكميات المباعة"
+                value={totalUnits > 0 ? `${fmtInt(totalUnits)} قطعة` : `${fmtInt(summary?.totalCover ?? 0)} وحدة`}
+                icon={Boxes}
+                sparkColor="violet"
+                spark={trend.map((p) => p.total)}
+                delta={unitsGrowthPct}
+                badge="الكمية الإجمالية"
+                footnote={
+                  totalUnits > 0 && totalOrders > 0
+                    ? `معدل كثافة السلة: ${(totalUnits / totalOrders).toFixed(1)} قطعة / شيك`
+                    : 'إجمالي حركة الوحدات المباعة عبر المنافذ'
+                }
+                loading={loading}
+              />
+
+              {/* 3. Total Transactions / Receipts (إجمالي عدد الشيكات) */}
+              <KpiCard
+                title="إجمالي عدد الشيكات"
+                value={`${fmtInt(totalOrders)} شيك`}
+                icon={Receipt}
+                sparkColor="violet"
+                spark={trend.map((p) => p.total)}
+                delta={ordersGrowth}
+                badge="العمليات"
+                footnote={
+                  kpisData?.orders.previous
+                    ? `الفترة السابقة: ${fmtInt(kpisData.orders.previous)} شيك`
+                    : 'إجمالي عدد الشيكات والمعاملات المنفذة'
+                }
+                loading={loading}
+              />
+
+              {/* 4. Total Voids (إجمالي المرتجعات) - Strict Financial Audit Aesthetic */}
+              <KpiCard
+                title="إجمالي المرتجعات"
+                value={<Money value={totalVoids} symbolClassName="text-xs opacity-60 font-normal mr-1 select-none" />}
+                icon={RotateCcw}
+                sparkColor="violet"
+                spark={trend.map((p) => p.total)}
+                delta={null}
+                badge={hasVoids ? 'رصد مرتجعات' : 'سليم 100%'}
+                badgeTone={hasVoids ? 'danger' : 'success'}
+                footnote={
+          hasVoids
+            ? 'إجمالي مبالغ الإلغاءات المسترجعة من المبيعات'
+              : 'كافة الفواتير والعمليات معتمدة بدون إلغاءات'
         }
-        loading={loading}
+              loading={loading}
+              isAuditTone={hasVoids}
       />
-
-      {/* 2. Units Sold (Volume & Velocity) */}
-      <KpiCard
-        title="إجمالي الكميات المباعة"
-        value={totalUnits > 0 ? `${fmtInt(totalUnits)} قطعة` : `${fmtInt(summary?.totalCover ?? 0)} وحدة`}
-        icon={Boxes}
-        sparkColor="violet"
-        spark={trend.map((p) => p.total)}
-        delta={unitsGrowthPct}
-        badge="الكمية الإجمالية"
-        footnote={
-          totalUnits > 0 && totalOrders > 0
-            ? `معدل كثافة السلة: ${(totalUnits / totalOrders).toFixed(1)} قطعة / شيك`
-            : 'إجمالي حركة الوحدات المباعة عبر المنافذ'
-        }
-        loading={loading}
-      />
-
-      {/* 3. Checks & Average Order Value (AOV) */}
-      <KpiCard
-        title="عدد الشيكات ومتوسط الفاتورة"
-        value={`${fmtInt(totalOrders)} شيك`}
-        icon={Receipt}
-        sparkColor="violet"
-        spark={trend.map((p) => p.total)}
-        delta={aovGrowth}
-        badge="AOV"
-        footnote={`متوسط الفاتورة: ${fmtMoney(aovValue)}`}
-        loading={loading}
-      />
-
-      {/* 4. Variance & Cash Control Reconciliation */}
-      <KpiCard
-        title="فارق التسوية والرقابة النقدية"
-        value={
-          <span>
-            {varianceValue >= 0 && !isVarianceZero ? '+' : ''}
-            <Money value={varianceValue} symbolClassName="text-xs opacity-60 font-normal mr-1 select-none" />
-          </span>
-        }
-        icon={Scale}
-        sparkColor="violet"
-        spark={trend.map((p) => p.cash)}
-        delta={null}
-        badge={isVarianceZero ? 'مطابق تماماً' : isShortage ? 'عجز توريد' : 'زيادة توريد'}
-        badgeTone={isVarianceZero ? 'success' : isShortage ? 'danger' : 'warning'}
-        footnote={
-          isVarianceZero
-            ? 'كافة المطابقات النقدية والفيزا متزنة 100%'
-            : 'فارق تسوية النقدية والفيزا مع الإيراد الشامل المسجل'
-        }
-        loading={loading}
-      />
-    </div>
-  );
+            </div>
+            );
 }

@@ -375,29 +375,29 @@ export function FinancialDatePicker({
         </div>
       )}
 
-      {/* Date Range Inputs */}
-      <div className="flex items-center gap-1.5">
+      {/* Date Range Inputs: High-contrast, large-text boxes optimized for older demographic (50+ years) */}
+      <div className="flex items-center gap-2.5">
         {/* 2nd: Input 1: Start Date (من تاريخ) */}
         <div className="relative">
           <button
             type="button"
             disabled={isTriggerDisabled}
             onClick={() => (activePicker === 'start' ? setActivePicker(null) : openPicker('start'))}
-            className={`flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-mono font-bold transition shadow-xs ${activePicker === 'start'
-                ? 'border-orange-500 bg-orange-50/70 text-orange-950 ring-2 ring-orange-500/20 dark:border-orange-400 dark:bg-orange-500/15 dark:text-orange-200'
-                : 'border-slate-200 bg-white text-slate-800 hover:border-slate-300 dark:border-white/10 dark:bg-[#09090b] dark:text-zinc-200 dark:hover:border-white/20'
+            className={`flex items-center gap-2.5 rounded-lg border-2 px-3.5 py-2 font-mono transition shadow-sm ${activePicker === 'start'
+              ? 'border-orange-500 bg-orange-50/80 text-orange-950 ring-2 ring-orange-500/20 dark:border-orange-400 dark:bg-zinc-900 dark:text-orange-200'
+              : 'border-slate-300 bg-white text-slate-900 hover:border-slate-400 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:border-zinc-500'
               } disabled:opacity-50 disabled:cursor-not-allowed`}
           >
-            <CalendarIcon className="h-3.5 w-3.5 text-orange-600 dark:text-orange-400 shrink-0" />
-            <span className="font-sans text-[11px] font-medium text-slate-500 dark:text-zinc-400">من تاريخ:</span>
-            <span className="tabular-nums tracking-tight font-semibold">
+            <CalendarIcon className="h-4 w-4 text-orange-600 dark:text-orange-400 shrink-0" />
+            <span className="font-sans text-sm font-bold text-slate-700 dark:text-zinc-300">من :</span>
+            <span className="tabular-nums tracking-tight font-extrabold text-sm sm:text-base text-slate-900 dark:text-white" dir="ltr">
               {activePicker ? draftStart : startDate}
             </span>
           </button>
         </div>
 
-        {/* 3rd: Arrow Separator Icon (Reversed for RTL flow from Start to End) */}
-        <ArrowLeft className="h-3.5 w-3.5 text-slate-400 dark:text-zinc-600 select-none shrink-0" />
+        {/* 3rd: Arrow Separator Icon (Highly visible, distinct arrow in RTL layout) */}
+        <ArrowLeft className="w-5 h-5 text-slate-500 dark:text-zinc-400 select-none shrink-0" strokeWidth={2.5} />
 
         {/* 4th: Input 2: End Date (إلى تاريخ) */}
         <div className="relative">
@@ -405,14 +405,14 @@ export function FinancialDatePicker({
             type="button"
             disabled={isTriggerDisabled}
             onClick={() => (activePicker === 'end' ? setActivePicker(null) : openPicker('end'))}
-            className={`flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-mono font-bold transition shadow-xs ${activePicker === 'end'
-                ? 'border-orange-500 bg-orange-50/70 text-orange-950 ring-2 ring-orange-500/20 dark:border-orange-400 dark:bg-orange-500/15 dark:text-orange-200'
-                : 'border-slate-200 bg-white text-slate-800 hover:border-slate-300 dark:border-white/10 dark:bg-[#09090b] dark:text-zinc-200 dark:hover:border-white/20'
+            className={`flex items-center gap-2.5 rounded-lg border-2 px-3.5 py-2 font-mono transition shadow-sm ${activePicker === 'end'
+              ? 'border-orange-500 bg-orange-50/80 text-orange-950 ring-2 ring-orange-500/20 dark:border-orange-400 dark:bg-zinc-900 dark:text-orange-200'
+              : 'border-slate-300 bg-white text-slate-900 hover:border-slate-400 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:border-zinc-500'
               } disabled:opacity-50 disabled:cursor-not-allowed`}
           >
-            <CalendarIcon className="h-3.5 w-3.5 text-orange-600 dark:text-orange-400 shrink-0" />
-            <span className="font-sans text-[11px] font-medium text-slate-500 dark:text-zinc-400">إلى تاريخ:</span>
-            <span className="tabular-nums tracking-tight font-semibold">
+            <CalendarIcon className="h-4 w-4 text-orange-600 dark:text-orange-400 shrink-0" />
+            <span className="font-sans text-sm font-bold text-slate-700 dark:text-zinc-300">إلى :</span>
+            <span className="tabular-nums tracking-tight font-extrabold text-sm sm:text-base text-slate-900 dark:text-white" dir="ltr">
               {activePicker ? draftEnd : endDate}
             </span>
           </button>
