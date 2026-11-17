@@ -36,6 +36,7 @@ import {
   ExecutiveKpisSection,
   KPIsSkeleton,
 } from '@/components/reports/caravans/ExecutiveKpisSection';
+import { DailyRevenueMatrix } from '@/components/reports/caravans/DailyRevenueMatrix';
 import { useCaravanDashboard } from '@/hooks/useCaravanDashboard';
 
 const MAX_BRANCHES_IN_CHART = 10;
@@ -317,6 +318,16 @@ export default function CaravanDashboardHomePage() {
           /* VIEW MODE 2: STANDARD OPERATIONAL REPORT (REORDERED CARAVANS MVP)         */
           /* ========================================================================= */
           <div className="space-y-6">
+            {/* --------------------------------------------------------------------- */}
+            {/* TOP OF MAIN CONTENT: DAILY REVENUE MATRIX (Excel-Like Dynamic Pivot)   */}
+            {/* --------------------------------------------------------------------- */}
+            <div className="break-inside-avoid">
+              <DailyRevenueMatrix
+                rows={dash.records}
+                loading={dash.loading}
+              />
+            </div>
+
             {/* --------------------------------------------------------------------- */}
             {/* ROW 1: EXECUTIVE PULSE (Suspense-wrapped Top Macro KPI Cards)         */}
             {/* --------------------------------------------------------------------- */}
