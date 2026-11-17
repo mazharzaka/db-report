@@ -336,47 +336,7 @@ export default function CaravanDashboardHomePage() {
             </div>
 
             {/* --------------------------------------------------------------------- */}
-            {/* ROW 2: VISITOR & OUTLET PERFORMANCE (Micro Metrics: 50/50 Split)      */}
-            {/* --------------------------------------------------------------------- */}
-            <div className={`break-inside-avoid ${!dash.printConfig.kpis ? 'print:hidden' : ''}`}>
-              <VisitorOutletPerformanceRow
-                totalRevenue={dash.summary?.totalSales ?? 0}
-                records={dash.records}
-                guests={dash.guests}
-                spendPerGuest={dash.spendPerGuest}
-                summary={dash.summary}
-                loading={dash.loading}
-              />
-            </div>
-
-            {dash.itemsError && (
-              <div
-                role="alert"
-                className="flex items-center gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm font-medium text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300"
-              >
-                <AlertCircle className="h-5 w-5 shrink-0" />
-                تحليلات الأصناف غير متاحة: {dash.itemsError}
-              </div>
-            )}
-
-            {/* --------------------------------------------------------------------- */}
-            {/* ROW 3: SALES DRIVERS (Top Items by Quantity / Value)                 */}
-            {/* --------------------------------------------------------------------- */}
-            <div className={`break-inside-avoid ${!dash.printConfig.kpis ? 'print:hidden' : ''}`}>
-              <TopItemsWidget
-                items={dash.topItems.length > 0 ? dash.topItems : (dash.itemsData?.topItems ?? [])}
-                slowItems={dash.slowItems.length > 0 ? dash.slowItems : (dash.itemsData?.slowItems ?? [])}
-                mode={dash.itemMode}
-                onModeChange={dash.setItemMode}
-                metric={dash.itemMetric}
-                onMetricChange={dash.setItemMetric}
-                scopeLabel={dash.topScopeLabel}
-                loading={dash.itemsLoading}
-              />
-            </div>
-
-            {/* --------------------------------------------------------------------- */}
-            {/* ROW 3: DYNAMICS (Branch Comparison & Conditional Revenue Trend)       */}
+            {/* ROW 2: DYNAMICS (Branch Comparison & Conditional Revenue Trend)       */}
             {/* --------------------------------------------------------------------- */}
             {(() => {
               const isSingleDay = dash.start === dash.end;
@@ -445,7 +405,7 @@ export default function CaravanDashboardHomePage() {
             })()}
 
             {/* --------------------------------------------------------------------- */}
-            {/* ROW 4: FINANCIAL CONTROL (Active Voids Alert & Caravan Master Ledger) */}
+            {/* ROW 3: FINANCIAL CONTROL (Active Voids Alert & Caravan Master Ledger) */}
             {/* --------------------------------------------------------------------- */}
             <div
               className={`space-y-4 print:space-y-3 print:break-inside-auto ${!dash.printConfig.table ? 'print:hidden' : ''
@@ -463,18 +423,7 @@ export default function CaravanDashboardHomePage() {
             </div>
 
             {/* --------------------------------------------------------------------- */}
-            {/* ROW 5: ITEM DEEP-DIVE (ABC Classification & Full Product Matrix)     */}
-            {/* --------------------------------------------------------------------- */}
-            <div className={`break-inside-avoid ${!dash.printConfig.itemsPerformance ? 'print:hidden' : ''}`}>
-              <ItemSalesPerformance
-                startDate={dash.start}
-                endDate={dash.end}
-                selectedBranches={dash.effectiveBranches}
-              />
-            </div>
-
-            {/* --------------------------------------------------------------------- */}
-            {/* ROW 6: ADVANCED ANALYTICS DRAWER (Collapsible Experimental Tools)    */}
+            {/* ROW 4: COLLAPSIBLE ANALYTICAL DRAWER (تحليلات إضافية وتركيبية)         */}
             {/* --------------------------------------------------------------------- */}
             <details className="group rounded-xl border border-slate-200/80 bg-white p-6 shadow-sm ring-1 ring-slate-900/5 backdrop-blur-md transition-all duration-200 dark:border-zinc-800/80 dark:bg-zinc-900/60 dark:ring-white/10 print:hidden">
               <summary className="flex cursor-pointer items-center justify-between text-base font-bold text-slate-800 dark:text-zinc-200 select-none list-none">
@@ -484,10 +433,10 @@ export default function CaravanDashboardHomePage() {
                   </div>
                   <div>
                     <span className="text-base font-bold text-slate-900 dark:text-white">
-                      تحليلات إضافية وتجريبية (Advanced Analytics Drawer)
+                      تحليلات إضافية وتركيبية
                     </span>
                     <p className="text-xs font-normal text-slate-500 dark:text-zinc-400 mt-0.5">
-                      أدوات مساعدة: مواجهة المتصدرين (Duel)، خريطة المنافذ التفاعلية (2D)، وسجل الفواتير التقديرية
+                      تتضمن: سلوك الإنفاق، كفاءة التشغيل، الأفضل مبيعاً والراكد، تحليل مبيعات الأصناف، والمزيد
                     </p>
                   </div>
                 </div>
@@ -498,7 +447,52 @@ export default function CaravanDashboardHomePage() {
               </summary>
 
               <div className="mt-6 space-y-6 border-t border-slate-100 pt-6 dark:border-zinc-800/80">
-                {/* 1. Duel Card & 2D Interactive Map */}
+                {/* 1. Spend Behavior & Operational Efficiency (سلوك الإنفاق وكفاءة التشغيل) */}
+                <div className="break-inside-avoid">
+                  <VisitorOutletPerformanceRow
+                    totalRevenue={dash.summary?.totalSales ?? 0}
+                    records={dash.records}
+                    guests={dash.guests}
+                    spendPerGuest={dash.spendPerGuest}
+                    summary={dash.summary}
+                    loading={dash.loading}
+                  />
+                </div>
+
+                {dash.itemsError && (
+                  <div
+                    role="alert"
+                    className="flex items-center gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm font-medium text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300"
+                  >
+                    <AlertCircle className="h-5 w-5 shrink-0" />
+                    تحليلات الأصناف غير متاحة: {dash.itemsError}
+                  </div>
+                )}
+
+                {/* 2. Best & Worst Sellers (الأفضل مبيعاً والراكد) */}
+                <div className="break-inside-avoid">
+                  <TopItemsWidget
+                    items={dash.topItems.length > 0 ? dash.topItems : (dash.itemsData?.topItems ?? [])}
+                    slowItems={dash.slowItems.length > 0 ? dash.slowItems : (dash.itemsData?.slowItems ?? [])}
+                    mode={dash.itemMode}
+                    onModeChange={dash.setItemMode}
+                    metric={dash.itemMetric}
+                    onMetricChange={dash.setItemMetric}
+                    scopeLabel={dash.topScopeLabel}
+                    loading={dash.itemsLoading}
+                  />
+                </div>
+
+                {/* 3. Item Sales Analysis (تحليل مبيعات الأصناف - ABC Classification) */}
+                <div className="break-inside-avoid">
+                  <ItemSalesPerformance
+                    startDate={dash.start}
+                    endDate={dash.end}
+                    selectedBranches={dash.effectiveBranches}
+                  />
+                </div>
+
+                {/* 4. Duel Card & 2D Interactive Map */}
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
                   <div className="lg:col-span-12 xl:col-span-5">
                     <DuelCard duel={dash.itemsData?.duel ?? null} loading={dash.itemsLoading} />
@@ -526,7 +520,7 @@ export default function CaravanDashboardHomePage() {
                   </div>
                 </div>
 
-                {/* 2. Invoices Ledger */}
+                {/* 5. Invoices Ledger */}
                 <div className="break-inside-avoid">
                   <InvoicesTable
                     invoices={dash.invoicesData.length > 0 ? dash.invoicesData : undefined}
