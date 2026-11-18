@@ -6,6 +6,9 @@ import {
   BarChart3,
   ChevronLeft,
   ChevronDown,
+  DollarSign,
+  Receipt,
+  Percent,
   FileSpreadsheet,
   Printer,
   RefreshCw,
@@ -31,7 +34,7 @@ import { PeriodComparisonDashboard } from '@/components/reports/caravans/PeriodC
 import { SplashScreen } from '@/components/reports/caravans/SplashScreen';
 import { PrintConfigModal } from '@/components/reports/caravans/PrintConfigModal';
 import { ItemSalesPerformance } from '@/components/reports/caravans/ItemSalesPerformance';
-import { RevenueTrendChart } from '@/components/reports/caravans/charts';
+import { RevenueTrendChart, Money } from '@/components/reports/caravans/charts';
 import {
   ExecutiveKpisSection,
   KPIsSkeleton,
@@ -43,6 +46,23 @@ const MAX_BRANCHES_IN_CHART = 10;
 
 export default function CaravanDashboardHomePage() {
   const dash = useCaravanDashboard();
+
+  // Dynamic calculations for the 3 Core KPI Cards based on currently displayed rows
+  const financialTotals = React.useMemo(() => {
+    let total = 0;
+    (dash.records || []).forEach((r) => {
+      const cash = Number(r.cash) || 0;
+      const visa = Number(r.visa) || 0;
+      const cl = Number(r.creditLine ?? (r as any).cl) || 0;
+      const rowSum = (cash + visa + cl) > 0 ? (cash + visa + cl) : (Number(r.total) || 0);
+      total += rowSum;
+    });
+
+    const retail = total / 1.14;
+    const vat = total - retail;
+
+    return { total, retail, vat };
+  }, [dash.records]);
 
   // Unauthenticated screen guard
   if (dash.isAuthorized === null || !dash.isAuthorized) {
@@ -319,7 +339,105 @@ export default function CaravanDashboardHomePage() {
           /* ========================================================================= */
           <div className="space-y-6">
             {/* --------------------------------------------------------------------- */}
-            {/* TOP OF MAIN CONTENT: DAILY REVENUE MATRIX (Excel-Like Dynamic Pivot)   */}
+            {/* TOP KPI CARDS: 3 STANDALONE EQUAL FINANCIAL METRICS (Dynamic Calculation) */}
+            {/* --------------------------------------------------------------------- */}
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-3 break-inside-avoid">
+              {/* Card 1: Total Revenue (شامل الضريبة) */}
+              <div className="flex flex-col justify-between rounded-xl border border-blue-200/80 bg-blue-50/50 p-5 shadow-sm ring-1 ring-blue-500/10 backdrop-blur-md transition hover:border-blue-300 dark:border-blue-900/40 dark:bg-blue-950/20 dark:ring-blue-400/10">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <span className="text-sm font-bold text-slate-800 dark:text-zinc-100">
+                      إجمالي الإيرادات (شامل الضريبة)
+                    </span>
+                    <p className="mt-0.5 text-xs text-slate-500 dark:text-zinc-400">
+                      Total Sales (Cash + Visa + C/L)
+                    </p>
+                  </div>
+                  <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-500/10 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400 shadow-2xs">
+                    <DollarSign className="h-5 w-5" />
+                  </div>
+                </div>
+
+                <div className="mt-4 flex items-baseline justify-between gap-2">
+                  <div className="text-3xl font-extrabold tracking-tight font-mono tabular-nums text-zinc-900 dark:text-white" dir="ltr">
+                    <Money value={financialTotals.total} symbolClassName="text-sm opacity-60 font-normal mr-1.5 select-none" />
+                  </div>
+                  <span className="rounded-full bg-blue-100/80 px-2.5 py-0.5 text-xs font-semibold text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
+                    الإجمالي
+                  </span>
+                </div>
+
+                <div className="mt-3 flex items-center justify-between border-t border-blue-100/80 pt-2.5 dark:border-blue-900/30 text-xs text-slate-500 dark:text-zinc-400">
+                  <span>محسوب وفق المنافذ المعروضة</span>
+                  <span className="font-mono tabular-nums">{dash.records.length} سجل</span>
+                </div>
+              </div>
+
+              {/* Card 2: Net Sales (الصافي) */}
+              <div className="flex flex-col justify-between rounded-xl border border-emerald-200/80 bg-emerald-50/50 p-5 shadow-sm ring-1 ring-emerald-500/10 backdrop-blur-md transition hover:border-emerald-300 dark:border-emerald-900/40 dark:bg-emerald-950/20 dark:ring-emerald-400/10">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <span className="text-sm font-bold text-slate-800 dark:text-zinc-100">
+                      الصافي (Net Sales)
+                    </span>
+                    <p className="mt-0.5 text-xs text-slate-500 dark:text-zinc-400">
+                      Retail (Total / 1.14)
+                    </p>
+                  </div>
+                  <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 shadow-2xs">
+                    <Receipt className="h-5 w-5" />
+                  </div>
+                </div>
+
+                <div className="mt-4 flex items-baseline justify-between gap-2">
+                  <div className="text-3xl font-extrabold tracking-tight font-mono tabular-nums text-zinc-900 dark:text-white" dir="ltr">
+                    <Money value={financialTotals.retail} symbolClassName="text-sm opacity-60 font-normal mr-1.5 select-none" />
+                  </div>
+                  <span className="rounded-full bg-emerald-100/80 px-2.5 py-0.5 text-xs font-semibold text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">
+                    قبل الضريبة
+                  </span>
+                </div>
+
+                <div className="mt-3 flex items-center justify-between border-t border-emerald-100/80 pt-2.5 dark:border-emerald-900/30 text-xs text-slate-500 dark:text-zinc-400">
+                  <span>صافي الدخل التشغيلي للمبيعات</span>
+                  <span className="font-mono tabular-nums">87.7%</span>
+                </div>
+              </div>
+
+              {/* Card 3: VAT 14% (ضريبة القيمة المضافة) */}
+              <div className="flex flex-col justify-between rounded-xl border border-amber-200/80 bg-amber-50/50 p-5 shadow-sm ring-1 ring-amber-500/10 backdrop-blur-md transition hover:border-amber-300 dark:border-amber-900/40 dark:bg-amber-950/20 dark:ring-amber-400/10">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <span className="text-sm font-bold text-slate-800 dark:text-zinc-100">
+                      ضريبة القيمة المضافة (VAT 14%)
+                    </span>
+                    <p className="mt-0.5 text-xs text-slate-500 dark:text-zinc-400">
+                      Total - Retail
+                    </p>
+                  </div>
+                  <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-500/10 text-amber-600 dark:bg-amber-500/20 dark:text-amber-400 shadow-2xs">
+                    <Percent className="h-5 w-5" />
+                  </div>
+                </div>
+
+                <div className="mt-4 flex items-baseline justify-between gap-2">
+                  <div className="text-3xl font-extrabold tracking-tight font-mono tabular-nums text-zinc-900 dark:text-white" dir="ltr">
+                    <Money value={financialTotals.vat} symbolClassName="text-sm opacity-60 font-normal mr-1.5 select-none" />
+                  </div>
+                  <span className="rounded-full bg-amber-100/80 px-2.5 py-0.5 text-xs font-semibold text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
+                    14% مستحقة
+                  </span>
+                </div>
+
+                <div className="mt-3 flex items-center justify-between border-t border-amber-100/80 pt-2.5 dark:border-amber-900/30 text-xs text-slate-500 dark:text-zinc-400">
+                  <span>الضريبة المحصلة للإقرار المالي</span>
+                  <span className="font-mono tabular-nums">14%</span>
+                </div>
+              </div>
+            </div>
+
+            {/* --------------------------------------------------------------------- */}
+            {/* DAILY REVENUE MATRIX (Excel-Like Dynamic Pivot)                       */}
             {/* --------------------------------------------------------------------- */}
             <div className="break-inside-avoid">
               <DailyRevenueMatrix
