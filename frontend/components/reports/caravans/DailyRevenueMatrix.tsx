@@ -7,7 +7,6 @@ import {
   Calendar,
   Grid3X3,
   ArrowUpDown,
-  Wallet,
   Receipt,
   ChevronLeft,
   ChevronRight,
@@ -45,7 +44,6 @@ interface MatrixColumn {
   name: string;
 }
 
-export type PaymentSource = 'cash_visa' | 'cl' | 'all';
 export type CalcMode = 'total' | 'net' | 'vat';
 export type MatrixViewMode = 'net' | 'vat' | 'total'; // Backward compatibility
 
@@ -61,15 +59,14 @@ export function DailyRevenueMatrix({
   const [exporting, setExporting] = useState(false);
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
 
-  // 1. Dual Control Panel (2D State Logic) - Default to 'cash_visa'
-  const [paymentSource, setPaymentSource] = useState<'all' | 'cash_visa' | 'cl'>('cash_visa');
+  // Calculation Mode State - Default to 'total' (الإجمالي الشامل)
   const [calcMode, setCalcMode] = useState<CalcMode>('total');
 
-  // 2. Client-Side Pagination States
+  // Client-Side Pagination States
   const [rowsPerPage, setRowsPerPage] = useState<number>(10);
   const [currentPage, setCurrentPage] = useState<number>(1);
 
-  // 3. Stage 1: Raw Pivot & Grouping (Runs ONLY when raw rows change)
+  // Stage 1: Raw Pivot & Grouping (Runs ONLY when raw rows change)
   const aggregatedData = useMemo(() => {
     const colMap = new Map<string, string>();
     const dateMap = new Map<
@@ -125,8 +122,8 @@ export function DailyRevenueMatrix({
     };
   }, [rows]);
 
-  // Stage 2: Dynamic 2D Metric Projection & Totals (Instant O(Dates * Columns))
-  const { columns, matrixRows, columnTotals, grandTotal } = useMemo(() => {
+  // Stage 2: Dynamic Metric Projection & Aggregate Totals (Instant O(Dates * Columns))
+  const { columns, matrixRows, columnTotals, grandTotal, grandCashVisa, grandCoupons } = useMemo(() => {
     const { cols, dateMap, rawDates } = aggregatedData;
 
     const dates = [...rawDates].sort((a, b) => {
@@ -140,11 +137,21 @@ export function DailyRevenueMatrix({
     });
 
     let overallTotal = 0;
+    let overallCashVisa = 0;
+    let overallCoupons = 0;
+
+    const applyCalcMode = (val: number, mode: CalcMode) => {
+      if (mode === 'net') return val / 1.14;
+      if (mode === 'vat') return val - val / 1.14;
+      return val;
+    };
 
     const mRows = dates.map((date) => {
       const branchValues = dateMap.get(date);
       const values: Record<string, number> = {};
       let rowTotal = 0;
+      let rawDailyCashVisa = 0;
+      let rawDailyCoupons = 0;
 
       cols.forEach((col) => {
         const item = branchValues?.get(col.branchCode) || {
@@ -154,39 +161,36 @@ export function DailyRevenueMatrix({
           rawTotal: 0,
         };
 
-        // Step 1: Compute baseTotal based on selected paymentSource
-        let baseTotal = 0;
-        if (paymentSource === 'cash_visa') {
-          baseTotal = item.cash + item.visa;
-        } else if (paymentSource === 'cl') {
-          baseTotal = item.cl;
-        } else {
-          // 'all'
-          baseTotal =
-            item.cash + item.visa + item.cl > 0
-              ? item.cash + item.visa + item.cl
-              : item.rawTotal;
-        }
+        // Always calculate using All sources: baseTotal = cash + visa + cl
+        const baseTotal =
+          item.cash + item.visa + item.cl > 0
+            ? item.cash + item.visa + item.cl
+            : item.rawTotal;
 
-        // Step 2: Apply calcMode
-        let val = baseTotal;
-        if (calcMode === 'net') {
-          val = baseTotal / 1.14;
-        } else if (calcMode === 'vat') {
-          val = baseTotal - baseTotal / 1.14;
-        }
+        const val = applyCalcMode(baseTotal, calcMode);
 
         values[col.branchCode] = val;
         rowTotal += val;
         colTotalsAcc[col.branchCode] += val;
+
+        rawDailyCashVisa += item.cash + item.visa;
+        rawDailyCoupons += item.cl;
       });
 
+      // Apply calcMode to daily aggregate columns
+      const rowCashVisa = applyCalcMode(rawDailyCashVisa, calcMode);
+      const rowCoupons = applyCalcMode(rawDailyCoupons, calcMode);
+
       overallTotal += rowTotal;
+      overallCashVisa += rowCashVisa;
+      overallCoupons += rowCoupons;
 
       return {
         date,
         values,
         rowTotal,
+        rowCashVisa,
+        rowCoupons,
       };
     });
 
@@ -195,8 +199,10 @@ export function DailyRevenueMatrix({
       matrixRows: mRows,
       columnTotals: colTotalsAcc,
       grandTotal: overallTotal,
+      grandCashVisa: overallCashVisa,
+      grandCoupons: overallCoupons,
     };
-  }, [aggregatedData, sortOrder, paymentSource, calcMode]);
+  }, [aggregatedData, sortOrder, calcMode]);
 
   // Client-Side Pagination Calculations
   const totalPages = Math.max(1, Math.ceil(matrixRows.length / rowsPerPage));
@@ -221,7 +227,7 @@ export function DailyRevenueMatrix({
     rowsPerPage >= 9999 ? matrixRows.length : Math.min(currentPage * rowsPerPage, matrixRows.length);
 
   /* -------------------------------------------------------------------------- */
-  /* Excel Export using ExcelJS with High-Readability & Professional Colors     */
+  /* Excel Export using ExcelJS with Precise Cell Formatting & Styling Range    */
   /* -------------------------------------------------------------------------- */
   const handleExportToExcel = async () => {
     try {
@@ -234,26 +240,17 @@ export function DailyRevenueMatrix({
       workbook.creator = 'Dream Park ERP';
       workbook.created = new Date();
 
-      const paymentCode =
-        paymentSource === 'cash_visa' ? 'CashVisa' : paymentSource === 'cl' ? 'CL' : 'All';
       const calcCode =
         calcMode === 'net' ? 'Net' : calcMode === 'vat' ? 'VAT' : 'Total';
-
-      const paymentLabel =
-        paymentSource === 'cash_visa'
-          ? 'نقدي وفيزا'
-          : paymentSource === 'cl'
-          ? 'آجل وضيافة'
-          : 'الكل';
 
       const calcLabel =
         calcMode === 'net' ? 'الصافي (Net)' : calcMode === 'vat' ? 'الضريبة (VAT)' : 'الإجمالي (Total)';
 
-      const worksheet = workbook.addWorksheet(`Matrix_${paymentCode}_${calcCode}`, {
+      const worksheet = workbook.addWorksheet(`Matrix_${calcCode}`, {
         views: [{ rightToLeft: true }],
       });
 
-      // 1. Setup Column Headers: Date, Caravans, Total
+      // 1. Setup Column Headers: Date, Caravans, Total, Cash+Visa, Coupons
       const wsColumns: { header: string; key: string; width: number }[] = [
         { header: 'التاريخ', key: 'date', width: 16 },
         ...columns.map((col) => ({
@@ -262,35 +259,42 @@ export function DailyRevenueMatrix({
           width: 24,
         })),
         { header: `الإجمالي اليومي (${calcLabel})`, key: 'row_total', width: 24 },
+        { header: `الكاش والفيزا (${calcLabel})`, key: 'cash_visa', width: 22 },
+        { header: `الكوبونات (${calcLabel})`, key: 'coupons', width: 20 },
       ];
 
       worksheet.columns = wsColumns;
+      const totalColumnsCount = wsColumns.length;
 
-      // 2. Format Header Row (Size 12, Bold, Dark Slate text on Slate background)
+      // 2. Format Header Row (Height: 36, Size: 13, Bold, Arial, Soft Slate fill FFE2E8F0, Dark Text FF0F172A)
+      // Strictly format cells 1 to totalColumnsCount to prevent infinite row-fill overflow
       const headerRow = worksheet.getRow(1);
-      headerRow.height = 34;
-      headerRow.font = { name: 'Arial', size: 12, bold: true, color: { argb: 'FF0F172A' } };
-      headerRow.fill = {
-        type: 'pattern',
-        pattern: 'solid',
-        fgColor: { argb: 'FFE2E8F0' }, // Professional Slate
-      };
-      headerRow.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
+      headerRow.height = 36;
 
-      headerRow.eachCell((cell) => {
+      for (let colIdx = 1; colIdx <= totalColumnsCount; colIdx++) {
+        const cell = headerRow.getCell(colIdx);
+        cell.font = { name: 'Arial', size: 13, bold: true, color: { argb: 'FF0F172A' } };
+        cell.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: 'FFE2E8F0' },
+        };
+        cell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
         cell.border = {
           top: { style: 'thin', color: { argb: 'FF94A3B8' } },
           bottom: { style: 'medium', color: { argb: 'FF64748B' } },
           left: { style: 'thin', color: { argb: 'FFCBD5E1' } },
           right: { style: 'thin', color: { argb: 'FFCBD5E1' } },
         };
-      });
+      }
 
-      // 3. Populate ALL Data Rows (Font size 12 for auditor readability)
+      // 3. Populate ALL Data Rows (Height: 26, Arial, Size: 12, Bold numbers, numFmt: '#,##0.00')
       matrixRows.forEach((item) => {
         const rowData: Record<string, any> = {
           date: item.date,
           row_total: item.rowTotal,
+          cash_visa: item.rowCashVisa,
+          coupons: item.rowCoupons,
         };
 
         columns.forEach((col) => {
@@ -300,47 +304,48 @@ export function DailyRevenueMatrix({
         const row = worksheet.addRow(rowData);
         row.height = 26;
 
-        // Date Cell
-        const dateCell = row.getCell(1);
-        dateCell.alignment = { vertical: 'middle', horizontal: 'center' };
-        dateCell.font = { name: 'Arial', size: 12, bold: true, color: { argb: 'FF0F172A' } };
-        dateCell.fill = {
-          type: 'pattern',
-          pattern: 'solid',
-          fgColor: { argb: 'FFF8FAFC' },
-        };
-
-        // Data Cells
-        for (let colIdx = 2; colIdx <= columns.length + 2; colIdx++) {
+        for (let colIdx = 1; colIdx <= totalColumnsCount; colIdx++) {
           const cell = row.getCell(colIdx);
-          cell.numFmt = '#,##0.00';
-          cell.alignment = { vertical: 'middle', horizontal: 'right' };
-          cell.font = { name: 'Arial', size: 12, bold: false, color: { argb: 'FF0F172A' } };
-
-          if (colIdx === columns.length + 2) {
-            cell.font = { name: 'Arial', size: 12, bold: true, color: { argb: 'FF0F172A' } };
-            cell.fill = {
-              type: 'pattern',
-              pattern: 'solid',
-              fgColor: { argb: 'FFF1F5F9' },
-            };
-          }
-        }
-
-        row.eachCell((cell) => {
           cell.border = {
             top: { style: 'thin', color: { argb: 'FFE2E8F0' } },
             bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } },
             left: { style: 'thin', color: { argb: 'FFE2E8F0' } },
             right: { style: 'thin', color: { argb: 'FFE2E8F0' } },
           };
-        });
+
+          if (colIdx === 1) {
+            // Date Cell
+            cell.alignment = { vertical: 'middle', horizontal: 'center' };
+            cell.font = { name: 'Arial', size: 12, bold: true, color: { argb: 'FF0F172A' } };
+            cell.fill = {
+              type: 'pattern',
+              pattern: 'solid',
+              fgColor: { argb: 'FFF8FAFC' },
+            };
+          } else {
+            // Number data cells
+            cell.numFmt = '#,##0.00';
+            cell.alignment = { vertical: 'middle', horizontal: 'right' };
+            cell.font = { name: 'Arial', size: 12, bold: true, color: { argb: 'FF0F172A' } };
+
+            if (colIdx === columns.length + 2) {
+              cell.fill = {
+                type: 'pattern',
+                pattern: 'solid',
+                fgColor: { argb: 'FFF1F5F9' },
+              };
+            }
+          }
+        }
       });
 
-      // 4. Totals Row (Footer: Font 14, Bold, Dark Navy text on Soft Blue background)
+      // 4. Totals Row (Height: 34, Arial, Size: 14, Bold, Soft Blue fill FFDBEAFE, Dark Navy text FF1E3A8A)
+      // Strictly format cells 1 to totalColumnsCount to prevent infinite row-fill overflow
       const footerData: Record<string, any> = {
         date: 'الإجمالي العام للفترة',
         row_total: grandTotal,
+        cash_visa: grandCashVisa,
+        coupons: grandCoupons,
       };
 
       columns.forEach((col) => {
@@ -349,37 +354,35 @@ export function DailyRevenueMatrix({
 
       const totalRow = worksheet.addRow(footerData);
       totalRow.height = 34;
-      totalRow.font = { name: 'Arial', size: 14, bold: true, color: { argb: 'FF1E3A8A' } };
-      totalRow.fill = {
-        type: 'pattern',
-        pattern: 'solid',
-        fgColor: { argb: 'FFDBEAFE' }, // Professional soft blue
-      };
 
-      const footerDateCell = totalRow.getCell(1);
-      footerDateCell.alignment = { vertical: 'middle', horizontal: 'center' };
-
-      for (let colIdx = 2; colIdx <= columns.length + 2; colIdx++) {
+      for (let colIdx = 1; colIdx <= totalColumnsCount; colIdx++) {
         const cell = totalRow.getCell(colIdx);
-        cell.numFmt = '#,##0.00';
-        cell.alignment = { vertical: 'middle', horizontal: 'right' };
         cell.font = { name: 'Arial', size: 14, bold: true, color: { argb: 'FF1E3A8A' } };
-      }
-
-      totalRow.eachCell((cell) => {
+        cell.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: 'FFDBEAFE' },
+        };
         cell.border = {
           top: { style: 'thin', color: { argb: 'FF3B82F6' } },
           bottom: { style: 'double', color: { argb: 'FF1E3A8A' } },
           left: { style: 'thin', color: { argb: 'FF93C5FD' } },
           right: { style: 'thin', color: { argb: 'FF93C5FD' } },
         };
-      });
+
+        if (colIdx === 1) {
+          cell.alignment = { vertical: 'middle', horizontal: 'center' };
+        } else {
+          cell.numFmt = '#,##0.00';
+          cell.alignment = { vertical: 'middle', horizontal: 'right' };
+        }
+      }
 
       const buffer = await workbook.xlsx.writeBuffer();
       const blob = new Blob([buffer], {
         type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
       });
-      const fileName = `Matrix_${paymentCode}_${calcCode}_${new Date().toISOString().split('T')[0]}.xlsx`;
+      const fileName = `Daily_Revenue_Matrix_${calcCode}_${new Date().toISOString().split('T')[0]}.xlsx`;
       saveAs(blob, fileName);
     } catch (err) {
       console.error('Error exporting Matrix to Excel:', err);
@@ -394,7 +397,7 @@ export function DailyRevenueMatrix({
   return (
     <div className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-sm ring-1 ring-slate-900/5 backdrop-blur-md dark:border-zinc-800/90 dark:bg-zinc-900/70 dark:ring-white/10 space-y-4">
       {/* --------------------------------------------------------------------- */}
-      {/* Matrix Header & DUAL CONTROL PANEL (2D State Logic)                   */}
+      {/* Matrix Header & Calculation Mode Toggle                               */}
       {/* --------------------------------------------------------------------- */}
       <div className="flex flex-col gap-4 border-b border-slate-200 pb-4 dark:border-zinc-800/80">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
@@ -408,7 +411,7 @@ export function DailyRevenueMatrix({
               </h3>
             </div>
             <p className="mt-1 text-xs text-slate-500 dark:text-zinc-400">
-              لوحة التدقيق المالي المباشر: اختر مصدر الدفع ونوع الاحتساب لمطابقة الدفاتر الحسابية لحظياً
+              لوحة التدقيق المالي المباشر: اختر نوع الاحتساب لمطابقة الدفاتر الحسابية لحظياً
             </p>
           </div>
 
@@ -438,86 +441,46 @@ export function DailyRevenueMatrix({
           </div>
         </div>
 
-        {/* Dual Control Toggles: Modern iOS Segmented Controls */}
-        <div className="flex flex-wrap items-center justify-between gap-4 pt-1">
-          {/* 1. Payment Source Toggle (Reordered: نقدي وفيزا | آجل وضيافة | الكل) */}
-          <div className="flex flex-wrap items-center gap-2.5">
-            <span className="text-xs font-bold text-slate-700 dark:text-zinc-300 flex items-center gap-1.5">
-              <Wallet className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-              <span>مصدر الإيراد:</span>
-            </span>
-            <div className="inline-flex bg-slate-200/60 dark:bg-zinc-800/80 p-1 rounded-xl shadow-inner">
-              <button
-                type="button"
-                onClick={() => setPaymentSource('cash_visa')}
-                className={`px-4 py-2 text-sm font-bold rounded-lg transition-all ${paymentSource === 'cash_visa'
+        {/* Calculation Mode Toggle: 3-way Segmented Control */}
+        <div className="flex flex-wrap items-center gap-2.5 pt-1">
+          <span className="text-xs font-bold text-slate-700 dark:text-zinc-300 flex items-center gap-1.5">
+            <Receipt className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+            <span>معادلة الاحتساب:</span>
+          </span>
+          <div className="inline-flex bg-slate-200/60 dark:bg-zinc-800/80 p-1 rounded-xl shadow-inner">
+            <button
+              type="button"
+              onClick={() => setCalcMode('total')}
+              className={`px-4 py-2 text-sm font-bold rounded-lg transition-all ${
+                calcMode === 'total'
                   ? 'bg-white text-slate-900 shadow-sm dark:bg-zinc-700 dark:text-white'
                   : 'text-slate-500 hover:text-slate-700 dark:text-zinc-400 dark:hover:text-zinc-200'
-                  }`}
-              >
-                نقدي وفيزا
-              </button>
-              <button
-                type="button"
-                onClick={() => setPaymentSource('cl')}
-                className={`px-4 py-2 text-sm font-bold rounded-lg transition-all ${paymentSource === 'cl'
+              }`}
+            >
+              الإجمالي الشامل (Total Gross)
+            </button>
+            <button
+              type="button"
+              onClick={() => setCalcMode('net')}
+              className={`px-4 py-2 text-sm font-bold rounded-lg transition-all ${
+                calcMode === 'net'
                   ? 'bg-white text-slate-900 shadow-sm dark:bg-zinc-700 dark:text-white'
                   : 'text-slate-500 hover:text-slate-700 dark:text-zinc-400 dark:hover:text-zinc-200'
-                  }`}
-              >
-                آجل وضيافة
-              </button>
-              <button
-                type="button"
-                onClick={() => setPaymentSource('all')}
-                className={`px-4 py-2 text-sm font-bold rounded-lg transition-all ${paymentSource === 'all'
+              }`}
+            >
+              الصافي (Net Sales)
+            </button>
+            <button
+              type="button"
+              onClick={() => setCalcMode('vat')}
+              className={`px-4 py-2 text-sm font-bold rounded-lg transition-all ${
+                calcMode === 'vat'
                   ? 'bg-white text-slate-900 shadow-sm dark:bg-zinc-700 dark:text-white'
                   : 'text-slate-500 hover:text-slate-700 dark:text-zinc-400 dark:hover:text-zinc-200'
-                  }`}
-              >
-                الكل
-              </button>
-            </div>
-          </div>
-
-          {/* 2. Calculation Mode Toggle */}
-          <div className="flex flex-wrap items-center gap-2.5">
-            <span className="text-xs font-bold text-slate-700 dark:text-zinc-300 flex items-center gap-1.5">
-              <Receipt className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-              <span>معادلة الاحتساب:</span>
-            </span>
-            <div className="inline-flex bg-slate-200/60 dark:bg-zinc-800/80 p-1 rounded-xl shadow-inner">
-              <button
-                type="button"
-                onClick={() => setCalcMode('total')}
-                className={`px-4 py-2 text-sm font-bold rounded-lg transition-all ${calcMode === 'total'
-                  ? 'bg-white text-slate-900 shadow-sm dark:bg-zinc-700 dark:text-white'
-                  : 'text-slate-500 hover:text-slate-700 dark:text-zinc-400 dark:hover:text-zinc-200'
-                  }`}
-              >
-                الإجمالي الشامل (Total)
-              </button>
-              <button
-                type="button"
-                onClick={() => setCalcMode('net')}
-                className={`px-4 py-2 text-sm font-bold rounded-lg transition-all ${calcMode === 'net'
-                  ? 'bg-white text-slate-900 shadow-sm dark:bg-zinc-700 dark:text-white'
-                  : 'text-slate-500 hover:text-slate-700 dark:text-zinc-400 dark:hover:text-zinc-200'
-                  }`}
-              >
-                الصافي (Net ÷ 1.14)
-              </button>
-              <button
-                type="button"
-                onClick={() => setCalcMode('vat')}
-                className={`px-4 py-2 text-sm font-bold rounded-lg transition-all ${calcMode === 'vat'
-                  ? 'bg-white text-slate-900 shadow-sm dark:bg-zinc-700 dark:text-white'
-                  : 'text-slate-500 hover:text-slate-700 dark:text-zinc-400 dark:hover:text-zinc-200'
-                  }`}
-              >
-                الضريبة (VAT 14%)
-              </button>
-            </div>
+              }`}
+            >
+              الضريبة (VAT 14%)
+            </button>
           </div>
         </div>
       </div>
@@ -553,14 +516,20 @@ export function DailyRevenueMatrix({
               <th className="px-4 py-4 font-black text-left bg-slate-200/90 dark:bg-zinc-800 text-slate-900 dark:text-white min-w-[160px] text-sm">
                 الإجمالي اليومي
               </th>
+              <th className="px-4 py-4 font-black text-left bg-slate-200/90 dark:bg-zinc-800 text-slate-900 dark:text-white min-w-[150px] text-sm">
+                الكاش والفيزا
+              </th>
+              <th className="px-4 py-4 font-black text-left bg-slate-200/90 dark:bg-zinc-800 text-slate-900 dark:text-white min-w-[150px] text-sm">
+                الكوبونات
+              </th>
             </tr>
           </thead>
 
-          {/* Table Body with Crosshair Row Hover & Big Font Readability */}
+          {/* Table Body with Crosshair Row Hover & Readable Fonts */}
           <tbody className="divide-y divide-slate-200 dark:divide-zinc-800/80 font-mono tabular-nums tracking-tight">
             {loading ? (
               <tr>
-                <td colSpan={columns.length + 2} className="py-16 text-center text-slate-400">
+                <td colSpan={columns.length + 4} className="py-16 text-center text-slate-400">
                   <div className="flex flex-col items-center gap-2">
                     <Loader2 className="h-7 w-7 animate-spin text-blue-600" />
                     <span className="text-sm font-sans font-semibold text-slate-700 dark:text-zinc-300">
@@ -572,7 +541,7 @@ export function DailyRevenueMatrix({
             ) : paginatedRows.length === 0 ? (
               <tr>
                 <td
-                  colSpan={columns.length + 2}
+                  colSpan={columns.length + 4}
                   className="py-12 text-center text-slate-500 text-sm font-sans font-medium"
                 >
                   لا توجد سجلات كافية لبناء المصفوفة
@@ -589,16 +558,17 @@ export function DailyRevenueMatrix({
                     {row.date}
                   </td>
 
-                  {/* Caravan Values (Accessible Huge Fonts & High Contrast) */}
+                  {/* Caravan Values */}
                   {columns.map((col) => {
                     const val = row.values[col.branchCode] || 0;
                     return (
                       <td
                         key={col.branchCode}
-                        className={`px-4 py-3.5 text-left font-bold text-base lg:text-lg tabular-nums border-l border-slate-200/60 dark:border-zinc-800/40 group-hover:bg-blue-50/50 dark:group-hover:bg-blue-900/20 transition-colors ${val > 0
-                          ? 'text-slate-900 dark:text-white'
-                          : 'text-slate-300 dark:text-zinc-600 font-normal'
-                          }`}
+                        className={`px-4 py-3.5 text-left font-bold text-base lg:text-lg tabular-nums border-l border-slate-200/60 dark:border-zinc-800/40 group-hover:bg-blue-50/50 dark:group-hover:bg-blue-900/20 transition-colors ${
+                          val > 0
+                            ? 'text-slate-900 dark:text-white'
+                            : 'text-slate-300 dark:text-zinc-600 font-normal'
+                        }`}
                       >
                         {val > 0 ? (
                           val.toLocaleString('en-US', {
@@ -615,6 +585,16 @@ export function DailyRevenueMatrix({
                   {/* Daily Row Total */}
                   <td className="px-4 py-3.5 text-left font-black text-base lg:text-lg tabular-nums text-slate-950 bg-slate-100/80 group-hover:bg-blue-100/80 dark:bg-zinc-800/60 dark:text-white dark:group-hover:bg-blue-950/60 transition-colors">
                     <Money value={row.rowTotal} />
+                  </td>
+
+                  {/* Daily Cash & Visa */}
+                  <td className="px-4 py-3.5 text-left font-bold text-base lg:text-lg tabular-nums text-slate-900 bg-slate-50/80 group-hover:bg-blue-50/80 dark:bg-zinc-800/40 dark:text-zinc-100 dark:group-hover:bg-blue-950/40 transition-colors">
+                    <Money value={row.rowCashVisa} />
+                  </td>
+
+                  {/* Daily Coupons */}
+                  <td className="px-4 py-3.5 text-left font-bold text-base lg:text-lg tabular-nums text-slate-900 bg-slate-50/80 group-hover:bg-blue-50/80 dark:bg-zinc-800/40 dark:text-zinc-100 dark:group-hover:bg-blue-950/40 transition-colors">
+                    <Money value={row.rowCoupons} />
                   </td>
                 </tr>
               ))
@@ -644,6 +624,18 @@ export function DailyRevenueMatrix({
                 })}
                 <td className="px-4 py-4 text-left text-lg lg:text-xl font-black bg-blue-200/95 dark:bg-blue-800/60 text-blue-950 dark:text-blue-50">
                   {grandTotal.toLocaleString('en-US', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}
+                </td>
+                <td className="px-4 py-4 text-left text-base lg:text-lg font-black bg-blue-200/80 dark:bg-blue-800/40 text-blue-950 dark:text-blue-50">
+                  {grandCashVisa.toLocaleString('en-US', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}
+                </td>
+                <td className="px-4 py-4 text-left text-base lg:text-lg font-black bg-blue-200/80 dark:bg-blue-800/40 text-blue-950 dark:text-blue-50">
+                  {grandCoupons.toLocaleString('en-US', {
                     minimumFractionDigits: 2,
                     maximumFractionDigits: 2,
                   })}
@@ -735,21 +727,13 @@ export function DailyRevenueMatrix({
       {/* Accounting Footnote */}
       <div className="flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 dark:text-zinc-400 bg-slate-50/60 p-2.5 rounded-md dark:bg-zinc-900/40">
         <span>
-          * الحالة الحالية: مصدر الإيراد [
-          <strong>
-            {paymentSource === 'cash_visa'
-              ? 'نقدي وفيزا'
-              : paymentSource === 'cl'
-                ? 'آجل وضيافة'
-                : 'الكل (نقدي + فيزا + آجل)'}
-          </strong>
-          ] | نوع الاحتساب [
+          * الحالة الحالية: نوع الاحتساب [
           <strong>
             {calcMode === 'net'
-              ? 'الصافي (Net ÷ 1.14)'
+              ? 'الصافي (Net Sales)'
               : calcMode === 'vat'
                 ? 'الضريبة (VAT 14%)'
-                : 'الإجمالي الشامل (Total)'}
+                : 'الإجمالي الشامل (Total Gross)'}
           </strong>
           ]
         </span>
