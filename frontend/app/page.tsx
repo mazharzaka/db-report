@@ -329,25 +329,7 @@ export default function CaravanDashboardHomePage() {
             </div>
 
             {/* --------------------------------------------------------------------- */}
-            {/* ROW 1: EXECUTIVE PULSE (Suspense-wrapped Top Macro KPI Cards)         */}
-            {/* --------------------------------------------------------------------- */}
-            <div className={`break-inside-avoid ${!dash.printConfig.kpis ? 'print:hidden' : ''}`}>
-              <Suspense fallback={<KPIsSkeleton />}>
-                <ExecutiveKpisSection
-                  startDate={dash.start}
-                  endDate={dash.end}
-                  selectedBranches={dash.effectiveBranches}
-                  summary={dash.summary}
-                  trend={dash.trend}
-                  records={dash.records}
-                  guests={dash.guests}
-                  refreshTick={dash.refreshTick}
-                />
-              </Suspense>
-            </div>
-
-            {/* --------------------------------------------------------------------- */}
-            {/* ROW 2: DYNAMICS (Branch Comparison & Conditional Revenue Trend)       */}
+            {/* ROW 1: DYNAMICS (Branch Comparison & Conditional Revenue Trend)       */}
             {/* --------------------------------------------------------------------- */}
             {(() => {
               const isSingleDay = dash.start === dash.end;
@@ -458,7 +440,23 @@ export default function CaravanDashboardHomePage() {
               </summary>
 
               <div className="mt-6 space-y-6 border-t border-slate-100 pt-6 dark:border-zinc-800/80">
-                {/* 1. Spend Behavior & Operational Efficiency (سلوك الإنفاق وكفاءة التشغيل) */}
+                {/* 1. Top Macro KPIs (إجمالي الإيرادات، الكميات، الزوار، والمرتجعات) */}
+                <div className="break-inside-avoid">
+                  <Suspense fallback={<KPIsSkeleton />}>
+                    <ExecutiveKpisSection
+                      startDate={dash.start}
+                      endDate={dash.end}
+                      selectedBranches={dash.effectiveBranches}
+                      summary={dash.summary}
+                      trend={dash.trend}
+                      records={dash.records}
+                      guests={dash.guests}
+                      refreshTick={dash.refreshTick}
+                    />
+                  </Suspense>
+                </div>
+
+                {/* 2. Spend Behavior & Operational Efficiency (سلوك الإنفاق وكفاءة التشغيل) */}
                 <div className="break-inside-avoid">
                   <VisitorOutletPerformanceRow
                     totalRevenue={dash.summary?.totalSales ?? 0}

@@ -290,7 +290,7 @@ export function useCaravanDashboard() {
   const [preset, setPreset] = useState<PresetId>('yesterday');
   const [start, setStart] = useState(initial.start);
   const [end, setEnd] = useState(initial.end);
-  const [granularity, setGranularity] = useState<Granularity>('summary');
+  const [granularity, setGranularity] = useState<Granularity>('day');
 
   // Period Comparison State
   const initialComp = useMemo(() => getComparisonPresetDates('month_vs_last'), []);

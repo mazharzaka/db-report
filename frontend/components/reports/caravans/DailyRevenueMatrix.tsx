@@ -330,32 +330,32 @@ export function DailyRevenueMatrix({
       </div>
 
       {/* Matrix Table */}
-      <div className="mt-4 overflow-x-auto rounded-lg border border-slate-200/70 dark:border-zinc-800/70">
-        <table className="w-full text-right text-xs" dir="rtl">
+      <div className="mt-4 overflow-x-auto rounded-lg border border-slate-200 dark:border-zinc-800">
+        <table className="w-full text-right text-sm" dir="rtl">
           <thead>
-            {/* Header row with modernized legacy subtle pink tint */}
-            <tr className="border-b border-rose-200/60 bg-rose-50/70 text-slate-800 dark:border-rose-900/30 dark:bg-rose-950/20 dark:text-rose-200">
-              <th className="sticky right-0 z-20 px-3.5 py-3 font-bold text-center border-l border-rose-200/60 bg-rose-100/70 dark:border-rose-900/30 dark:bg-rose-950/40 min-w-[120px]">
-                <div className="flex items-center justify-center gap-1.5">
-                  <Calendar className="h-3.5 w-3.5 text-rose-600 dark:text-rose-400" />
-                  <span>التاريخ</span>
+            {/* Header row with sleek modern enterprise styling (No red/pink) */}
+            <tr className="border-b border-slate-200 bg-slate-100/90 text-slate-700 dark:border-zinc-800 dark:bg-zinc-800/80 dark:text-zinc-200">
+              <th className="sticky right-0 z-20 px-4 py-3.5 font-semibold text-center border-l border-slate-200 bg-slate-200/70 dark:border-zinc-700/80 dark:bg-zinc-800 min-w-[130px]">
+                <div className="flex items-center justify-center gap-2">
+                  <Calendar className="h-4 w-4 text-slate-500 dark:text-zinc-400" />
+                  <span className="font-semibold text-slate-800 dark:text-zinc-100">التاريخ</span>
                 </div>
               </th>
               {columns.map((col) => (
                 <th
                   key={col.branchCode}
-                  className="px-3 py-3 font-bold text-center border-l border-rose-200/40 dark:border-rose-900/20 min-w-[140px] whitespace-nowrap"
+                  className="px-4 py-3.5 font-semibold text-center border-l border-slate-200/80 dark:border-zinc-700/60 min-w-[145px] whitespace-nowrap"
                   title={`كود الفرع: ${col.branchCode}`}
                 >
                   <div className="flex flex-col items-center">
-                    <span>{col.name}</span>
-                    <span className="text-[10px] font-mono font-normal opacity-60">
+                    <span className="text-slate-800 dark:text-zinc-100 font-semibold">{col.name}</span>
+                    <span className="text-xs font-mono font-normal opacity-60">
                       {col.branchCode}
                     </span>
                   </div>
                 </th>
               ))}
-              <th className="px-3.5 py-3 font-bold text-left bg-rose-100/60 dark:bg-rose-950/30 min-w-[140px]">
+              <th className="px-4 py-3.5 font-semibold text-left bg-slate-200/60 dark:bg-zinc-800/90 text-slate-800 dark:text-zinc-100 min-w-[145px]">
                 الإجمالي اليومي
               </th>
             </tr>
@@ -366,13 +366,13 @@ export function DailyRevenueMatrix({
                 <td colSpan={columns.length + 2} className="py-12 text-center text-slate-400">
                   <div className="flex flex-col items-center gap-2">
                     <Loader2 className="h-6 w-6 animate-spin text-orange-500" />
-                    <span>جاري تجميع وحساب مصفوفة الإيرادات...</span>
+                    <span className="text-sm font-sans font-medium">جاري تجميع وحساب مصفوفة الإيرادات...</span>
                   </div>
                 </td>
               </tr>
             ) : matrixRows.length === 0 ? (
               <tr>
-                <td colSpan={columns.length + 2} className="py-10 text-center text-slate-400">
+                <td colSpan={columns.length + 2} className="py-10 text-center text-slate-400 text-sm font-sans">
                   لا توجد سجلات كافية لبناء المصفوفة
                 </td>
               </tr>
@@ -380,10 +380,10 @@ export function DailyRevenueMatrix({
               matrixRows.map((row) => (
                 <tr
                   key={row.date}
-                  className="transition hover:bg-slate-50/70 dark:hover:bg-zinc-800/40"
+                  className="transition hover:bg-slate-50 dark:hover:bg-zinc-800/40"
                 >
-                  {/* Date Column: Distinct Subtle Light Blue Background */}
-                  <td className="sticky right-0 z-10 px-3.5 py-2.5 text-center font-bold text-slate-900 border-l border-slate-200/70 bg-sky-50/80 dark:border-zinc-800 dark:bg-sky-950/25 dark:text-sky-300">
+                  {/* Date Column: Clean subtle contrasting tone */}
+                  <td className="sticky right-0 z-10 px-4 py-3 text-center font-medium text-slate-900 border-l border-slate-200/80 bg-slate-50/90 dark:border-zinc-800 dark:bg-zinc-900/50 dark:text-zinc-200">
                     {row.date}
                   </td>
 
@@ -393,7 +393,7 @@ export function DailyRevenueMatrix({
                     return (
                       <td
                         key={col.branchCode}
-                        className={`px-3 py-2.5 text-left border-l border-slate-100 dark:border-zinc-800/40 ${
+                        className={`px-4 py-3 text-left font-medium border-l border-slate-100 dark:border-zinc-800/40 ${
                           val > 0
                             ? 'text-slate-800 dark:text-zinc-200'
                             : 'text-slate-300 dark:text-zinc-600'
@@ -405,14 +405,14 @@ export function DailyRevenueMatrix({
                             maximumFractionDigits: 2,
                           })
                         ) : (
-                          <span className="select-none font-normal">—</span>
+                          <span className="select-none font-normal opacity-40">—</span>
                         )}
                       </td>
                     );
                   })}
 
                   {/* Row Total */}
-                  <td className="px-3.5 py-2.5 text-left font-bold text-slate-900 bg-slate-50/60 dark:bg-zinc-900/40 dark:text-white">
+                  <td className="px-4 py-3 text-left font-semibold text-slate-900 bg-slate-50/60 dark:bg-zinc-900/40 dark:text-white">
                     <Money value={row.rowTotal} />
                   </td>
                 </tr>
@@ -420,11 +420,11 @@ export function DailyRevenueMatrix({
             )}
           </tbody>
 
-          {/* Grand Totals Footer */}
+          {/* Grand Totals Footer: Modern Enterprise Accent Theme (No yellow) */}
           {!loading && matrixRows.length > 0 && (
             <tfoot>
-              <tr className="border-t-2 border-slate-300 bg-amber-300/80 font-bold text-slate-900 dark:bg-amber-400 dark:text-zinc-950 font-mono tabular-nums tracking-tight shadow-inner">
-                <td className="sticky right-0 z-10 px-3.5 py-3 text-center font-sans text-sm font-black border-l border-amber-400 dark:border-amber-500 bg-amber-300 dark:bg-amber-400">
+              <tr className="border-t-2 border-slate-300 bg-blue-50/80 font-semibold text-slate-900 dark:border-blue-800 dark:bg-blue-900/20 dark:text-blue-100 font-mono tabular-nums tracking-tight">
+                <td className="sticky right-0 z-10 px-4 py-3.5 text-center font-sans text-sm font-semibold border-l border-slate-300 dark:border-blue-800 bg-blue-100/70 dark:bg-blue-900/40">
                   الإجمالي العام
                 </td>
                 {columns.map((col) => {
@@ -432,7 +432,7 @@ export function DailyRevenueMatrix({
                   return (
                     <td
                       key={col.branchCode}
-                      className="px-3 py-3 text-left border-l border-amber-400/50 dark:border-amber-500/50"
+                      className="px-4 py-3.5 text-left font-semibold border-l border-slate-200 dark:border-blue-900/40"
                     >
                       {total.toLocaleString('en-US', {
                         minimumFractionDigits: 2,
@@ -441,7 +441,7 @@ export function DailyRevenueMatrix({
                     </td>
                   );
                 })}
-                <td className="px-3.5 py-3 text-left text-sm font-black bg-amber-400/90 dark:bg-amber-500 text-slate-950">
+                <td className="px-4 py-3.5 text-left text-sm font-bold bg-blue-100/90 dark:bg-blue-800/40 text-blue-950 dark:text-blue-50">
                   {grandTotal.toLocaleString('en-US', {
                     minimumFractionDigits: 2,
                     maximumFractionDigits: 2,
