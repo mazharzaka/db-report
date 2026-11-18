@@ -27,7 +27,7 @@ export function BranchSelect({ options, value, onChange }: Props) {
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     return q
-      ? options.cdfilter((o) => o.Name.toLowerCase().includes(q) || String(o.Code).toLowerCase().includes(q))
+      ? options.filter((o) => o.Name.toLowerCase().includes(q) || String(o.Code).toLowerCase().includes(q))
       : options;
   }, [options, query]);
 

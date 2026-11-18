@@ -45,7 +45,6 @@ interface MatrixColumn {
 }
 
 export type CalcMode = 'total' | 'net' | 'vat';
-export type MatrixViewMode = 'net' | 'vat' | 'total'; // Backward compatibility
 
 /* -------------------------------------------------------------------------- */
 /* Component Implementation                                                   */
@@ -233,8 +232,8 @@ export function DailyRevenueMatrix({
     try {
       setExporting(true);
 
-      const ExcelJS = (await import('exceljs')).default;
-      const { saveAs } = (await import('file-saver')).default;
+      const excelJsModule = await import('exceljs');
+      const ExcelJS = (excelJsModule as any).default || excelJsModule;
 
       const workbook = new ExcelJS.Workbook();
       workbook.creator = 'Dream Park ERP';
@@ -378,12 +377,43 @@ export function DailyRevenueMatrix({
         }
       }
 
+      // 5. Trigger Browser Download with resilient fallbacks
       const buffer = await workbook.xlsx.writeBuffer();
       const blob = new Blob([buffer], {
         type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
       });
       const fileName = `Daily_Revenue_Matrix_${calcCode}_${new Date().toISOString().split('T')[0]}.xlsx`;
-      saveAs(blob, fileName);
+
+      const triggerDomDownload = (b: Blob, name: string) => {
+        const url = window.URL.createObjectURL(b);
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+        a.download = name;
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(() => {
+          window.URL.revokeObjectURL(url);
+          document.body.removeChild(a);
+        }, 200);
+      };
+
+      try {
+        const fileSaverModule = await import('file-saver');
+        const saveAsFn =
+          (fileSaverModule as any).saveAs ||
+          (fileSaverModule as any).default?.saveAs ||
+          (fileSaverModule as any).default ||
+          fileSaverModule;
+
+        if (typeof saveAsFn === 'function') {
+          saveAsFn(blob, fileName);
+        } else {
+          triggerDomDownload(blob, fileName);
+        }
+      } catch {
+        triggerDomDownload(blob, fileName);
+      }
     } catch (err) {
       console.error('Error exporting Matrix to Excel:', err);
     } finally {

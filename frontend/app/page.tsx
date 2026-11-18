@@ -47,13 +47,16 @@ const MAX_BRANCHES_IN_CHART = 10;
 export default function CaravanDashboardHomePage() {
   const dash = useCaravanDashboard();
 
-  // Dynamic calculations for the 3 Core KPI Cards based on currently displayed rows
+  // Dynamic calculations for the 3 Core KPI Cards based on currently displayed rows (Cash + Visa + CL)
   const financialTotals = React.useMemo(() => {
     let total = 0;
     (dash.records || []).forEach((r) => {
       const cash = Number(r.cash) || 0;
       const visa = Number(r.visa) || 0;
-      total += (cash + visa);
+      const cl = Number(r.creditLine ?? (r as any).cl) || 0;
+      const rawTotal = Number(r.total) || 0;
+      const rowBase = cash + visa + cl > 0 ? cash + visa + cl : rawTotal;
+      total += rowBase;
     });
 
     const net = total / 1.14;
@@ -348,7 +351,7 @@ export default function CaravanDashboardHomePage() {
                       إجمالي الإيرادات (شامل الضريبة)
                     </span>
                     <p className="mt-0.5 text-xs text-slate-500 dark:text-zinc-400">
-                      Total Sales (Cash + Visa)
+                      Total Sales (Cash + Visa + CL)
                     </p>
                   </div>
                   <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-500/10 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400 shadow-2xs">
