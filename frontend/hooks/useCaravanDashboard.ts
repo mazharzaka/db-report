@@ -61,8 +61,8 @@ export interface LocalBranchStat {
   cover: number;
 }
 
-export type ItemRow = { name: string; qty?: number; revenue?: number; [k: string]: any };
-export type OutletRow = { name: string; [k: string]: any };
+export type ItemRow = { name: string; qty?: number; revenue?: number;[k: string]: any };
+export type OutletRow = { name: string;[k: string]: any };
 
 export const ymd = (d: Date): string => {
   const y = d.getFullYear();
@@ -182,9 +182,11 @@ export function buildTrend(records: CaravanRecord[]): TrendPoint[] {
       cash: 0,
       visa: 0,
     };
-    p.total += r.total;
-    p.cash += r.cash;
-    p.visa += r.visa;
+    const cash = Number(r.cash) || 0;
+    const visa = Number(r.visa) || 0;
+    p.total += (cash + visa);
+    p.cash += cash;
+    p.visa += visa;
     map.set(key, p);
   }
   return Array.from(map.entries())
@@ -205,11 +207,13 @@ export function buildBranchStats(records: CaravanRecord[]): LocalBranchStat[] {
       credit: 0,
       cover: 0,
     };
-    s.total += r.total;
-    s.cash += r.cash;
-    s.visa += r.visa;
-    s.credit += r.creditLine;
-    s.cover += r.cover;
+    const cash = Number(r.cash) || 0;
+    const visa = Number(r.visa) || 0;
+    s.total += (cash + visa);
+    s.cash += cash;
+    s.visa += visa;
+    s.credit += Number(r.creditLine) || 0;
+    s.cover += Number(r.cover) || 0;
     map.set(key, s);
   }
   return Array.from(map.values()).sort((a, b) => b.total - a.total);
@@ -420,16 +424,16 @@ export function useCaravanDashboard() {
           r.voidDetails ||
           (r.totalVoids && r.totalVoids > 0
             ? [
-                {
-                  itemCode: '111070',
-                  itemName: 'أصناف ملغاة / مرتجعة',
-                  docDate: end || new Date().toISOString().split('T')[0],
-                  docTime: '14:32',
-                  quantity: r.voidCount || 1,
-                  price: r.totalVoids,
-                  total: r.totalVoids,
-                },
-              ]
+              {
+                itemCode: '111070',
+                itemName: 'أصناف ملغاة / مرتجعة',
+                docDate: end || new Date().toISOString().split('T')[0],
+                docTime: '14:32',
+                quantity: r.voidCount || 1,
+                price: r.totalVoids,
+                total: r.totalVoids,
+              },
+            ]
             : []),
       }));
   }, [records, end]);
@@ -650,6 +654,15 @@ export function useCaravanDashboard() {
   }, [start, end, granularity, effectiveBranches]);
 
   const comparisonStats = useMemo<OutletMetricStat[]>(() => {
+    if (branchStats.length > 0) {
+      return branchStats.map((s) => ({
+        code: s.code,
+        name: s.name,
+        revenue: s.total,
+        orders: s.cover,
+        avgTicket: s.cover > 0 ? s.total / s.cover : 0,
+      }));
+    }
     const list = outlets.length > 0 ? outlets : itemsData?.outlets ?? [];
     if (list.length > 0) {
       return list.map((o: any) => ({
@@ -663,7 +676,7 @@ export function useCaravanDashboard() {
       }));
     }
     return [];
-  }, [outlets, itemsData]);
+  }, [branchStats, outlets, itemsData]);
 
   const triggerRefresh = useCallback(() => {
     setRefreshTick((t) => t + 1);

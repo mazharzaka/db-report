@@ -53,15 +53,13 @@ export default function CaravanDashboardHomePage() {
     (dash.records || []).forEach((r) => {
       const cash = Number(r.cash) || 0;
       const visa = Number(r.visa) || 0;
-      const cl = Number(r.creditLine ?? (r as any).cl) || 0;
-      const rowSum = (cash + visa + cl) > 0 ? (cash + visa + cl) : (Number(r.total) || 0);
-      total += rowSum;
+      total += (cash + visa);
     });
 
-    const retail = total / 1.14;
-    const vat = total - retail;
+    const net = total / 1.14;
+    const vat = total - net;
 
-    return { total, retail, vat };
+    return { total, net, retail: net, vat };
   }, [dash.records]);
 
   // Unauthenticated screen guard
@@ -350,7 +348,7 @@ export default function CaravanDashboardHomePage() {
                       إجمالي الإيرادات (شامل الضريبة)
                     </span>
                     <p className="mt-0.5 text-xs text-slate-500 dark:text-zinc-400">
-                      Total Sales (Cash + Visa + C/L)
+                      Total Sales (Cash + Visa)
                     </p>
                   </div>
                   <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-500/10 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400 shadow-2xs">
@@ -412,7 +410,7 @@ export default function CaravanDashboardHomePage() {
                       ضريبة القيمة المضافة (VAT 14%)
                     </span>
                     <p className="mt-0.5 text-xs text-slate-500 dark:text-zinc-400">
-                      Total - Retail
+                      Total - Net
                     </p>
                   </div>
                   <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-500/10 text-amber-600 dark:bg-amber-500/20 dark:text-amber-400 shadow-2xs">
@@ -462,18 +460,18 @@ export default function CaravanDashboardHomePage() {
                     title="مقارنة أداء الفروع والمحلات"
                     subtitle={
                       isSingleDay
-                        ? `جميع الفروع والمحلات (${dash.comparisonStats.length} منفذ) مرتبة حسب ${dash.barMetric === 'revenue' ? 'صافي الإيراد' : 'عدد العمليات'
+                        ? `جميع الفروع والمحلات (${dash.comparisonStats.length} منفذ) مرتبة حسب ${dash.barMetric === 'revenue' ? 'الإجمالي الشامل' : 'عدد العمليات'
                         }`
                         : `أعلى ${Math.min(
                           dash.comparisonStats.length,
                           10
-                        )} محلات مرتبة حسب ${dash.barMetric === 'revenue' ? 'صافي الإيراد' : 'عدد العمليات'
+                        )} محلات مرتبة حسب ${dash.barMetric === 'revenue' ? 'الإجمالي الشامل' : 'عدد العمليات'
                         }`
                     }
                     action={
                       <Segmented
                         options={[
-                          { id: 'revenue', label: 'صافي الإيراد' },
+                          { id: 'revenue', label: 'الإجمالي الشامل' },
                           { id: 'orders', label: 'عدد الشيكات' },
                         ]}
                         value={dash.barMetric}
@@ -500,7 +498,7 @@ export default function CaravanDashboardHomePage() {
                     <Card
                       className="col-span-12 lg:col-span-6"
                       title="اتجاه الإيرادات عبر الوقت"
-                      subtitle="مسار المبيعات مقسّماً (صافي الإيراد، النقدية، الفيزا)"
+                      subtitle="مسار المبيعات مقسّماً (الإجمالي الشامل، النقدية، الفيزا)"
                     >
                       <div className="h-[360px]" dir="ltr">
                         <RevenueTrendChart

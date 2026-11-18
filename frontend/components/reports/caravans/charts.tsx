@@ -178,7 +178,7 @@ export function RevenueTrendChart({
   const series = [
     {
       key: "total" as const,
-      label: "صافي الإيرادات",
+      label: "الإجمالي الشامل",
       rgb: dark ? PALETTE.lavender : PALETTE.orange,
     },
     {

@@ -66,7 +66,7 @@ export function BranchComparisonChart({
             items[0] ? (displayedStats[items[0].dataIndex]?.name ?? "") : "",
           label: (c) =>
             isRevenue
-              ? ` صافي الإيراد: ${fmtMoney(Number(c.parsed.y))}`
+              ? ` الإجمالي الشامل: ${fmtMoney(Number(c.parsed.y))}`
               : ` عدد العمليات: ${fmtInt(Number(c.parsed.y))} شيك`,
           footer: (items) => {
             const s = items[0] ? displayedStats[items[0].dataIndex] : undefined;
@@ -127,7 +127,7 @@ export function BranchComparisonChart({
         labels: displayedStats.map((s) => s.name),
         datasets: [
           {
-            label: isRevenue ? "صافي الإيراد" : "عدد الشيكات",
+            label: isRevenue ? "الإجمالي الشامل" : "عدد الشيكات",
             data: dataValues,
             backgroundColor: barColor,
             hoverBackgroundColor: barHoverColor,
