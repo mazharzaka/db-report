@@ -184,7 +184,8 @@ export function buildTrend(records: CaravanRecord[]): TrendPoint[] {
     };
     const cash = Number(r.cash) || 0;
     const visa = Number(r.visa) || 0;
-    p.total += (cash + visa);
+    const cl = Number(r.creditLine ?? (r as any).cl) || 0;
+    p.total += (cash + visa + cl);
     p.cash += cash;
     p.visa += visa;
     map.set(key, p);
@@ -209,10 +210,11 @@ export function buildBranchStats(records: CaravanRecord[]): LocalBranchStat[] {
     };
     const cash = Number(r.cash) || 0;
     const visa = Number(r.visa) || 0;
-    s.total += (cash + visa);
+    const cl = Number(r.creditLine ?? (r as any).cl) || 0;
+    s.total += (cash + visa + cl);
     s.cash += cash;
     s.visa += visa;
-    s.credit += Number(r.creditLine) || 0;
+    s.credit += cl;
     s.cover += Number(r.cover) || 0;
     map.set(key, s);
   }
