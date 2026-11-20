@@ -20,32 +20,36 @@ export const CARAVAN_BRANCH_CODES = [
   '1007',
   '1008',
   '1010',
+  '1015',
   '1018',
   '1027',
   '1030',
 ];
 
-export const SHOP_BRANCH_CODES = ['1021', '1023', '1025', '1026', '1029'];
+export const SHOP_BRANCH_CODES = ['1021', '1023', '1024', '1025', '1029'];
 
 export const ALL_OUTLET_CODES = [...CARAVAN_BRANCH_CODES, ...SHOP_BRANCH_CODES];
 
-const DEFAULT_BRANCH_NAMES: Record<string, string> = {
-  '1003': 'كرفان 1 (منطقة الألعاب)',
-  '1004': 'كرفان 2 (بوابة الخروج)',
-  '1005': 'كرفان 3 (الساحة الرئيسية)',
-  '1006': 'كرفان 4 (ممر الألعاب المائية)',
-  '1007': 'كرفان 5 (منطقة الأطفال)',
-  '1008': 'كرفان 6 (المسرح المكشوف)',
-  '1010': 'كرفان 7 (المطاعم المركزية)',
-  '1018': 'كرفان 8 (منطقة المغامرات)',
-  '1027': 'كرفان 9 (القطار السريع)',
-  '1030': 'كرفان 10 (المدخل الشرقي)',
-  '1021': 'محل 1 (سوبر ماركت 1)',
-  '1023': 'محل 2 (هدايا وألعاب)',
-  '1025': 'محل 3 (حلويات وسناكس)',
-  '1026': 'محل 4 (مرطبات وآيس كريم)',
-  '1029': 'محل 5 (مخبوزات ومعجنات)',
+export const CARAVAN_DISPLAY_NAMES: Record<string, string> = {
+  '1003': 'BAWABA',
+  '1004': 'AL SHLAL',
+  '1005': 'DISCOVRY',
+  '1006': 'ROCET',
+  '1007': 'DARKNISS',
+  '1008': 'THE RIVER',
+  '1010': 'EGYPTION',
+  '1015': 'AL PATATS',
+  '1018': '229',
+  '1021': 'DOPY',
+  '1023': 'LIMO',
+  '1024': 'TOYES',
+  '1025': 'BONBON',
+  '1027': 'ZOO',
+  '1029': 'Funny',
+  '1030': 'ALTAAWWSS',
 };
+
+const DEFAULT_BRANCH_NAMES: Record<string, string> = CARAVAN_DISPLAY_NAMES;
 
 export const PRESETS: { id: Exclude<PresetId, 'custom'>; label: string }[] = [
   { id: 'yesterday', label: 'الأمس' },
@@ -73,6 +77,8 @@ export const GRANULARITIES: { id: Granularity; label: string }[] = [
 /* -------------------------------------------------------------------------- */
 
 interface HybridBranchFilterDropdownProps {
+  sectorType?: number;
+  sectorLabel?: string;
   facilityType: FacilityType;
   onFacilityTypeChange: (type: FacilityType) => void;
   options: BranchOption[];
@@ -81,6 +87,8 @@ interface HybridBranchFilterDropdownProps {
 }
 
 export function HybridBranchFilterDropdown({
+  sectorType = 4,
+  sectorLabel,
   facilityType,
   onFacilityTypeChange,
   options,
@@ -117,32 +125,34 @@ export function HybridBranchFilterDropdown({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [open]);
 
-  // Master list of all options combining server options and defaults
+  // Master list of all options strictly scoped to the active sector
   const allOutlets = useMemo<BranchOption[]>(() => {
-    const map = new Map<string, string>();
-    // First, populate standard 15 outlets with known Arabic labels
-    ALL_OUTLET_CODES.forEach((code) => {
-      map.set(code, DEFAULT_BRANCH_NAMES[code] || `منفذ ${code}`);
-    });
-    // Overlay any server provided names
-    options.forEach((opt) => {
-      const code = String(opt.Code);
-      if (opt.Name && opt.Name.trim()) {
-        map.set(code, opt.Name.trim());
-      } else if (!map.has(code)) {
-        map.set(code, `منفذ ${code}`);
-      }
-    });
-
-    return Array.from(map.entries()).map(([Code, Name]) => ({ Code, Name }));
-  }, [options]);
+    if (sectorType !== 4) {
+      return options;
+    }
+    if (options.length > 0) {
+      return options.map((opt) => ({
+        Code: String(opt.Code),
+        Name:
+          opt.Name && opt.Name.trim()
+            ? opt.Name.trim()
+            : DEFAULT_BRANCH_NAMES[String(opt.Code)] || `منفذ ${opt.Code}`,
+      }));
+    }
+    return ALL_OUTLET_CODES.map((code) => ({
+      Code: code,
+      Name: DEFAULT_BRANCH_NAMES[code] || `منفذ ${code}`,
+    }));
+  }, [options, sectorType]);
 
   // Check if a specific branch code is currently active
   const isBranchChecked = (code: string): boolean => {
     if (selectedBranches.length === 0) {
-      if (facilityType === 'caravans') return CARAVAN_BRANCH_CODES.includes(code);
-      if (facilityType === 'shops') return SHOP_BRANCH_CODES.includes(code);
-      return true; // facilityType === 'all'
+      if (sectorType === 4) {
+        if (facilityType === 'caravans') return CARAVAN_BRANCH_CODES.includes(code);
+        if (facilityType === 'shops') return SHOP_BRANCH_CODES.includes(code);
+      }
+      return true; // Default: All branches selected
     }
     return selectedBranches.includes(code);
   };
@@ -150,16 +160,27 @@ export function HybridBranchFilterDropdown({
   // Compute checked count
   const checkedCount = useMemo(() => {
     return allOutlets.filter((o) => isBranchChecked(String(o.Code))).length;
-  }, [allOutlets, selectedBranches, facilityType]);
+  }, [allOutlets, selectedBranches, facilityType, sectorType]);
 
   // Dynamic Trigger Button Label
   const buttonLabel = useMemo(() => {
+    if (sectorType !== 4) {
+      if (selectedBranches.length === 0 || checkedCount === allOutlets.length) {
+        return `جميع منافذ ${sectorLabel || 'القطاع'}: الكل (${allOutlets.length} منفذ)`;
+      }
+      if (checkedCount === 1) {
+        const single = allOutlets.find((o) => isBranchChecked(String(o.Code)));
+        return single?.Name || 'منفذ واحد محدد';
+      }
+      return `تم تحديد ${checkedCount} من ${allOutlets.length} منافذ`;
+    }
+
     if (facilityType === 'all' && (selectedBranches.length === 0 || checkedCount === allOutlets.length)) {
-      return 'الفروع والقطاعات: الكل (15 منفذ)';
+      return `الفروع والقطاعات: الكل (${allOutlets.length} منفذ)`;
     }
     if (facilityType === 'caravans') {
       if (checkedCount === CARAVAN_BRANCH_CODES.length) {
-        return 'الكرفانات بالكامل (10 منافذ)';
+        return 'الكرفانات بالكامل (11 منافذ)';
       }
       return `الكرفانات (${checkedCount} من 10)`;
     }
@@ -174,9 +195,9 @@ export function HybridBranchFilterDropdown({
       return single?.Name || 'منفذ واحد محدد';
     }
     return `تم تحديد ${checkedCount} منافذ`;
-  }, [facilityType, selectedBranches, checkedCount, allOutlets]);
+  }, [sectorType, sectorLabel, facilityType, selectedBranches, checkedCount, allOutlets]);
 
-  // 1. Quick Sector Toggle in Section A
+  // 1. Quick Sector Toggle in Section A (Caravans Only)
   const handleSectorToggle = (type: FacilityType) => {
     onFacilityTypeChange(type);
     if (type === 'all') {
@@ -190,6 +211,24 @@ export function HybridBranchFilterDropdown({
 
   // 2. Granular Checkbox Toggle in Section B
   const toggleBranch = (code: string) => {
+    if (sectorType !== 4) {
+      let nextChecked: string[];
+      if (selectedBranches.length === 0) {
+        nextChecked = allOutlets.map((o) => String(o.Code)).filter((c) => c !== code);
+      } else if (selectedBranches.includes(code)) {
+        nextChecked = selectedBranches.filter((c) => c !== code);
+      } else {
+        nextChecked = [...selectedBranches, code];
+      }
+
+      if (nextChecked.length === 0 || nextChecked.length === allOutlets.length) {
+        onChange([]);
+      } else {
+        onChange(nextChecked);
+      }
+      return;
+    }
+
     const currentChecked = allOutlets
       .map((o) => String(o.Code))
       .filter((c) => isBranchChecked(c));
@@ -223,6 +262,10 @@ export function HybridBranchFilterDropdown({
   };
 
   const handleSelectAll = () => {
+    if (sectorType !== 4) {
+      onChange([]);
+      return;
+    }
     if (facilityType === 'caravans') {
       onChange([...CARAVAN_BRANCH_CODES]);
     } else if (facilityType === 'shops') {
@@ -267,9 +310,8 @@ export function HybridBranchFilterDropdown({
             </span>
           )}
           <ChevronDown
-            className={`h-4 w-4 text-slate-400 transition-transform duration-200 ${
-              open ? 'rotate-180' : ''
-            }`}
+            className={`h-4 w-4 text-slate-400 transition-transform duration-200 ${open ? 'rotate-180' : ''
+              }`}
           />
         </div>
       </button>
@@ -280,62 +322,61 @@ export function HybridBranchFilterDropdown({
           dir="rtl"
           className="absolute right-0 top-full mt-2 w-[360px] sm:w-[410px] z-50 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-2xl ring-1 ring-slate-900/10 dark:border-zinc-800 dark:bg-zinc-900 dark:ring-white/10 animate-in fade-in-50 zoom-in-95 duration-100"
         >
-          {/* SECTION A: Quick Sector Toggles */}
-          <div className="border-b border-slate-100 bg-slate-50/80 p-3 dark:border-zinc-800/80 dark:bg-zinc-950/60">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400">
-                قطاع الأعمال (Quick Sector)
-              </span>
-              <span className="text-[10px] font-mono tabular-nums text-slate-400 dark:text-zinc-500">
-                {facilityType === 'caravans'
-                  ? '10 كرفانات نشطة'
-                  : facilityType === 'shops'
-                    ? '5 محلات نشطة'
-                    : '15 منفذ كلي'}
-              </span>
-            </div>
+          {/* SECTION A: Quick Sector Toggles - ONLY RENDER FOR CARAVANS (Type = 4) */}
+          {sectorType === 4 && (
+            <div className="border-b border-slate-100 bg-slate-50/80 p-3 dark:border-zinc-800/80 dark:bg-zinc-950/60">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400">
+                  قطاع الأعمال (Sub-Category)
+                </span>
+                <span className="text-[10px] font-mono tabular-nums text-slate-400 dark:text-zinc-500">
+                  {facilityType === 'caravans'
+                    ? '11 كرفانات نشطة'
+                    : facilityType === 'shops'
+                      ? '5 محلات نشطة'
+                      : `${allOutlets.length} منفذ كلي`}
+                </span>
+              </div>
 
-            <div className="grid grid-cols-3 gap-1 rounded-lg bg-slate-200/70 p-1 dark:bg-zinc-800/70">
-              <button
-                type="button"
-                onClick={() => handleSectorToggle('all')}
-                className={`flex flex-col items-center justify-center rounded-md py-1.5 px-2 text-xs transition ${
-                  facilityType === 'all'
+              <div className="grid grid-cols-3 gap-1 rounded-lg bg-slate-200/70 p-1 dark:bg-zinc-800/70">
+                <button
+                  type="button"
+                  onClick={() => handleSectorToggle('all')}
+                  className={`flex flex-col items-center justify-center rounded-md py-1.5 px-2 text-xs transition ${facilityType === 'all'
                     ? 'bg-white font-bold text-slate-900 shadow-xs dark:bg-zinc-900 dark:text-white'
                     : 'font-medium text-slate-600 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-white'
-                }`}
-              >
-                <span>الكل (All)</span>
-                <span className="text-[9px] opacity-70">15 منفذ</span>
-              </button>
+                    }`}
+                >
+                  <span>الكل (All)</span>
+                  <span className="text-[9px] opacity-70">{allOutlets.length} منفذ</span>
+                </button>
 
-              <button
-                type="button"
-                onClick={() => handleSectorToggle('caravans')}
-                className={`flex flex-col items-center justify-center rounded-md py-1.5 px-2 text-xs transition ${
-                  facilityType === 'caravans'
+                <button
+                  type="button"
+                  onClick={() => handleSectorToggle('caravans')}
+                  className={`flex flex-col items-center justify-center rounded-md py-1.5 px-2 text-xs transition ${facilityType === 'caravans'
                     ? 'bg-white font-bold text-orange-600 shadow-xs dark:bg-zinc-900 dark:text-orange-400'
                     : 'font-medium text-slate-600 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-white'
-                }`}
-              >
-                <span>الكرفانات</span>
-                <span className="text-[9px] opacity-70">10 كرفان</span>
-              </button>
+                    }`}
+                >
+                  <span>الكرفانات</span>
+                  <span className="text-[9px] opacity-70">11 كرفان</span>
+                </button>
 
-              <button
-                type="button"
-                onClick={() => handleSectorToggle('shops')}
-                className={`flex flex-col items-center justify-center rounded-md py-1.5 px-2 text-xs transition ${
-                  facilityType === 'shops'
+                <button
+                  type="button"
+                  onClick={() => handleSectorToggle('shops')}
+                  className={`flex flex-col items-center justify-center rounded-md py-1.5 px-2 text-xs transition ${facilityType === 'shops'
                     ? 'bg-white font-bold text-blue-600 shadow-xs dark:bg-zinc-900 dark:text-blue-400'
                     : 'font-medium text-slate-600 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-white'
-                }`}
-              >
-                <span>المحلات</span>
-                <span className="text-[9px] opacity-70">5 محلات</span>
-              </button>
+                    }`}
+                >
+                  <span>المحلات</span>
+                  <span className="text-[9px] opacity-70">5 محلات</span>
+                </button>
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Quick Search inside Menu */}
           <div className="relative border-b border-slate-100 p-2.5 dark:border-zinc-800">
@@ -367,11 +408,10 @@ export function HybridBranchFilterDropdown({
                   >
                     <div className="flex items-center gap-2.5 min-w-0">
                       <span
-                        className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border transition ${
-                          isChecked
-                            ? 'border-orange-600 bg-orange-600 text-white dark:border-orange-500 dark:bg-orange-500'
-                            : 'border-slate-300 bg-white dark:border-zinc-600 dark:bg-zinc-900'
-                        }`}
+                        className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border transition ${isChecked
+                          ? 'border-orange-600 bg-orange-600 text-white dark:border-orange-500 dark:bg-orange-500'
+                          : 'border-slate-300 bg-white dark:border-zinc-600 dark:bg-zinc-900'
+                          }`}
                       >
                         {isChecked && <Check className="h-3 w-3 stroke-[3]" />}
                       </span>
@@ -381,15 +421,16 @@ export function HybridBranchFilterDropdown({
                     </div>
 
                     <div className="flex items-center gap-1.5 shrink-0">
-                      <span
-                        className={`rounded px-1.5 py-0.5 text-[10px] font-bold ${
-                          isCaravan
+                      {sectorType === 4 && (
+                        <span
+                          className={`rounded px-1.5 py-0.5 text-[10px] font-bold ${isCaravan
                             ? 'bg-amber-100/80 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300'
                             : 'bg-blue-100/80 text-blue-800 dark:bg-blue-950/60 dark:text-blue-300'
-                        }`}
-                      >
-                        {isCaravan ? 'كرفان' : 'محل'}
-                      </span>
+                            }`}
+                        >
+                          {isCaravan ? 'كرفان' : 'محل'}
+                        </span>
+                      )}
                       <span className="font-mono text-[11px] tabular-nums text-slate-400 dark:text-zinc-500" dir="ltr">
                         {branch.Code}
                       </span>
@@ -439,6 +480,8 @@ export function HybridBranchFilterDropdown({
 /* -------------------------------------------------------------------------- */
 
 export interface CaravanFiltersToolbarProps {
+  sectorType?: number;
+  sectorLabel?: string;
   viewMode: ViewMode;
   facilityType: FacilityType;
   onFacilityTypeChange: (type: FacilityType) => void;
@@ -467,6 +510,8 @@ export interface CaravanFiltersToolbarProps {
 }
 
 export function CaravanFiltersToolbar({
+  sectorType = 4,
+  sectorLabel,
   viewMode,
   facilityType,
   onFacilityTypeChange,
@@ -498,6 +543,8 @@ export function CaravanFiltersToolbar({
           {/* Hybrid Dropdown: Sector Toggles + Granular Branch Multi-Select */}
           <div className="flex flex-wrap items-center gap-2.5">
             <HybridBranchFilterDropdown
+              sectorType={sectorType}
+              sectorLabel={sectorLabel}
               facilityType={facilityType}
               onFacilityTypeChange={onFacilityTypeChange}
               options={branchOptions}
@@ -524,13 +571,12 @@ export function CaravanFiltersToolbar({
                   type="button"
                   disabled={isToday || isLoading}
                   onClick={() => !isToday && onApplyPreset(p.id)}
-                  className={`rounded-lg px-3.5 py-1.5 text-xs font-semibold tabular-nums tracking-tight transition-all duration-200 ${
-                    isToday
-                      ? 'opacity-50 cursor-not-allowed pointer-events-none bg-slate-100 text-slate-700 dark:bg-zinc-800 dark:text-zinc-400'
-                      : preset === p.id
-                        ? 'bg-orange-600 text-white shadow-sm dark:bg-white dark:text-black font-bold'
-                        : 'bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-zinc-800/80 dark:text-zinc-300 dark:hover:bg-zinc-700 dark:hover:text-white'
-                  }`}
+                  className={`rounded-lg px-3.5 py-1.5 text-xs font-semibold tabular-nums tracking-tight transition-all duration-200 ${isToday
+                    ? 'opacity-50 cursor-not-allowed pointer-events-none bg-slate-100 text-slate-700 dark:bg-zinc-800 dark:text-zinc-400'
+                    : preset === p.id
+                      ? 'bg-orange-600 text-white shadow-sm dark:bg-white dark:text-black font-bold'
+                      : 'bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-zinc-800/80 dark:text-zinc-300 dark:hover:bg-zinc-700 dark:hover:text-white'
+                    }`}
                 >
                   {p.label}
                 </button>
@@ -560,11 +606,10 @@ export function CaravanFiltersToolbar({
               key={p.id}
               type="button"
               onClick={() => onApplyCompPreset(p.id)}
-              className={`rounded-lg px-3 py-1 text-xs font-semibold tabular-nums tracking-tight transition-all duration-200 ${
-                compPreset === p.id
-                  ? 'bg-orange-600 text-white shadow-sm dark:bg-white dark:text-black font-bold'
-                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-zinc-800/80 dark:text-zinc-300 dark:hover:bg-zinc-700 dark:hover:text-white'
-              }`}
+              className={`rounded-lg px-3 py-1 text-xs font-semibold tabular-nums tracking-tight transition-all duration-200 ${compPreset === p.id
+                ? 'bg-orange-600 text-white shadow-sm dark:bg-white dark:text-black font-bold'
+                : 'bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-zinc-800/80 dark:text-zinc-300 dark:hover:bg-zinc-700 dark:hover:text-white'
+                }`}
             >
               {p.label}
             </button>
@@ -574,6 +619,8 @@ export function CaravanFiltersToolbar({
         {/* Hybrid Dropdown in Comparison Mode */}
         <div className="flex flex-wrap items-center gap-2.5">
           <HybridBranchFilterDropdown
+            sectorType={sectorType}
+            sectorLabel={sectorLabel}
             facilityType={facilityType}
             onFacilityTypeChange={onFacilityTypeChange}
             options={branchOptions}

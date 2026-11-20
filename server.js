@@ -58,12 +58,14 @@ app.get("/api/health", async (req, res) => {
   }
 });
 
-// 2. Metadata Endpoint: استرجاع جميع منافذ الكرفانات (Type = 4)
-app.get("/api/caravans/branches", async (req, res) => {
+// 2. Metadata Endpoint: استرجاع منافذ القطاع المحدد (افتراضياً Type = 4 الكرفانات)
+async function handleSectorBranches(req, res) {
   try {
-    const branches = await CaravanReportService.getCaravanBranches();
+    const sectorType = Number(req.query.sectorType || req.query.type) || 4;
+    const branches = await CaravanReportService.getCaravanBranches(sectorType);
     res.json({
       status: "success",
+      sectorType,
       count: branches.length,
       branches: branches.map((b) => ({
         Code: b.Code,
@@ -71,16 +73,21 @@ app.get("/api/caravans/branches", async (req, res) => {
       })),
     });
   } catch (err) {
-    console.error("[API Error] /api/caravans/branches:", err);
+    console.error("[API Error] /api/sectors/branches:", err);
     res.status(500).json({ status: "error", message: err.message });
   }
-});
+}
 
-// 3. Controller Handler للتقرير التحليلي للكرفانات
+app.get("/api/caravans/branches", handleSectorBranches);
+app.get("/api/sectors/branches", handleSectorBranches);
+app.get("/api/reports/sectors/branches", handleSectorBranches);
+
+// 3. Controller Handler للتقرير التحليلي لقطاعات دريم بارك
 async function handleCaravanReport(req, res) {
   try {
     const queryParams = { ...req.query, ...req.body };
-    const { startDate, endDate, granularity, sort } = queryParams;
+    const { startDate, endDate, granularity, sort, sectorType, type } = queryParams;
+    const secType = Number(sectorType || type) || 4;
 
     let branches = [];
     if (queryParams.branches) {
@@ -100,6 +107,7 @@ async function handleCaravanReport(req, res) {
       branches,
       granularity: (granularity || "summary").toLowerCase(),
       sortBy: (sort || "total_desc").toLowerCase(),
+      sectorType: secType,
     });
 
     res.json({
@@ -116,16 +124,20 @@ async function handleCaravanReport(req, res) {
   }
 }
 
-// مسارات استعلام تقرير الكرفانات
+// مسارات استعلام تقارير القطاعات والكرفانات
 app.get("/api/caravans/report", handleCaravanReport);
 app.post("/api/caravans/report", handleCaravanReport);
 app.get("/api/caravans-2026", handleCaravanReport);
 app.post("/api/caravans-2026", handleCaravanReport);
 app.get("/api/reports/caravans-2026", handleCaravanReport);
 app.get("/api/reports/caravans", handleCaravanReport);
+app.get("/api/sectors/report", handleCaravanReport);
+app.post("/api/sectors/report", handleCaravanReport);
+app.get("/api/reports/sectors", handleCaravanReport);
 
 // 4. مسار تصدير إكسيل المحاسبي المعتمد (ExcelJS RTL)
 app.get("/api/caravans/export", exportCaravanExcel);
+app.get("/api/sectors/export", exportCaravanExcel);
 
 // 5. التحليلات التشغيلية على مستوى الأصناف (Pos_item_post)
 // params: startDate, endDate, branchCode (واحد أو عدة أكواد مفصولة بفاصلة), metricType = revenue | quantity, mode = best | slow
@@ -328,7 +340,7 @@ app.get("/login", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "login", "index.html"));
 });
 
-app.get(["/reports/caravans", "/reports"], (req, res) => {
+app.get(["/reports/*", "/reports", "/reports/caravans"], (req, res) => {
   res.redirect("/");
 });
 

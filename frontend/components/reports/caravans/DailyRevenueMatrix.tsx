@@ -33,10 +33,37 @@ export interface MatrixRowItem {
   [key: string]: any;
 }
 
+export const CARAVAN_DISPLAY_NAMES: Record<string, string> = {
+  '1003': 'BAWABA',
+  '1004': 'AL SHLAL',
+  '1005': 'DISCOVRY',
+  '1006': 'ROCET',
+  '1007': 'DARKNISS',
+  '1008': 'THE RIVER',
+  '1010': 'EGYPTION',
+  '1015': 'AL PATATS',
+  '1018': '229',
+  '1021': 'DOPY',
+  '1023': 'LIMO',
+  '1024': 'TOYES',
+  '1025': 'BONBON',
+  '1027': 'ZOO',
+  '1029': 'Funny',
+  '1030': 'ALTAAWWSS',
+};
+
+export const SHOP_BRANCH_CODES_SET = new Set(['1021', '1023', '1024', '1025', '1029']);
+
 interface DailyRevenueMatrixProps {
   rows?: (CaravanRecord | MatrixRowItem)[];
   title?: string;
   loading?: boolean;
+  sectorId?: string;
+  sectorType?: number;
+  sectorLabel?: string;
+  facilityType?: 'all' | 'caravans' | 'shops';
+  startDate?: string;
+  endDate?: string;
 }
 
 interface MatrixColumn {
@@ -47,14 +74,35 @@ interface MatrixColumn {
 export type CalcMode = 'total' | 'net' | 'vat';
 export type MatrixViewMode = 'net' | 'vat' | 'total'; // Backward compatibility
 
+function formatDateAr(dateStr?: string): string {
+  if (!dateStr) return '';
+  const trimmed = dateStr.trim();
+  const parts = trimmed.split('-');
+  if (parts.length === 3) {
+    const [y, m, d] = parts;
+    return `${parseInt(d, 10)}/${parseInt(m, 10)}/${y}`;
+  }
+  const d = new Date(trimmed);
+  if (!isNaN(d.getTime())) {
+    return `${d.getDate()}/${d.getMonth() + 1}/${d.getFullYear()}`;
+  }
+  return trimmed;
+}
+
 /* -------------------------------------------------------------------------- */
 /* Component Implementation                                                   */
 /* -------------------------------------------------------------------------- */
 
 export function DailyRevenueMatrix({
   rows = [],
-  title = 'مصفوفة الإيرادات اليومية حسب المنفذ (Daily Revenue Matrix)',
+  title,
   loading = false,
+  sectorId,
+  sectorType,
+  sectorLabel,
+  facilityType = 'all',
+  startDate,
+  endDate,
 }: DailyRevenueMatrixProps) {
   const [exporting, setExporting] = useState(false);
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
@@ -78,7 +126,7 @@ export function DailyRevenueMatrix({
       const rawDate = 'date' in r && r.date ? r.date : r.period;
       const dateKey = (rawDate || 'غير محدد').trim();
       const branchKey = String(r.branchCode || '').trim();
-      const branchName = r.name || `منفذ ${branchKey}`;
+      const branchName = CARAVAN_DISPLAY_NAMES[branchKey] || r.name || `منفذ ${branchKey}`;
 
       if (branchKey && !colMap.has(branchKey)) {
         colMap.set(branchKey, branchName);
@@ -239,6 +287,40 @@ export function DailyRevenueMatrix({
   const endRecord =
     rowsPerPage >= 9999 ? matrixRows.length : Math.min(currentPage * rowsPerPage, matrixRows.length);
 
+  // Dynamic Title according to sector, facility sub-filter, and period
+  const dynamicTitle = useMemo(() => {
+    if (title) return title;
+
+    const rawStart = startDate || (matrixRows.length > 0 ? matrixRows[0].date : '');
+    const rawEnd = endDate || (matrixRows.length > 0 ? matrixRows[matrixRows.length - 1].date : '');
+    const startFmt = formatDateAr(rawStart);
+    const endFmt = formatDateAr(rawEnd);
+
+    const periodText =
+      startFmt && endFmt
+        ? (rawStart === rawEnd || startFmt === endFmt ? `يوم ${startFmt}` : `من فترة ${startFmt} إلى ${endFmt}`)
+        : startFmt
+        ? `يوم ${startFmt}`
+        : '';
+
+    const secType = sectorType ?? 4;
+    let baseSubject = '';
+
+    if (secType === 4) {
+      if (facilityType === 'caravans') {
+        baseSubject = 'مبيعات الكرفانات';
+      } else if (facilityType === 'shops') {
+        baseSubject = 'مبيعات المحلات';
+      } else {
+        baseSubject = 'مبيعات الكرفانات والمحلات';
+      }
+    } else {
+      baseSubject = `مبيعات ${sectorLabel || 'القطاع'}`;
+    }
+
+    return periodText ? `${baseSubject} ${periodText}` : baseSubject;
+  }, [title, startDate, endDate, sectorType, sectorLabel, facilityType, matrixRows]);
+
   /* -------------------------------------------------------------------------- */
   /* Excel Export using ExcelJS with Precise Cell Formatting & Styling Range    */
   /* -------------------------------------------------------------------------- */
@@ -256,37 +338,151 @@ export function DailyRevenueMatrix({
       const calcCode =
         calcMode === 'net' ? 'Net' : calcMode === 'vat' ? 'VAT' : 'Total';
 
-      const calcLabel =
-        calcMode === 'net' ? 'الصافي (Net)' : calcMode === 'vat' ? 'الضريبة (VAT)' : 'الإجمالي (Total)';
+      // Build Arabic Entity Name
+      const secType = sectorType ?? 4;
+      let entityName = '';
+      if (secType === 4) {
+        if (facilityType === 'caravans') {
+          entityName = 'الكرفانات';
+        } else if (facilityType === 'shops') {
+          entityName = 'المحلات';
+        } else {
+          entityName = 'الكرفانات والمحلات';
+        }
+      } else {
+        entityName = sectorLabel || 'القطاع';
+      }
 
-      const worksheet = workbook.addWorksheet(`Matrix_${calcCode}`, {
+      // Build CalcMode Arabic Label
+      let calcModeLabel = '';
+      let modeWord = '';
+      if (calcMode === 'net') {
+        calcModeLabel = 'صافي المبيعات (قبل الضريبة)';
+        modeWord = 'صافي';
+      } else if (calcMode === 'vat') {
+        calcModeLabel = 'ضريبة القيمة المضافة (14%)';
+        modeWord = 'ضرائب';
+      } else {
+        calcModeLabel = 'إجمالي المبيعات (شامل الضريبة)';
+        modeWord = 'إجمالي';
+      }
+
+      // Build Date / Period Label
+      const rawStart = startDate || (matrixRows.length > 0 ? matrixRows[0].date : '');
+      const rawEnd = endDate || (matrixRows.length > 0 ? matrixRows[matrixRows.length - 1].date : '');
+      const startFmt = formatDateAr(rawStart);
+      const endFmt = formatDateAr(rawEnd);
+
+      let datePeriodLabel = '';
+      let dateFilePart = '';
+      if (startFmt && endFmt) {
+        if (rawStart === rawEnd || startFmt === endFmt) {
+          datePeriodLabel = `يوم ${startFmt}`;
+          dateFilePart = startFmt.replace(/\//g, '-');
+        } else {
+          datePeriodLabel = `من ${startFmt} إلى ${endFmt}`;
+          dateFilePart = `من_${startFmt.replace(/\//g, '-')}_إلى_${endFmt.replace(/\//g, '-')}`;
+        }
+      } else if (startFmt) {
+        datePeriodLabel = `يوم ${startFmt}`;
+        dateFilePart = startFmt.replace(/\//g, '-');
+      } else {
+        dateFilePart = new Date().toISOString().split('T')[0];
+      }
+
+      // Full Arabic Dynamic Title for Excel
+      const excelTitle = datePeriodLabel
+        ? `${calcModeLabel} - ${entityName} - ${datePeriodLabel}`
+        : `${calcModeLabel} - ${entityName}`;
+
+      // Clean Arabic Worksheet Name (Max 31 chars, no invalid Excel chars)
+      const rawSheetName = `${modeWord} ${entityName}`.replace(/[\\/?*:[\]]/g, '').trim();
+      const sheetName = rawSheetName.slice(0, 31) || 'المبيعات';
+      const worksheet = workbook.addWorksheet(sheetName, {
         views: [{ rightToLeft: true }],
       });
 
-      // 1. Setup Column Headers: Date, Caravans, Total, Cash+Visa, Coupons
-      const wsColumns: { header: string; key: string; width: number }[] = [
+      // 1. Setup Column Headers: Date, Caravans/Shops (English ONLY), TOTAL REV, CASH, COPON /C L
+      const wsColumns: { header: string; key: string; width: number; isShop?: boolean }[] = [
         { header: 'التاريخ', key: 'date', width: 16 },
         ...columns.map((col) => ({
-          header: col.name,
+          header: CARAVAN_DISPLAY_NAMES[col.branchCode] || col.name,
           key: `col_${col.branchCode}`,
-          width: 24,
+          width: 20,
+          isShop: SHOP_BRANCH_CODES_SET.has(col.branchCode),
         })),
-        { header: `الإجمالي اليومي (${calcLabel})`, key: 'row_total', width: 24 },
-        { header: `الكاش والفيزا (${calcLabel})`, key: 'cash_visa', width: 22 },
-        { header: `الكوبونات (${calcLabel})`, key: 'coupons', width: 20 },
+        { header: 'TOTAL REV', key: 'row_total', width: 22 },
+        ...(calcMode !== 'vat'
+          ? [
+              { header: 'CASH', key: 'cash_visa', width: 18 },
+              { header: 'COPON /C L', key: 'coupons', width: 20 },
+            ]
+          : []),
       ];
 
-      worksheet.columns = wsColumns;
+      worksheet.columns = wsColumns.map((c) => ({ key: c.key, width: c.width }));
       const totalColumnsCount = wsColumns.length;
 
-      // 2. Format Header Row (Height: 36, Size: 13, Bold, Arial, Soft Slate fill FFE2E8F0, Dark Text FF0F172A)
-      // Strictly format cells 1 to totalColumnsCount to prevent infinite row-fill overflow
-      const headerRow = worksheet.getRow(1);
-      headerRow.height = 36;
+      // Row 1 (height 28) and Row 2 (height 24) header area for Logo and Centered Title
+      const row1 = worksheet.addRow([]);
+      row1.height = 28;
+      const row2 = worksheet.addRow([]);
+      row2.height = 24;
+
+      // Place Dream Park Logo cleanly in top-right corner (Columns A-B, Rows 1-2, zero overlap)
+      try {
+        const logoRes = await fetch('/dreampark-logo.png');
+        if (logoRes.ok) {
+          const logoBuffer = await logoRes.arrayBuffer();
+          const imageId = workbook.addImage({
+            buffer: logoBuffer,
+            extension: 'png',
+          });
+          worksheet.addImage(imageId, {
+            tl: { col: 0, row: 0 },
+            ext: { width: 110, height: 48 },
+          });
+        }
+      } catch (logoErr) {
+        console.warn('Could not load logo for Excel export:', logoErr);
+      }
+
+      // Merge Title strictly across first visible columns next to logo: Col C (col 3) to Math.min(lastColIndex, 10)
+      if (totalColumnsCount >= 3) {
+        const titleEndCol = Math.min(totalColumnsCount, 10);
+        worksheet.mergeCells(1, 3, 2, titleEndCol);
+        const titleCell = worksheet.getCell(1, 3);
+        titleCell.value = excelTitle;
+        titleCell.font = { name: 'Times New Roman', size: 15, bold: true, color: { argb: 'FF000000' } };
+        titleCell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+      } else {
+        worksheet.mergeCells(1, 1, 2, totalColumnsCount);
+        const titleCell = worksheet.getCell(1, 1);
+        titleCell.value = excelTitle;
+        titleCell.font = { name: 'Times New Roman', size: 15, bold: true, color: { argb: 'FF000000' } };
+        titleCell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+      }
+
+      // Row 3: Table Header Row (Times New Roman, size 13, bold, fill #E2E8F0, height 53.25)
+      // Red #FF0000 font for the 5 Shops, #0F172A for Caravans & summary headers, crisp #000000 borders
+      const headerValues: Record<string, string> = {};
+      wsColumns.forEach((c) => {
+        headerValues[c.key] = c.header;
+      });
+      const headerRow = worksheet.addRow(headerValues);
+      headerRow.height = 53.25;
 
       for (let colIdx = 1; colIdx <= totalColumnsCount; colIdx++) {
         const cell = headerRow.getCell(colIdx);
-        cell.font = { name: 'Arial', size: 13, bold: true, color: { argb: 'FF0F172A' } };
+        const colDef = wsColumns[colIdx - 1];
+        const isShop = colDef?.isShop;
+
+        cell.font = {
+          name: 'Times New Roman',
+          size: 13,
+          bold: true,
+          color: { argb: isShop ? 'FFFF0000' : 'FF0F172A' },
+        };
         cell.fill = {
           type: 'pattern',
           pattern: 'solid',
@@ -294,42 +490,45 @@ export function DailyRevenueMatrix({
         };
         cell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
         cell.border = {
-          top: { style: 'thin', color: { argb: 'FF94A3B8' } },
-          bottom: { style: 'medium', color: { argb: 'FF64748B' } },
-          left: { style: 'thin', color: { argb: 'FFCBD5E1' } },
-          right: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+          top: { style: 'thin', color: { argb: 'FF000000' } },
+          bottom: { style: 'thin', color: { argb: 'FF000000' } },
+          left: { style: 'thin', color: { argb: 'FF000000' } },
+          right: { style: 'thin', color: { argb: 'FF000000' } },
         };
       }
 
-      // 3. Populate ALL Data Rows (Height: 26, Arial, Size: 12, Bold numbers, numFmt: '#,##0.00')
+      // Rows 4+: Populate ALL Data Rows (Height: 26.1, Times New Roman, Size: 12, Bold, #0F172A, numFmt: '#,##0.00')
       matrixRows.forEach((item) => {
         const rowData: Record<string, any> = {
           date: item.date,
           row_total: item.rowTotal,
-          cash_visa: item.rowCashVisa,
-          coupons: item.rowCoupons,
         };
+
+        if (calcMode !== 'vat') {
+          rowData.cash_visa = item.rowCashVisa;
+          rowData.coupons = item.rowCoupons;
+        }
 
         columns.forEach((col) => {
           rowData[`col_${col.branchCode}`] = item.values[col.branchCode] || 0;
         });
 
         const row = worksheet.addRow(rowData);
-        row.height = 26;
+        row.height = 26.1;
 
         for (let colIdx = 1; colIdx <= totalColumnsCount; colIdx++) {
           const cell = row.getCell(colIdx);
           cell.border = {
-            top: { style: 'thin', color: { argb: 'FFE2E8F0' } },
-            bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } },
-            left: { style: 'thin', color: { argb: 'FFE2E8F0' } },
-            right: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+            top: { style: 'thin', color: { argb: 'FF000000' } },
+            bottom: { style: 'thin', color: { argb: 'FF000000' } },
+            left: { style: 'thin', color: { argb: 'FF000000' } },
+            right: { style: 'thin', color: { argb: 'FF000000' } },
           };
 
           if (colIdx === 1) {
             // Date Cell
             cell.alignment = { vertical: 'middle', horizontal: 'center' };
-            cell.font = { name: 'Arial', size: 12, bold: true, color: { argb: 'FF0F172A' } };
+            cell.font = { name: 'Times New Roman', size: 12, bold: true, color: { argb: 'FF0F172A' } };
             cell.fill = {
               type: 'pattern',
               pattern: 'solid',
@@ -339,7 +538,7 @@ export function DailyRevenueMatrix({
             // Number data cells
             cell.numFmt = '#,##0.00';
             cell.alignment = { vertical: 'middle', horizontal: 'right' };
-            cell.font = { name: 'Arial', size: 12, bold: true, color: { argb: 'FF0F172A' } };
+            cell.font = { name: 'Times New Roman', size: 12, bold: true, color: { argb: 'FF0F172A' } };
 
             if (colIdx === columns.length + 2) {
               cell.fill = {
@@ -352,35 +551,37 @@ export function DailyRevenueMatrix({
         }
       });
 
-      // 4. Totals Row (Height: 34, Arial, Size: 14, Bold, Soft Blue fill FFDBEAFE, Dark Navy text FF1E3A8A)
-      // Strictly format cells 1 to totalColumnsCount to prevent infinite row-fill overflow
+      // Grand Total Row (Height: 33.95, Times New Roman, Size: 14, Bold, #1E3A8A, fill #DBEAFE, bottom double border)
       const footerData: Record<string, any> = {
-        date: 'الإجمالي العام للفترة',
+        date: 'الإجمالي',
         row_total: grandTotal,
-        cash_visa: grandCashVisa,
-        coupons: grandCoupons,
       };
+
+      if (calcMode !== 'vat') {
+        footerData.cash_visa = grandCashVisa;
+        footerData.coupons = grandCoupons;
+      }
 
       columns.forEach((col) => {
         footerData[`col_${col.branchCode}`] = columnTotals[col.branchCode] || 0;
       });
 
       const totalRow = worksheet.addRow(footerData);
-      totalRow.height = 34;
+      totalRow.height = 33.95;
 
       for (let colIdx = 1; colIdx <= totalColumnsCount; colIdx++) {
         const cell = totalRow.getCell(colIdx);
-        cell.font = { name: 'Arial', size: 14, bold: true, color: { argb: 'FF1E3A8A' } };
+        cell.font = { name: 'Times New Roman', size: 14, bold: true, color: { argb: 'FF1E3A8A' } };
         cell.fill = {
           type: 'pattern',
           pattern: 'solid',
           fgColor: { argb: 'FFDBEAFE' },
         };
         cell.border = {
-          top: { style: 'thin', color: { argb: 'FF3B82F6' } },
-          bottom: { style: 'double', color: { argb: 'FF1E3A8A' } },
-          left: { style: 'thin', color: { argb: 'FF93C5FD' } },
-          right: { style: 'thin', color: { argb: 'FF93C5FD' } },
+          top: { style: 'thin', color: { argb: 'FF000000' } },
+          bottom: { style: 'double', color: { argb: 'FF000000' } },
+          left: { style: 'thin', color: { argb: 'FF000000' } },
+          right: { style: 'thin', color: { argb: 'FF000000' } },
         };
 
         if (colIdx === 1) {
@@ -391,11 +592,24 @@ export function DailyRevenueMatrix({
         }
       }
 
+      // Blank Row after Grand Total
+      const blankRow = worksheet.addRow([]);
+      blankRow.height = 18;
+
+      // Signature Row: INCOME AUDITOR in Col A (Times New Roman, size 11, bold)
+      const signatureRow = worksheet.addRow(['INCOME AUDITOR']);
+      signatureRow.height = 24;
+      const sigCell = signatureRow.getCell(1);
+      sigCell.font = { name: 'Times New Roman', size: 11, bold: true, color: { argb: 'FF0F172A' } };
+      sigCell.alignment = { vertical: 'middle', horizontal: 'center' };
+
       const buffer = await workbook.xlsx.writeBuffer();
       const blob = new Blob([buffer], {
         type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
       });
-      const fileName = `Daily_Revenue_Matrix_${calcCode}_${new Date().toISOString().split('T')[0]}.xlsx`;
+      const safeEntityName = entityName.replace(/\s+/g, '_').replace(/[/\\:*?"<>|]/g, '');
+      const safeDatePart = dateFilePart.replace(/[/\\:*?"<>|]/g, '-');
+      const fileName = `${modeWord}_${safeEntityName}_${safeDatePart}.xlsx`;
       saveAs(blob, fileName);
     } catch (err) {
       console.error('Error exporting Matrix to Excel:', err);
@@ -420,7 +634,7 @@ export function DailyRevenueMatrix({
                 <Grid3X3 className="h-5 w-5" />
               </div>
               <h3 className="text-base lg:text-lg font-black text-slate-900 dark:text-white tracking-tight">
-                {title}
+                {dynamicTitle}
               </h3>
             </div>
             <p className="mt-1 text-xs text-slate-500 dark:text-zinc-400">
@@ -509,29 +723,54 @@ export function DailyRevenueMatrix({
                   <span className="font-bold text-sm text-slate-900 dark:text-white">التاريخ</span>
                 </div>
               </th>
-              {columns.map((col) => (
-                <th
-                  key={col.branchCode}
-                  className="px-4 py-3.5 font-bold text-center border-l border-slate-300 dark:border-zinc-700 min-w-[155px] whitespace-nowrap"
-                  title={`كود الفرع: ${col.branchCode}`}
-                >
-                  <div className="flex flex-col items-center">
-                    <span className="font-bold text-sm">{col.name}</span>
-                    <span className="text-xs font-mono font-medium opacity-70">
-                      {col.branchCode}
-                    </span>
-                  </div>
-                </th>
-              ))}
+              {columns.map((col) => {
+                const isShop = SHOP_BRANCH_CODES_SET.has(col.branchCode);
+                return (
+                  <th
+                    key={col.branchCode}
+                    className={`px-4 py-3 text-center border-l min-w-[145px] whitespace-nowrap transition-colors ${
+                      isShop
+                        ? 'border-orange-500/20 bg-orange-500/10 text-orange-600 dark:text-orange-400 border-b-2 border-b-orange-500'
+                        : 'border-slate-300 dark:border-zinc-700 bg-slate-100 dark:bg-zinc-800'
+                    }`}
+                    title={`كود المنفذ: ${col.branchCode}`}
+                  >
+                    <div className="flex flex-col items-center justify-center gap-0.5">
+                      <span
+                        className={`text-sm tracking-wide ${
+                          isShop
+                            ? 'font-bold text-orange-600 dark:text-orange-400'
+                            : 'font-bold text-slate-900 dark:text-white'
+                        }`}
+                      >
+                        {col.name}
+                      </span>
+                      <span
+                        className={`text-xs font-mono font-medium ${
+                          isShop
+                            ? 'text-orange-500/80 dark:text-orange-400/80'
+                            : 'text-slate-500 dark:text-zinc-400'
+                        }`}
+                      >
+                        {col.branchCode}
+                      </span>
+                    </div>
+                  </th>
+                );
+              })}
               <th className="px-4 py-4 font-black text-left bg-slate-200/90 dark:bg-zinc-800 text-slate-900 dark:text-white min-w-[160px] text-sm">
                 الإجمالي اليومي
               </th>
-              <th className="px-4 py-4 font-black text-left bg-slate-200/90 dark:bg-zinc-800 text-slate-900 dark:text-white min-w-[150px] text-sm">
-                الكاش والفيزا
-              </th>
-              <th className="px-4 py-4 font-black text-left bg-slate-200/90 dark:bg-zinc-800 text-slate-900 dark:text-white min-w-[150px] text-sm">
-                الكوبونات
-              </th>
+              {calcMode !== 'vat' && (
+                <>
+                  <th className="px-4 py-4 font-black text-left bg-slate-200/90 dark:bg-zinc-800 text-slate-900 dark:text-white min-w-[150px] text-sm">
+                    كاش
+                  </th>
+                  <th className="px-4 py-4 font-black text-left bg-slate-200/90 dark:bg-zinc-800 text-slate-900 dark:text-white min-w-[150px] text-sm">
+                    كوبونات و CL
+                  </th>
+                </>
+              )}
             </tr>
           </thead>
 
@@ -539,7 +778,7 @@ export function DailyRevenueMatrix({
           <tbody className="divide-y divide-slate-200 dark:divide-zinc-800/80 font-mono tabular-nums tracking-tight">
             {loading ? (
               <tr>
-                <td colSpan={columns.length + 4} className="py-16 text-center text-slate-400">
+                <td colSpan={columns.length + (calcMode === 'vat' ? 2 : 4)} className="py-16 text-center text-slate-400">
                   <div className="flex flex-col items-center gap-2">
                     <Loader2 className="h-7 w-7 animate-spin text-blue-600" />
                     <span className="text-sm font-sans font-semibold text-slate-700 dark:text-zinc-300">
@@ -551,7 +790,7 @@ export function DailyRevenueMatrix({
             ) : paginatedRows.length === 0 ? (
               <tr>
                 <td
-                  colSpan={columns.length + 4}
+                  colSpan={columns.length + (calcMode === 'vat' ? 2 : 4)}
                   className="py-12 text-center text-slate-500 text-sm font-sans font-medium"
                 >
                   لا توجد سجلات كافية لبناء المصفوفة
@@ -596,15 +835,19 @@ export function DailyRevenueMatrix({
                     <Money value={row.rowTotal} />
                   </td>
 
-                  {/* Daily Cash & Visa */}
-                  <td className="px-4 py-3.5 text-left font-bold text-base lg:text-lg tabular-nums text-slate-900 bg-slate-50/80 group-hover:bg-blue-50/80 dark:bg-zinc-800/40 dark:text-zinc-100 dark:group-hover:bg-blue-950/40 transition-colors">
-                    <Money value={row.rowCashVisa} />
-                  </td>
+                  {calcMode !== 'vat' && (
+                    <>
+                      {/* Daily Cash */}
+                      <td className="px-4 py-3.5 text-left font-bold text-base lg:text-lg tabular-nums text-slate-900 bg-slate-50/80 group-hover:bg-blue-50/80 dark:bg-zinc-800/40 dark:text-zinc-100 dark:group-hover:bg-blue-950/40 transition-colors">
+                        <Money value={row.rowCashVisa} />
+                      </td>
 
-                  {/* Daily Coupons */}
-                  <td className="px-4 py-3.5 text-left font-bold text-base lg:text-lg tabular-nums text-slate-900 bg-slate-50/80 group-hover:bg-blue-50/80 dark:bg-zinc-800/40 dark:text-zinc-100 dark:group-hover:bg-blue-950/40 transition-colors">
-                    <Money value={row.rowCoupons} />
-                  </td>
+                      {/* Daily Coupons & CL */}
+                      <td className="px-4 py-3.5 text-left font-bold text-base lg:text-lg tabular-nums text-slate-900 bg-slate-50/80 group-hover:bg-blue-50/80 dark:bg-zinc-800/40 dark:text-zinc-100 dark:group-hover:bg-blue-950/40 transition-colors">
+                        <Money value={row.rowCoupons} />
+                      </td>
+                    </>
+                  )}
                 </tr>
               ))
             )}
@@ -615,7 +858,7 @@ export function DailyRevenueMatrix({
             <tfoot className="sticky bottom-0 z-20 shadow-lg border-t-2 border-slate-300 bg-blue-100/95 dark:border-blue-800 dark:bg-blue-950/95 backdrop-blur-md font-mono tabular-nums tracking-tight">
               <tr className="font-bold text-slate-950 dark:text-blue-100">
                 <td className="sticky right-0 z-30 px-4 py-4 text-center font-sans text-sm lg:text-base font-black border-l border-slate-300 dark:border-blue-800 bg-blue-200/95 dark:bg-blue-900/90 text-blue-950 dark:text-white">
-                  الإجمالي العام للفترة
+                  الإجمالي
                 </td>
                 {columns.map((col) => {
                   const total = columnTotals[col.branchCode] || 0;
@@ -637,18 +880,22 @@ export function DailyRevenueMatrix({
                     maximumFractionDigits: 2,
                   })}
                 </td>
-                <td className="px-4 py-4 text-left text-base lg:text-lg font-black bg-blue-200/80 dark:bg-blue-800/40 text-blue-950 dark:text-blue-50">
-                  {grandCashVisa.toLocaleString('en-US', {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                  })}
-                </td>
-                <td className="px-4 py-4 text-left text-base lg:text-lg font-black bg-blue-200/80 dark:bg-blue-800/40 text-blue-950 dark:text-blue-50">
-                  {grandCoupons.toLocaleString('en-US', {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                  })}
-                </td>
+                {calcMode !== 'vat' && (
+                  <>
+                    <td className="px-4 py-4 text-left text-base lg:text-lg font-black bg-blue-200/80 dark:bg-blue-800/40 text-blue-950 dark:text-blue-50">
+                      {grandCashVisa.toLocaleString('en-US', {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })}
+                    </td>
+                    <td className="px-4 py-4 text-left text-base lg:text-lg font-black bg-blue-200/80 dark:bg-blue-800/40 text-blue-950 dark:text-blue-50">
+                      {grandCoupons.toLocaleString('en-US', {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })}
+                    </td>
+                  </>
+                )}
               </tr>
             </tfoot>
           )}

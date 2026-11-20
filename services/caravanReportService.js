@@ -15,45 +15,56 @@ const VOIDS_SOURCE = '[dbo].[Pos_item_post_void]';
 
 export class CaravanReportService {
     /**
-     * استرجاع قائمة جميع منافذ وكرفانات دريم بارك النشطة (Type = 4)
+     * استرجاع قائمة جميع منافذ القطاع المحددة (افتراضياً الكرفانات Type = 4)
+     * مع استبعاد الكيانات غير الإيرادية (المخازن والمستشفيات)
+     * @param {number} [sectorType=4]
      * @returns {Promise<Array<{Code: string, Name: string}>>}
      */
-    static async getCaravanBranches() {
+    static async getCaravanBranches(sectorType = 4) {
         const pool = await getPool();
+        const request = pool.request();
+        const secType = Number(sectorType) || 4;
+        request.input('sectorType', sql.Int, secType);
+
         const query = `
             SELECT 
                 [Code], 
                 [Aname] AS [Name]
             FROM [dbo].[Branchs] WITH (NOLOCK)
-            WHERE [Type] = 4
+            WHERE [Type] = @sectorType
+              AND [Code] NOT IN ('12', '13', '1019', '1020', '1026', '1028')
             ORDER BY [Aname] ASC;
         `;
-        const result = await pool.request().query(query);
+        const result = await request.query(query);
         return result.recordset || [];
     }
 
     /**
-     * استعلام وتجميع بيانات إيرادات الكرفانات مع دعم التصفية الزمنية وتعدد المنافذ والتجميع الديناميكي
+     * استعلام وتجميع بيانات إيرادات القطاع المالي مع دعم التصفية الزمنية وتعدد المنافذ والتجميع الديناميكي
      * @param {Object} params
      * @param {string} params.startDate 'YYYY-MM-DD'
      * @param {string} params.endDate 'YYYY-MM-DD'
      * @param {string[]} [params.branches] قائمة أكواد الفروع
      * @param {('summary'|'month'|'day')} [params.granularity] مستوى التجميع
      * @param {string} [params.sortBy] طريقة الترتيب
+     * @param {number} [params.sectorType=4] نوع القطاع (1: مطاعم, 2: ألعاب, 3: فيديو جيم, 4: كرفانات, 5: بوابات, 6: أمانات)
      */
     static async getReportData({
         startDate = '2026-01-01',
         endDate = new Date().toISOString().split('T')[0],
         branches = [],
         granularity = 'summary',
-        sortBy = 'total_desc'
+        sortBy = 'total_desc',
+        sectorType = 4
     }) {
         const pool = await getPool();
         const request = pool.request();
+        const secType = Number(sectorType) || 4;
 
-        // 1. تثبيت بارامترات التواريخ الآمنة
+        // 1. تثبيت بارامترات التواريخ والقطاع الآمنة
         request.input('startDate', sql.VarChar, startDate);
         request.input('endDate', sql.VarChar, endDate);
+        request.input('sectorType', sql.Int, secType);
 
         // 2. معالجة تصفية المنافذ المختارة
         let branchClause = '';
@@ -131,6 +142,7 @@ export class CaravanReportService {
                   AND p.[Doc_Date] < DATEADD(DAY, 1, CAST(@endDate AS DATE))
                   AND (p.[Void] = 0 OR p.[Void] IS NULL)
                 GROUP BY p.[Branch_Code] ${groupByPeriod}
+                HAVING SUM(CAST(ISNULL(p.[Cash], 0) + ISNULL(p.[Visa], 0) + ISNULL(p.[Visa2], 0) + ISNULL(p.[Visa3], 0) + ISNULL(p.[C/L], 0) AS DECIMAL(18, 4))) > 0
             ) p ON p.[Branch_Code] = b.[Code]
             /* ========================================================================= */
             /* VOIDS DATA SOURCE: Precise Gross Value from [dbo].[Pos_item_post_void]   */
@@ -145,7 +157,8 @@ export class CaravanReportService {
                   AND v.[Doc_Date] < DATEADD(DAY, 1, CAST(@endDate AS DATE))
                   ${voidsPeriodMatch}
             ) v
-            WHERE b.[Type] = 4
+            WHERE b.[Type] = @sectorType
+              AND b.[Code] NOT IN ('12', '13', '1019', '1020', '1026', '1028')
               ${branchClause}
             ORDER BY ${orderByGranularity}${orderClause};
         `;
@@ -154,6 +167,7 @@ export class CaravanReportService {
         const detailsReq = pool.request();
         detailsReq.input('startDate', sql.VarChar, startDate);
         detailsReq.input('endDate', sql.VarChar, endDate);
+        detailsReq.input('sectorType', sql.Int, secType);
         if (Array.isArray(branches) && branches.length > 0) {
             branches.forEach((code, index) => {
                 detailsReq.input(`dbranch_${index}`, sql.VarChar, String(code).trim());
@@ -176,7 +190,8 @@ export class CaravanReportService {
                 ROUND(v.[Item_Qunt] * v.[Item_Price] * (1.0 + ISNULL(v.[item_Sels_Tax_P], 0) / 100.0 + ISNULL(v.[item_Serves_Tax_P], 0) / 100.0), 2) AS [total]
             FROM [dbo].[Pos_item_post_void] v WITH (NOLOCK)
             INNER JOIN [dbo].[Branchs] b WITH (NOLOCK) ON b.[Code] = v.[Branch_Code]
-            WHERE b.[Type] = 4
+            WHERE b.[Type] = @sectorType
+              AND b.[Code] NOT IN ('12', '13', '1019', '1020', '1026', '1028')
               AND v.[Doc_Date] >= CAST(@startDate AS DATE)
               AND v.[Doc_Date] < DATEADD(DAY, 1, CAST(@endDate AS DATE))
               ${detailsBranchClause}
@@ -196,7 +211,7 @@ export class CaravanReportService {
                 })
             ]);
             duration = Date.now() - startTime;
-            rawRecords = result.recordset || [];
+            rawRecords = (result.recordset || []).filter(r => (Number(r.Total) || 0) > 0);
             rawVoidDetails = detailsResult.recordset || [];
         } catch (queryErr) {
             throw queryErr;
@@ -310,7 +325,7 @@ export class CaravanReportService {
 
         return {
             executionTimeMs: duration,
-            filters: { startDate, endDate, granularity, branches },
+            filters: { startDate, endDate, granularity, branches, sectorType: secType },
             summary: {
                 totalSales,
                 totalCash,
@@ -327,6 +342,11 @@ export class CaravanReportService {
                 clPct: totalSales > 0 ? Math.round((totalCL / totalSales) * 1000) / 10 : 0,
                 avgTicket: totalCover > 0 ? Math.round((totalSales / totalCover) * 100) / 100 : 0,
                 rowCount: records.length,
+                topOutlet: records.length > 0 ? {
+                    name: records[0].name,
+                    total: records[0].total,
+                    cover: records[0].cover
+                } : null,
                 topCaravan: records.length > 0 ? {
                     name: records[0].name,
                     total: records[0].total,

@@ -10,14 +10,26 @@ import { CaravanReportService } from '../services/caravanReportService.js';
 
 export async function exportCaravanExcel(req, res) {
     try {
-        const { startDate, endDate, branches, granularity } = req.query;
+        const { startDate, endDate, branches, granularity, sectorType, type } = req.query;
         const branchList = branches ? String(branches).split(',').filter(Boolean) : [];
+        const secType = Number(sectorType || type) || 4;
+
+        const sectorTitles = {
+            1: 'المطاعم وصالات الطعام',
+            2: 'الألعاب الترفيهية الكبرى',
+            3: 'الفيديو جيم والواقع الافتراضي',
+            4: 'الكرفانات والأكشاك',
+            5: 'بوابات التذاكر',
+            6: 'الأمانات والانتظار'
+        };
+        const currentSectorName = sectorTitles[secType] || 'المنافذ والقطاعات';
 
         const report = await CaravanReportService.getReportData({
             startDate: startDate || '2026-01-01',
             endDate: endDate || new Date().toISOString().split('T')[0],
             branches: branchList,
-            granularity: granularity || 'summary'
+            granularity: granularity || 'summary',
+            sectorType: secType
         });
 
         const workbook = new ExcelJS.Workbook();
@@ -27,7 +39,7 @@ export async function exportCaravanExcel(req, res) {
         workbook.modified = new Date();
 
         // إعداد ورقة العمل مع إجبار العرض من اليمين إلى اليسار
-        const worksheet = workbook.addWorksheet('إيرادات الكرفانات والمنافذ', {
+        const worksheet = workbook.addWorksheet(`إيرادات ${currentSectorName}`.slice(0, 31), {
             views: [{ rightToLeft: true, showGridLines: true }],
             pageSetup: {
                 paperSize: 9, // A4
@@ -43,7 +55,7 @@ export async function exportCaravanExcel(req, res) {
         // 1. ترويسة التقرير المؤسسية (Corporate Header Block)
         worksheet.mergeCells('A1:H1');
         const titleCell = worksheet.getCell('A1');
-        titleCell.value = 'دريم بارك & زوو — تقرير الإيرادات والتحليلات المالية للمنافذ والكرفانات';
+        titleCell.value = `دريم بارك & زوو — تقرير الإيرادات والتحليلات المالية - قطاع ${currentSectorName}`;
         titleCell.font = { name: 'Arial', size: 16, bold: true, color: { argb: 'FFFFFFFF' } };
         titleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0F172A' } }; // Midnight Navy
         titleCell.alignment = { vertical: 'middle', horizontal: 'center' };
