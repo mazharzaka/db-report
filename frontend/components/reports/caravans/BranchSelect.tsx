@@ -1,8 +1,15 @@
-'use client';
+"use client";
 
-import React, { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
-import { Check, ChevronDown, Search, Store } from 'lucide-react';
-import type { BranchOption } from '@/types/reports';
+import React, {
+  useCallback,
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import { Check, ChevronDown, Search, Store } from "lucide-react";
+import type { BranchOption } from "@/types/reports";
 
 interface Props {
   options: BranchOption[];
@@ -17,7 +24,7 @@ interface Props {
  */
 export function BranchSelect({ options, value, onChange }: Props) {
   const [open, setOpen] = useState(false);
-  const [query, setQuery] = useState('');
+  const [query, setQuery] = useState("");
   const [active, setActive] = useState(0);
   const rootRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
@@ -27,7 +34,11 @@ export function BranchSelect({ options, value, onChange }: Props) {
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     return q
-      ? options.filter((o) => o.Name.toLowerCase().includes(q) || String(o.Code).toLowerCase().includes(q))
+      ? options.filter(
+          (o) =>
+            o.Name.toLowerCase().includes(q) ||
+            String(o.Code).toLowerCase().includes(q),
+        )
       : options;
   }, [options, query]);
 
@@ -37,17 +48,18 @@ export function BranchSelect({ options, value, onChange }: Props) {
 
   const close = useCallback(() => {
     setOpen(false);
-    setQuery('');
+    setQuery("");
   }, []);
 
   // Click-away
   useEffect(() => {
     if (!open) return;
     const onDown = (e: MouseEvent) => {
-      if (rootRef.current && !rootRef.current.contains(e.target as Node)) close();
+      if (rootRef.current && !rootRef.current.contains(e.target as Node))
+        close();
     };
-    document.addEventListener('mousedown', onDown);
-    return () => document.removeEventListener('mousedown', onDown);
+    document.addEventListener("mousedown", onDown);
+    return () => document.removeEventListener("mousedown", onDown);
   }, [open, close]);
 
   useEffect(() => {
@@ -59,11 +71,15 @@ export function BranchSelect({ options, value, onChange }: Props) {
 
   // Keep the active row visible
   useEffect(() => {
-    listRef.current?.querySelector<HTMLElement>(`[data-idx="${active}"]`)?.scrollIntoView({ block: 'nearest' });
+    listRef.current
+      ?.querySelector<HTMLElement>(`[data-idx="${active}"]`)
+      ?.scrollIntoView({ block: "nearest" });
   }, [active]);
 
   const toggle = (code: string) =>
-    onChange(value.includes(code) ? value.filter((c) => c !== code) : [...value, code]);
+    onChange(
+      value.includes(code) ? value.filter((c) => c !== code) : [...value, code],
+    );
 
   const activate = (idx: number) => {
     if (idx === 0) onChange([]);
@@ -72,45 +88,57 @@ export function BranchSelect({ options, value, onChange }: Props) {
 
   const onKeyDown = (e: React.KeyboardEvent) => {
     switch (e.key) {
-      case 'ArrowDown':
+      case "ArrowDown":
         e.preventDefault();
         if (!open) setOpen(true);
         else setActive((a) => (a + 1) % rowCount);
         break;
-      case 'ArrowUp':
+      case "ArrowUp":
         e.preventDefault();
         if (!open) setOpen(true);
         else setActive((a) => (a - 1 + rowCount) % rowCount);
         break;
-      case 'Home':
-        if (open) { e.preventDefault(); setActive(0); }
+      case "Home":
+        if (open) {
+          e.preventDefault();
+          setActive(0);
+        }
         break;
-      case 'End':
-        if (open) { e.preventDefault(); setActive(rowCount - 1); }
+      case "End":
+        if (open) {
+          e.preventDefault();
+          setActive(rowCount - 1);
+        }
         break;
-      case 'Enter':
+      case "Enter":
         e.preventDefault();
         if (open) activate(active);
         else setOpen(true);
         break;
-      case ' ':
+      case " ":
         // Space toggles only when the search box is empty (otherwise it is typing)
-        if (open && query === '') { e.preventDefault(); activate(active); }
+        if (open && query === "") {
+          e.preventDefault();
+          activate(active);
+        }
         break;
-      case 'Escape':
-        if (open) { e.preventDefault(); close(); }
+      case "Escape":
+        if (open) {
+          e.preventDefault();
+          close();
+        }
         break;
-      case 'Tab':
+      case "Tab":
         if (open) close();
         break;
     }
   };
 
   const label = allSelected
-    ? 'جميع الفروع والمحلات'
+    ? "جميع الفروع والمحلات"
     : value.length === 1
-    ? options.find((o) => String(o.Code) === value[0])?.Name ?? 'فرع واحد'
-    : `تم تحديد ${value.length} فروع`;
+      ? (options.find((o) => String(o.Code) === value[0])?.Name ?? "فرع واحد")
+      : `تم تحديد ${value.length} فروع`;
 
   return (
     <div ref={rootRef} className="relative z-50" onKeyDown={onKeyDown}>
@@ -124,13 +152,15 @@ export function BranchSelect({ options, value, onChange }: Props) {
         onClick={() => setOpen((o) => !o)}
         className={`flex h-10 w-full min-w-[230px] items-center justify-between gap-2 rounded-lg border bg-white px-3 text-xs font-semibold shadow-sm ring-1 ring-slate-200/50 transition dark:border-zinc-800 dark:bg-zinc-900/80 dark:ring-white/10 ${
           open
-            ? 'border-orange-500 ring-2 ring-orange-500/20'
-            : 'border-slate-200/80 hover:border-slate-300 dark:hover:border-zinc-700'
+            ? "border-orange-500 ring-2 ring-orange-500/20"
+            : "border-slate-200/80 hover:border-slate-300 dark:hover:border-zinc-700"
         }`}
       >
         <span className="flex min-w-0 items-center gap-2">
           <Store className="h-4 w-4 shrink-0 text-slate-400" />
-          <span className="truncate font-semibold text-slate-700 dark:text-slate-200">{label}</span>
+          <span className="truncate font-semibold text-slate-700 dark:text-slate-200">
+            {label}
+          </span>
         </span>
         <span className="flex shrink-0 items-center gap-2">
           {!allSelected && (
@@ -138,7 +168,9 @@ export function BranchSelect({ options, value, onChange }: Props) {
               {value.length}
             </span>
           )}
-          <ChevronDown className={`h-4 w-4 text-slate-400 transition-transform ${open ? 'rotate-180' : ''}`} />
+          <ChevronDown
+            className={`h-4 w-4 text-slate-400 transition-transform ${open ? "rotate-180" : ""}`}
+          />
         </span>
       </button>
 
@@ -149,7 +181,10 @@ export function BranchSelect({ options, value, onChange }: Props) {
             <input
               ref={searchRef}
               value={query}
-              onChange={(e) => { setQuery(e.target.value); setActive(0); }}
+              onChange={(e) => {
+                setQuery(e.target.value);
+                setActive(0);
+              }}
               placeholder="ابحث باسم المحل أو الكود..."
               aria-controls={listId}
               aria-activedescendant={`${listId}-${active}`}
@@ -157,7 +192,13 @@ export function BranchSelect({ options, value, onChange }: Props) {
             />
           </div>
 
-          <ul ref={listRef} id={listId} role="listbox" aria-multiselectable="true" className="max-h-72 overflow-y-auto p-1.5">
+          <ul
+            ref={listRef}
+            id={listId}
+            role="listbox"
+            aria-multiselectable="true"
+            className="max-h-72 overflow-y-auto p-1.5"
+          >
             <li
               id={`${listId}-0`}
               data-idx={0}
@@ -166,17 +207,23 @@ export function BranchSelect({ options, value, onChange }: Props) {
               onMouseEnter={() => setActive(0)}
               onClick={() => onChange([])}
               className={`flex cursor-pointer items-center justify-between rounded-lg px-3 py-2 text-sm font-semibold ${
-                active === 0 ? 'bg-slate-100 dark:bg-zinc-950' : ''
-              } ${allSelected ? 'text-violet-300 font-bold' : 'text-slate-700 dark:text-slate-200'}`}
+                active === 0 ? "bg-slate-100 dark:bg-zinc-950" : ""
+              } ${allSelected ? "text-violet-300 font-bold" : "text-slate-700 dark:text-slate-200"}`}
             >
               <span>جميع الفروع والمحلات</span>
               {allSelected && <Check className="h-4 w-4" />}
             </li>
 
-            <li role="presentation" className="my-1 h-px bg-slate-100 dark:bg-zinc-950" />
+            <li
+              role="presentation"
+              className="my-1 h-px bg-slate-100 dark:bg-zinc-950"
+            />
 
             {filtered.length === 0 && (
-              <li role="presentation" className="px-3 py-6 text-center text-sm text-slate-400">
+              <li
+                role="presentation"
+                className="px-3 py-6 text-center text-sm text-slate-400"
+              >
                 لا توجد نتائج
               </li>
             )}
@@ -194,20 +241,24 @@ export function BranchSelect({ options, value, onChange }: Props) {
                   onMouseEnter={() => setActive(idx)}
                   onClick={() => toggle(String(o.Code))}
                   className={`flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2 text-sm ${
-                    active === idx ? 'bg-slate-100 dark:bg-zinc-950' : ''
+                    active === idx ? "bg-slate-100 dark:bg-zinc-950" : ""
                   }`}
                 >
                   <span
                     className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border transition ${
                       selected
-                        ? 'border-violet-300 bg-violet-300 text-black'
-                        : 'border-slate-300 dark:border-slate-600'
+                        ? "border-violet-300 bg-violet-300 text-black"
+                        : "border-slate-300 dark:border-slate-600"
                     }`}
                   >
                     {selected && <Check className="h-3 w-3" strokeWidth={3} />}
                   </span>
-                  <span className="min-w-0 flex-1 truncate text-slate-700 dark:text-slate-200">{o.Name}</span>
-                  <span className="font-mono text-[11px] text-slate-400">{o.Code}</span>
+                  <span className="min-w-0 flex-1 truncate text-slate-700 dark:text-slate-200">
+                    {o.Name}
+                  </span>
+                  <span className="font-mono text-[11px] text-slate-400">
+                    {o.Code}
+                  </span>
                 </li>
               );
             })}
@@ -228,4 +279,3 @@ export function BranchSelect({ options, value, onChange }: Props) {
     </div>
   );
 }
-

@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import React, { Suspense } from 'react';
+import React, { Suspense } from "react";
 import {
   AlertCircle,
   BarChart3,
@@ -15,32 +15,32 @@ import {
   Scale,
   Sparkles,
   LogOut,
-} from 'lucide-react';
-import { ThemeToggle } from '@/components/dashboard/ThemeToggle';
-import { Card } from '@/components/ui/Card';
-import { Segmented } from '@/components/ui/Segmented';
-import { CaravanFiltersToolbar } from '@/components/reports/caravans/CaravanFiltersToolbar';
-import { CaravanGrid } from '@/components/reports/caravans/CaravanGrid';
-import { InvoicesTable } from '@/components/reports/caravans/InvoicesTable';
-import { VoidsAlertWidget } from '@/components/reports/caravans/VoidsAlertWidget';
-import { ParkMap } from '@/components/reports/caravans/ParkMap';
+} from "lucide-react";
+import { ThemeToggle } from "@/components/dashboard/ThemeToggle";
+import { Card } from "@/components/ui/Card";
+import { Segmented } from "@/components/ui/Segmented";
+import { CaravanFiltersToolbar } from "@/components/reports/caravans/CaravanFiltersToolbar";
+import { CaravanGrid } from "@/components/reports/caravans/CaravanGrid";
+import { InvoicesTable } from "@/components/reports/caravans/InvoicesTable";
+import { VoidsAlertWidget } from "@/components/reports/caravans/VoidsAlertWidget";
+import { ParkMap } from "@/components/reports/caravans/ParkMap";
 import {
   DuelCard,
   TopItemsWidget,
-} from '@/components/reports/caravans/OperationalWidgets';
-import { VisitorOutletPerformanceRow } from '@/components/reports/caravans/VisitorOutletPerformanceRow';
-import { BranchComparisonChart } from '@/components/reports/caravans/BranchComparisonChart';
-import { PeriodComparisonDashboard } from '@/components/reports/caravans/PeriodComparisonDashboard';
-import { SplashScreen } from '@/components/reports/caravans/SplashScreen';
-import { PrintConfigModal } from '@/components/reports/caravans/PrintConfigModal';
-import { ItemSalesPerformance } from '@/components/reports/caravans/ItemSalesPerformance';
-import { RevenueTrendChart, Money } from '@/components/reports/caravans/charts';
+} from "@/components/reports/caravans/OperationalWidgets";
+import { VisitorOutletPerformanceRow } from "@/components/reports/caravans/VisitorOutletPerformanceRow";
+import { BranchComparisonChart } from "@/components/reports/caravans/BranchComparisonChart";
+import { PeriodComparisonDashboard } from "@/components/reports/caravans/PeriodComparisonDashboard";
+import { SplashScreen } from "@/components/reports/caravans/SplashScreen";
+import { PrintConfigModal } from "@/components/reports/caravans/PrintConfigModal";
+import { ItemSalesPerformance } from "@/components/reports/caravans/ItemSalesPerformance";
+import { RevenueTrendChart, Money } from "@/components/reports/caravans/charts";
 import {
   ExecutiveKpisSection,
   KPIsSkeleton,
-} from '@/components/reports/caravans/ExecutiveKpisSection';
-import { DailyRevenueMatrix } from '@/components/reports/caravans/DailyRevenueMatrix';
-import { useCaravanDashboard } from '@/hooks/useCaravanDashboard';
+} from "@/components/reports/caravans/ExecutiveKpisSection";
+import { DailyRevenueMatrix } from "@/components/reports/caravans/DailyRevenueMatrix";
+import { useCaravanDashboard } from "@/hooks/useCaravanDashboard";
 
 const MAX_BRANCHES_IN_CHART = 10;
 
@@ -49,20 +49,20 @@ export default function CaravanDashboardHomePage() {
 
   // Dynamic calculations for the 3 Core KPI Cards based on currently displayed rows (Cash + Visa + CL)
   const financialTotals = React.useMemo(() => {
-    let total = 0;
+    let rawTotal = 0;
     (dash.records || []).forEach((r) => {
       const cash = Number(r.cash) || 0;
       const visa = Number(r.visa) || 0;
       const cl = Number(r.creditLine ?? (r as any).cl) || 0;
-      const rawTotal = Number(r.total) || 0;
-      const rowBase = cash + visa + cl > 0 ? cash + visa + cl : rawTotal;
-      total += rowBase;
+      const rowSum =
+        cash + visa + cl > 0 ? cash + visa + cl : Number(r.total) || 0;
+      rawTotal += rowSum;
     });
 
-    const net = total / 1.14;
-    const vat = total - net;
+    const net = rawTotal / 1.14;
+    const vat = rawTotal - net;
 
-    return { total, net, retail: net, vat };
+    return { total: rawTotal, net, retail: net, vat };
   }, [dash.records]);
 
   // Unauthenticated screen guard
@@ -101,10 +101,17 @@ export default function CaravanDashboardHomePage() {
         {/* ---------- Header ---------- */}
         <header className="space-y-4">
           <div className="flex items-center justify-between">
-            <nav className="flex items-center gap-1.5 text-sm text-slate-500 dark:text-zinc-400" aria-label="breadcrumb">
-              <span className="font-medium text-slate-700 dark:text-zinc-300">منظومة العمليات والتحليلات</span>
+            <nav
+              className="flex items-center gap-1.5 text-sm text-slate-500 dark:text-zinc-400"
+              aria-label="breadcrumb"
+            >
+              <span className="font-medium text-slate-700 dark:text-zinc-300">
+                منظومة العمليات والتحليلات
+              </span>
               <ChevronLeft className="h-3.5 w-3.5" />
-              <span className="font-bold text-orange-600 dark:text-orange-400">لوحة تقارير الكرفانات 2026</span>
+              <span className="font-bold text-orange-600 dark:text-orange-400">
+                لوحة تقارير الكرفانات 2026
+              </span>
             </nav>
 
             {/* User Session & Theme Controls */}
@@ -112,7 +119,9 @@ export default function CaravanDashboardHomePage() {
               <div className="hidden items-center gap-2 rounded-lg border border-slate-200/80 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 shadow-sm ring-1 ring-slate-900/5 dark:border-zinc-800/80 dark:bg-zinc-900/60 dark:ring-white/10 dark:text-zinc-300 sm:flex">
                 <span className="h-2 w-2 rounded-full bg-emerald-500" />
                 <span>المستخدم:</span>
-                <strong className="font-semibold text-slate-900 dark:text-white font-mono">{dash.authUser}</strong>
+                <strong className="font-semibold text-slate-900 dark:text-white font-mono">
+                  {dash.authUser}
+                </strong>
               </div>
 
               <button
@@ -132,7 +141,11 @@ export default function CaravanDashboardHomePage() {
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div className="flex flex-wrap items-center gap-3">
               <div className="flex items-center gap-3">
-                <img src="/dreampark-logo.png" alt="Dream Park" className="h-10 w-auto object-contain drop-shadow" />
+                <img
+                  src="/dreampark-logo.png"
+                  alt="Dream Park"
+                  className="h-10 w-auto object-contain drop-shadow"
+                />
                 <h1 className="text-2xl font-extrabold text-slate-900 dark:text-white sm:text-3xl">
                   إيرادات الكرفانات والمحلات
                 </h1>
@@ -141,20 +154,33 @@ export default function CaravanDashboardHomePage() {
               {/* Executive Print Report Header */}
               <div className="hidden print:flex print:w-full print:items-center print:justify-between print:border-b-2 print:border-black print:pb-2 print:pt-1 print:mb-2">
                 <div className="flex items-center gap-3">
-                  <img src="/dreampark-logo.png" alt="Dream Park" className="h-9 w-auto object-contain" />
+                  <img
+                    src="/dreampark-logo.png"
+                    alt="Dream Park"
+                    className="h-9 w-auto object-contain"
+                  />
                   <div>
-                    <h2 className="text-lg font-black text-black">دريم بارك — تقرير إيرادات ومبيعات الكرفانات والمحلات</h2>
+                    <h2 className="text-lg font-black text-black">
+                      دريم بارك — تقرير إيرادات ومبيعات الكرفانات والمحلات
+                    </h2>
                     <p className="text-[11px] font-semibold text-black mt-0.5">
-                      الفترة: {dash.start} إلى {dash.end} • النطاق: {dash.topScopeLabel}
+                      الفترة: {dash.start} إلى {dash.end} • النطاق:{" "}
+                      {dash.topScopeLabel}
                     </p>
                   </div>
                 </div>
-                <div className="text-left text-[10px] font-semibold text-black" dir="ltr">
+                <div
+                  className="text-left text-[10px] font-semibold text-black"
+                  dir="ltr"
+                >
                   <div>
-                    تاريخ الطباعة: {new Date().toLocaleDateString('en-GB')}{' '}
-                    {new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
+                    تاريخ الطباعة: {new Date().toLocaleDateString("en-GB")}{" "}
+                    {new Date().toLocaleTimeString("en-GB", {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
                   </div>
-                  <div>المستخدم: {dash.authUser || 'admin'}</div>
+                  <div>المستخدم: {dash.authUser || "admin"}</div>
                 </div>
               </div>
 
@@ -166,7 +192,7 @@ export default function CaravanDashboardHomePage() {
                 محدث لحظياً
                 {dash.updatedAt && (
                   <span className="tabular-nums opacity-80" dir="ltr">
-                    {dash.updatedAt.toLocaleTimeString('en-GB')}
+                    {dash.updatedAt.toLocaleTimeString("en-GB")}
                   </span>
                 )}
               </span>
@@ -177,22 +203,24 @@ export default function CaravanDashboardHomePage() {
               <div className="inline-flex rounded-lg border border-slate-200/80 bg-slate-100 p-1 ring-1 ring-slate-900/5 dark:border-zinc-800/80 dark:bg-zinc-900/60 dark:ring-white/10">
                 <button
                   type="button"
-                  onClick={() => dash.setViewMode('standard')}
-                  className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-bold transition ${dash.viewMode === 'standard'
-                    ? 'bg-white text-orange-600 shadow-sm dark:bg-zinc-950 dark:text-orange-400 border border-slate-200/80 dark:border-zinc-800'
-                    : 'text-slate-600 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-zinc-300'
-                    }`}
+                  onClick={() => dash.setViewMode("standard")}
+                  className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-bold transition ${
+                    dash.viewMode === "standard"
+                      ? "bg-white text-orange-600 shadow-sm dark:bg-zinc-950 dark:text-orange-400 border border-slate-200/80 dark:border-zinc-800"
+                      : "text-slate-600 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-zinc-300"
+                  }`}
                 >
                   <BarChart3 className="h-3.5 w-3.5" />
                   <span>التقرير القياسي</span>
                 </button>
                 <button
                   type="button"
-                  onClick={() => dash.setViewMode('comparison')}
-                  className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-bold transition ${dash.viewMode === 'comparison'
-                    ? 'bg-white text-orange-600 shadow-sm dark:bg-zinc-950 dark:text-orange-400 border border-slate-200/80 dark:border-zinc-800'
-                    : 'text-slate-600 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-zinc-300'
-                    }`}
+                  onClick={() => dash.setViewMode("comparison")}
+                  className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-bold transition ${
+                    dash.viewMode === "comparison"
+                      ? "bg-white text-orange-600 shadow-sm dark:bg-zinc-950 dark:text-orange-400 border border-slate-200/80 dark:border-zinc-800"
+                      : "text-slate-600 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-zinc-300"
+                  }`}
                 >
                   <Scale className="h-3.5 w-3.5" />
                   <span>مقارنة فترتين</span>
@@ -207,7 +235,7 @@ export default function CaravanDashboardHomePage() {
                 className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200/80 bg-white text-slate-700 shadow-sm ring-1 ring-slate-900/5 transition hover:text-orange-600 hover:bg-slate-50 dark:border-zinc-800/80 dark:bg-zinc-900/60 dark:ring-white/10 dark:text-zinc-300 dark:hover:text-orange-400 dark:hover:bg-zinc-800 disabled:opacity-50"
               >
                 <RefreshCw
-                  className={`h-4 w-4 ${dash.loading || dash.comparisonLoading ? 'animate-spin' : ''}`}
+                  className={`h-4 w-4 ${dash.loading || dash.comparisonLoading ? "animate-spin" : ""}`}
                 />
               </button>
               <button
@@ -247,7 +275,7 @@ export default function CaravanDashboardHomePage() {
               dash.resetStaleData();
               dash.setStart(newStart);
               dash.setEnd(newEnd);
-              dash.setPreset('custom');
+              dash.setPreset("custom");
             }}
             isLoading={dash.isLoading}
             compPreset={dash.compPreset}
@@ -258,7 +286,7 @@ export default function CaravanDashboardHomePage() {
               dash.setComparisonData(null);
               dash.setCompStartA(s);
               dash.setCompEndA(e);
-              dash.setCompPreset('custom');
+              dash.setCompPreset("custom");
             }}
             compStartB={dash.compStartB}
             compEndB={dash.compEndB}
@@ -266,7 +294,7 @@ export default function CaravanDashboardHomePage() {
               dash.setComparisonData(null);
               dash.setCompStartB(s);
               dash.setCompEndB(e);
-              dash.setCompPreset('custom');
+              dash.setCompPreset("custom");
             }}
             comparisonLoading={dash.comparisonLoading}
           />
@@ -283,7 +311,7 @@ export default function CaravanDashboardHomePage() {
           </div>
         )}
 
-        {dash.comparisonError && dash.viewMode === 'comparison' && (
+        {dash.comparisonError && dash.viewMode === "comparison" && (
           <div
             role="alert"
             className="flex items-center gap-3 rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm font-medium text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-300"
@@ -296,7 +324,7 @@ export default function CaravanDashboardHomePage() {
         {/* ========================================================================= */}
         {/* VIEW MODE 1: PERIOD-OVER-PERIOD COMPARISON                                */}
         {/* ========================================================================= */}
-        {dash.viewMode === 'comparison' ? (
+        {dash.viewMode === "comparison" ? (
           <div className="space-y-6">
             <PeriodComparisonDashboard
               data={dash.comparisonData}
@@ -304,7 +332,9 @@ export default function CaravanDashboardHomePage() {
               scopeLabel={dash.topScopeLabel}
             />
 
-            <div className={`break-inside-avoid ${!dash.printConfig.itemsPerformance ? 'print:hidden' : ''}`}>
+            <div
+              className={`break-inside-avoid ${!dash.printConfig.itemsPerformance ? "print:hidden" : ""}`}
+            >
               <ItemSalesPerformance
                 startDate={dash.compStartA}
                 endDate={dash.compEndA}
@@ -327,7 +357,9 @@ export default function CaravanDashboardHomePage() {
                 outlets={
                   dash.outlets.length > 0
                     ? dash.outlets
-                    : (dash.itemsData?.allOutlets ?? dash.itemsData?.outlets ?? [])
+                    : (dash.itemsData?.allOutlets ??
+                      dash.itemsData?.outlets ??
+                      [])
                 }
                 selected={dash.selected}
                 onSelect={dash.selectFromMap}
@@ -351,7 +383,7 @@ export default function CaravanDashboardHomePage() {
                       إجمالي الإيرادات (شامل الضريبة)
                     </span>
                     <p className="mt-0.5 text-xs text-slate-500 dark:text-zinc-400">
-                      Total Sales (Cash + Visa + CL)
+                      Total Sales = Cash &amp; Visa &amp; CL
                     </p>
                   </div>
                   <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-500/10 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400 shadow-2xs">
@@ -360,8 +392,14 @@ export default function CaravanDashboardHomePage() {
                 </div>
 
                 <div className="mt-4 flex items-baseline justify-between gap-2">
-                  <div className="text-3xl font-extrabold tracking-tight font-mono tabular-nums text-zinc-900 dark:text-white" dir="ltr">
-                    <Money value={financialTotals.total} symbolClassName="text-sm opacity-60 font-normal mr-1.5 select-none" />
+                  <div
+                    className="text-3xl font-extrabold tracking-tight font-mono tabular-nums text-zinc-900 dark:text-white"
+                    dir="ltr"
+                  >
+                    <Money
+                      value={financialTotals.total}
+                      symbolClassName="text-sm opacity-60 font-normal mr-1.5 select-none"
+                    />
                   </div>
                   <span className="rounded-full bg-blue-100/80 px-2.5 py-0.5 text-xs font-semibold text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
                     الإجمالي
@@ -370,7 +408,9 @@ export default function CaravanDashboardHomePage() {
 
                 <div className="mt-3 flex items-center justify-between border-t border-blue-100/80 pt-2.5 dark:border-blue-900/30 text-xs text-slate-500 dark:text-zinc-400">
                   <span>محسوب وفق المنافذ المعروضة</span>
-                  <span className="font-mono tabular-nums">{dash.records.length} سجل</span>
+                  <span className="font-mono tabular-nums">
+                    {dash.records.length} سجل
+                  </span>
                 </div>
               </div>
 
@@ -391,8 +431,14 @@ export default function CaravanDashboardHomePage() {
                 </div>
 
                 <div className="mt-4 flex items-baseline justify-between gap-2">
-                  <div className="text-3xl font-extrabold tracking-tight font-mono tabular-nums text-zinc-900 dark:text-white" dir="ltr">
-                    <Money value={financialTotals.retail} symbolClassName="text-sm opacity-60 font-normal mr-1.5 select-none" />
+                  <div
+                    className="text-3xl font-extrabold tracking-tight font-mono tabular-nums text-zinc-900 dark:text-white"
+                    dir="ltr"
+                  >
+                    <Money
+                      value={financialTotals.retail}
+                      symbolClassName="text-sm opacity-60 font-normal mr-1.5 select-none"
+                    />
                   </div>
                   <span className="rounded-full bg-emerald-100/80 px-2.5 py-0.5 text-xs font-semibold text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">
                     قبل الضريبة
@@ -422,8 +468,14 @@ export default function CaravanDashboardHomePage() {
                 </div>
 
                 <div className="mt-4 flex items-baseline justify-between gap-2">
-                  <div className="text-3xl font-extrabold tracking-tight font-mono tabular-nums text-zinc-900 dark:text-white" dir="ltr">
-                    <Money value={financialTotals.vat} symbolClassName="text-sm opacity-60 font-normal mr-1.5 select-none" />
+                  <div
+                    className="text-3xl font-extrabold tracking-tight font-mono tabular-nums text-zinc-900 dark:text-white"
+                    dir="ltr"
+                  >
+                    <Money
+                      value={financialTotals.vat}
+                      symbolClassName="text-sm opacity-60 font-normal mr-1.5 select-none"
+                    />
                   </div>
                   <span className="rounded-full bg-amber-100/80 px-2.5 py-0.5 text-xs font-semibold text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
                     14% مستحقة
@@ -441,10 +493,7 @@ export default function CaravanDashboardHomePage() {
             {/* DAILY REVENUE MATRIX (Excel-Like Dynamic Pivot)                       */}
             {/* --------------------------------------------------------------------- */}
             <div className="break-inside-avoid">
-              <DailyRevenueMatrix
-                rows={dash.records}
-                loading={dash.loading}
-              />
+              <DailyRevenueMatrix rows={dash.records} loading={dash.loading} />
             </div>
 
             {/* --------------------------------------------------------------------- */}
@@ -455,27 +504,38 @@ export default function CaravanDashboardHomePage() {
 
               return (
                 <div
-                  className={`grid grid-cols-1 gap-4 transition-opacity lg:grid-cols-12 break-inside-avoid ${dash.loading ? 'opacity-60' : ''
-                    } ${!dash.printConfig.charts ? 'print:hidden' : ''}`}
+                  className={`grid grid-cols-1 gap-4 transition-opacity lg:grid-cols-12 break-inside-avoid ${
+                    dash.loading ? "opacity-60" : ""
+                  } ${!dash.printConfig.charts ? "print:hidden" : ""}`}
                 >
                   <Card
-                    className={isSingleDay ? 'col-span-full lg:col-span-12' : 'col-span-12 lg:col-span-6'}
+                    className={
+                      isSingleDay
+                        ? "col-span-full lg:col-span-12"
+                        : "col-span-12 lg:col-span-6"
+                    }
                     title="مقارنة أداء الفروع والمحلات"
                     subtitle={
                       isSingleDay
-                        ? `جميع الفروع والمحلات (${dash.comparisonStats.length} منفذ) مرتبة حسب ${dash.barMetric === 'revenue' ? 'الإجمالي الشامل' : 'عدد العمليات'
-                        }`
+                        ? `جميع الفروع والمحلات (${dash.comparisonStats.length} منفذ) مرتبة حسب ${
+                            dash.barMetric === "revenue"
+                              ? "الإجمالي الشامل"
+                              : "عدد العمليات"
+                          }`
                         : `أعلى ${Math.min(
-                          dash.comparisonStats.length,
-                          10
-                        )} محلات مرتبة حسب ${dash.barMetric === 'revenue' ? 'الإجمالي الشامل' : 'عدد العمليات'
-                        }`
+                            dash.comparisonStats.length,
+                            10,
+                          )} محلات مرتبة حسب ${
+                            dash.barMetric === "revenue"
+                              ? "الإجمالي الشامل"
+                              : "عدد العمليات"
+                          }`
                     }
                     action={
                       <Segmented
                         options={[
-                          { id: 'revenue', label: 'الإجمالي الشامل' },
-                          { id: 'orders', label: 'عدد الشيكات' },
+                          { id: "revenue", label: "الإجمالي الشامل" },
+                          { id: "orders", label: "عدد الشيكات" },
                         ]}
                         value={dash.barMetric}
                         onChange={dash.setBarMetric}
@@ -520,8 +580,9 @@ export default function CaravanDashboardHomePage() {
             {/* ROW 3: FINANCIAL CONTROL (Active Voids Alert & Caravan Master Ledger) */}
             {/* --------------------------------------------------------------------- */}
             <div
-              className={`space-y-4 print:space-y-3 print:break-inside-auto ${!dash.printConfig.table ? 'print:hidden' : ''
-                }`}
+              className={`space-y-4 print:space-y-3 print:break-inside-auto ${
+                !dash.printConfig.table ? "print:hidden" : ""
+              }`}
             >
               {/* Active Voids Alert Widget */}
               <VoidsAlertWidget rows={dash.records} />
@@ -529,7 +590,7 @@ export default function CaravanDashboardHomePage() {
               {/* Master Caravan Financial Ledger */}
               <CaravanGrid
                 rows={dash.records}
-                showPeriod={dash.granularity !== 'summary'}
+                showPeriod={dash.granularity !== "summary"}
                 loading={dash.loading}
               />
             </div>
@@ -548,7 +609,8 @@ export default function CaravanDashboardHomePage() {
                       تحليلات إضافية وتركيبية
                     </span>
                     <p className="text-xs font-normal text-slate-500 dark:text-zinc-400 mt-0.5">
-                      تتضمن: سلوك الإنفاق، كفاءة التشغيل، الأفضل مبيعاً والراكد، تحليل مبيعات الأصناف، والمزيد
+                      تتضمن: سلوك الإنفاق، كفاءة التشغيل، الأفضل مبيعاً والراكد،
+                      تحليل مبيعات الأصناف، والمزيد
                     </p>
                   </div>
                 </div>
@@ -600,8 +662,16 @@ export default function CaravanDashboardHomePage() {
                 {/* 2. Best & Worst Sellers (الأفضل مبيعاً والراكد) */}
                 <div className="break-inside-avoid">
                   <TopItemsWidget
-                    items={dash.topItems.length > 0 ? dash.topItems : (dash.itemsData?.topItems ?? [])}
-                    slowItems={dash.slowItems.length > 0 ? dash.slowItems : (dash.itemsData?.slowItems ?? [])}
+                    items={
+                      dash.topItems.length > 0
+                        ? dash.topItems
+                        : (dash.itemsData?.topItems ?? [])
+                    }
+                    slowItems={
+                      dash.slowItems.length > 0
+                        ? dash.slowItems
+                        : (dash.itemsData?.slowItems ?? [])
+                    }
                     mode={dash.itemMode}
                     onModeChange={dash.setItemMode}
                     metric={dash.itemMetric}
@@ -623,7 +693,10 @@ export default function CaravanDashboardHomePage() {
                 {/* 4. Duel Card & 2D Interactive Map */}
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
                   <div className="lg:col-span-12 xl:col-span-5">
-                    <DuelCard duel={dash.itemsData?.duel ?? null} loading={dash.itemsLoading} />
+                    <DuelCard
+                      duel={dash.itemsData?.duel ?? null}
+                      loading={dash.itemsLoading}
+                    />
                   </div>
                   <div className="lg:col-span-12 xl:col-span-7">
                     <section className="rounded-xl border border-slate-200/80 bg-slate-50/50 p-5 shadow-2xs ring-1 ring-slate-900/5 backdrop-blur-md dark:border-zinc-800/80 dark:bg-zinc-900/40 dark:ring-white/10">
@@ -632,14 +705,17 @@ export default function CaravanDashboardHomePage() {
                           خريطة المحلات ونشاط المبيعات
                         </h3>
                         <p className="mt-0.5 text-xs text-slate-500 dark:text-zinc-400">
-                          اللون يعبّر عن سرعة المبيعات — انقر على منفذ لتصفية البيانات
+                          اللون يعبّر عن سرعة المبيعات — انقر على منفذ لتصفية
+                          البيانات
                         </p>
                       </div>
                       <ParkMap
                         outlets={
                           dash.outlets.length > 0
                             ? dash.outlets
-                            : (dash.itemsData?.allOutlets ?? dash.itemsData?.outlets ?? [])
+                            : (dash.itemsData?.allOutlets ??
+                              dash.itemsData?.outlets ??
+                              [])
                         }
                         selected={dash.selected}
                         onSelect={dash.selectFromMap}
@@ -651,7 +727,11 @@ export default function CaravanDashboardHomePage() {
                 {/* 5. Invoices Ledger */}
                 <div className="break-inside-avoid">
                   <InvoicesTable
-                    invoices={dash.invoicesData.length > 0 ? dash.invoicesData : undefined}
+                    invoices={
+                      dash.invoicesData.length > 0
+                        ? dash.invoicesData
+                        : undefined
+                    }
                     loading={dash.loading}
                   />
                 </div>
