@@ -62,7 +62,8 @@ app.get("/api/health", async (req, res) => {
 async function handleSectorBranches(req, res) {
   try {
     const sectorType = Number(req.query.sectorType || req.query.type) || 4;
-    const branches = await CaravanReportService.getCaravanBranches(sectorType);
+    const { startDate, endDate } = req.query;
+    const branches = await CaravanReportService.getCaravanBranches(sectorType, startDate, endDate);
     res.json({
       status: "success",
       sectorType,
@@ -155,9 +156,9 @@ app.get("/api/reports/caravans/items-summary", async (req, res) => {
   try {
     const branchCodes = branchCode
       ? String(branchCode)
-          .split(",")
-          .map((b) => b.trim())
-          .filter(Boolean)
+        .split(",")
+        .map((b) => b.trim())
+        .filter(Boolean)
       : [];
 
     const data = await CaravanItemService.getItemsSummary({
@@ -217,9 +218,9 @@ app.get("/api/reports/caravans/items-performance", async (req, res) => {
     const rawBranches = branchCode || branches;
     const branchCodes = rawBranches
       ? String(rawBranches)
-          .split(",")
-          .map((b) => b.trim())
-          .filter(Boolean)
+        .split(",")
+        .map((b) => b.trim())
+        .filter(Boolean)
       : [];
 
     const data = await CaravanItemService.getItemsPerformance({
@@ -254,9 +255,9 @@ app.get("/api/reports/caravans/executive-kpis", async (req, res) => {
       req.query;
     const branchCodes = branchCode
       ? String(branchCode)
-          .split(",")
-          .map((b) => b.trim())
-          .filter(Boolean)
+        .split(",")
+        .map((b) => b.trim())
+        .filter(Boolean)
       : [];
 
     const data = await CaravanItemService.getExecutiveKpis({
@@ -285,9 +286,9 @@ app.get("/api/reports/caravans/comparison", async (req, res) => {
       req.query;
     const branchCodes = branchCode
       ? String(branchCode)
-          .split(",")
-          .map((b) => b.trim())
-          .filter(Boolean)
+        .split(",")
+        .map((b) => b.trim())
+        .filter(Boolean)
       : [];
 
     const comparison = await CaravanItemService.getPeriodComparison({

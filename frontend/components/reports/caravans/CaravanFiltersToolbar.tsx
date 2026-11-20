@@ -164,6 +164,17 @@ export function HybridBranchFilterDropdown({
 
   // Dynamic Trigger Button Label
   const buttonLabel = useMemo(() => {
+    if (sectorType === 2 || sectorType === 3) {
+      if (selectedBranches.length === 0 || checkedCount === allOutlets.length) {
+        return `كل الألعاب (${allOutlets.length} لعبة)`;
+      }
+      if (checkedCount === 1) {
+        const single = allOutlets.find((o) => isBranchChecked(String(o.Code)));
+        return single ? `${single.Name} (${single.Code})` : 'لعبة واحدة محددة';
+      }
+      return `تم تحديد ${checkedCount} من ${allOutlets.length} ألعاب`;
+    }
+
     if (sectorType !== 4) {
       if (selectedBranches.length === 0 || checkedCount === allOutlets.length) {
         return `جميع منافذ ${sectorLabel || 'القطاع'}: الكل (${allOutlets.length} منفذ)`;
@@ -385,7 +396,7 @@ export function HybridBranchFilterDropdown({
               ref={searchInputRef}
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="ابحث بالاسم أو الكود..."
+              placeholder={sectorType === 2 || sectorType === 3 ? "ابحث باسم اللعبة أو الكود..." : "ابحث بالاسم أو الكود..."}
               className="w-full rounded-lg border border-slate-200 bg-slate-50 py-1.5 pl-3 pr-8 text-xs text-slate-800 placeholder-slate-400 outline-none transition focus:border-orange-500 focus:bg-white focus:ring-1 focus:ring-orange-500 dark:border-zinc-700/80 dark:bg-zinc-950 dark:text-zinc-200 dark:placeholder-zinc-500 dark:focus:border-orange-500"
             />
           </div>
@@ -394,7 +405,7 @@ export function HybridBranchFilterDropdown({
           <ul className="max-h-60 overflow-y-auto p-1.5 divide-y divide-slate-50 dark:divide-zinc-800/40">
             {filteredList.length === 0 ? (
               <li className="p-4 text-center text-xs text-slate-400 dark:text-zinc-500">
-                لا توجد منافذ مطابقة للبحث
+                {sectorType === 2 || sectorType === 3 ? "لا توجد ألعاب مطابقة للبحث" : "لا توجد منافذ مطابقة للبحث"}
               </li>
             ) : (
               filteredList.map((branch) => {
@@ -449,7 +460,7 @@ export function HybridBranchFilterDropdown({
                 onClick={handleSelectAll}
                 className="text-[11px] font-bold text-slate-600 hover:text-orange-600 dark:text-zinc-400 dark:hover:text-orange-400"
               >
-                تحديد الكل
+                {sectorType === 2 || sectorType === 3 ? "كل الألعاب" : "تحديد الكل"}
               </button>
               <span className="text-slate-300 dark:text-zinc-700">•</span>
               <button

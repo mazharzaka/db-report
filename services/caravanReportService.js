@@ -17,14 +17,40 @@ export class CaravanReportService {
     /**
      * استرجاع قائمة جميع منافذ القطاع المحددة (افتراضياً الكرفانات Type = 4)
      * مع استبعاد الكيانات غير الإيرادية (المخازن والمستشفيات)
+     * بالنسبة لقطاعات الألعاب (Type = 2) والفيديو جيم (Type = 3)، يتم استرجاع الألعاب من Pos_item_post
      * @param {number} [sectorType=4]
+     * @param {string} [startDate]
+     * @param {string} [endDate]
      * @returns {Promise<Array<{Code: string, Name: string}>>}
      */
-    static async getCaravanBranches(sectorType = 4) {
+    static async getCaravanBranches(sectorType = 4, startDate, endDate) {
         const pool = await getPool();
         const request = pool.request();
         const secType = Number(sectorType) || 4;
         request.input('sectorType', sql.Int, secType);
+
+        if (secType === 2 || secType === 3) {
+            const sDate = startDate || new Date(Date.now() - 30 * 86400000).toISOString().split('T')[0];
+            const eDate = endDate || new Date().toISOString().split('T')[0];
+            request.input('startDate', sql.VarChar, sDate);
+            request.input('endDate', sql.VarChar, eDate);
+
+            const query = `
+                SELECT DISTINCT 
+                    CAST(p.[item_Code] AS VARCHAR(50)) AS [Code],
+                    p.[item_name] AS [Name]
+                FROM [dbo].[Pos_item_post] p WITH (NOLOCK)
+                INNER JOIN [dbo].[Branchs] b WITH (NOLOCK) ON p.[Branch_Code] = b.[Code]
+                WHERE b.[Type] = @sectorType
+                  AND b.[Code] NOT IN ('12', '13', '1019', '1020', '1026', '1028')
+                  AND ISNULL(p.[Void_item], 0) = 0
+                  AND p.[Doc_Date] >= CAST(@startDate AS DATE)
+                  AND p.[Doc_Date] < DATEADD(DAY, 1, CAST(@endDate AS DATE))
+                ORDER BY p.[item_name] ASC;
+            `;
+            const result = await request.query(query);
+            return result.recordset || [];
+        }
 
         const query = `
             SELECT 
@@ -37,6 +63,211 @@ export class CaravanReportService {
         `;
         const result = await request.query(query);
         return result.recordset || [];
+    }
+
+    /**
+     * تقرير تحليلي على مستوى الأصناف/الألعاب الفردية لقطاعي الألعاب (Type = 2) والفيديو جيم (Type = 3)
+     */
+    static async getItemLevelReportData({
+        startDate = '2026-01-01',
+        endDate = new Date().toISOString().split('T')[0],
+        branches = [],
+        granularity = 'summary',
+        sortBy = 'total_desc',
+        sectorType = 3
+    }) {
+        const pool = await getPool();
+        const request = pool.request();
+        const secType = Number(sectorType) || 3;
+
+        request.input('startDate', sql.VarChar, startDate);
+        request.input('endDate', sql.VarChar, endDate);
+        request.input('sectorType', sql.Int, secType);
+
+        let itemFilterClause = '';
+        const isFiltered = Array.isArray(branches) && branches.length > 0;
+        if (isFiltered) {
+            const placeholders = branches.map((code, index) => {
+                const paramName = `item_${index}`;
+                request.input(paramName, sql.VarChar, String(code).trim());
+                return `@${paramName}`;
+            });
+            itemFilterClause = ` AND p.[item_Code] IN (${placeholders.join(', ')})`;
+        }
+
+        let selectPeriod = "CONVERT(VARCHAR(10), p.[Doc_Date], 120)";
+        if (granularity === 'month') {
+            selectPeriod = "CONVERT(VARCHAR(7), p.[Doc_Date], 120)";
+        }
+
+        const itemsQuery = `
+            SELECT 
+                ${selectPeriod} AS [Period],
+                CAST(p.[item_Code] AS VARCHAR(50)) AS [Branch_Code],
+                p.[item_name] AS [Name],
+                SUM(CAST(p.[Item_Qunt] AS INT)) AS [Cover],
+                SUM(CAST(p.[Item_Qunt] AS DECIMAL(18, 4)) * CAST(p.[Item_Price] AS DECIMAL(18, 4)) * (1.0 + ISNULL(CAST(p.[item_Sels_Tax_P] AS DECIMAL(18, 4)), 0) / 100.0)) AS [Total]
+            FROM [dbo].[Pos_item_post] p WITH (NOLOCK)
+            INNER JOIN [dbo].[Branchs] b WITH (NOLOCK) ON p.[Branch_Code] = b.[Code]
+            WHERE b.[Type] = @sectorType
+              AND b.[Code] NOT IN ('12', '13', '1019', '1020', '1026', '1028')
+              AND ISNULL(p.[Void_item], 0) = 0
+              AND p.[Doc_Date] >= CAST(@startDate AS DATE)
+              AND p.[Doc_Date] < DATEADD(DAY, 1, CAST(@endDate AS DATE))
+              ${itemFilterClause}
+            GROUP BY ${selectPeriod}, p.[item_Code], p.[item_name]
+            HAVING SUM(CAST(p.[Item_Qunt] AS DECIMAL(18, 4)) * CAST(p.[Item_Price] AS DECIMAL(18, 4)) * (1.0 + ISNULL(CAST(p.[item_Sels_Tax_P] AS DECIMAL(18, 4)), 0) / 100.0)) > 0
+            ORDER BY [Period] ASC, [Total] DESC;
+        `;
+
+        const payRequest = pool.request();
+        payRequest.input('startDate', sql.VarChar, startDate);
+        payRequest.input('endDate', sql.VarChar, endDate);
+        payRequest.input('sectorType', sql.Int, secType);
+
+        const paymentsQuery = `
+            SELECT 
+                ${selectPeriod} AS [Period],
+                SUM(CAST(ISNULL(p.[cover], 0) AS INT)) AS [Cover],
+                SUM(CAST(ISNULL(p.[Cash], 0) AS DECIMAL(18, 4))) AS [Cash],
+                SUM(CAST(ISNULL(p.[Visa], 0) + ISNULL(p.[Visa2], 0) + ISNULL(p.[Visa3], 0) AS DECIMAL(18, 4))) AS [Visa],
+                SUM(CAST(ISNULL(p.[C/L], 0) AS DECIMAL(18, 4))) AS [CL],
+                SUM(CAST(ISNULL(p.[Cash], 0) + ISNULL(p.[Visa], 0) + ISNULL(p.[Visa2], 0) + ISNULL(p.[Visa3], 0) + ISNULL(p.[C/L], 0) AS DECIMAL(18, 4))) AS [Total]
+            FROM [dbo].[POS_Post] p WITH (NOLOCK)
+            INNER JOIN [dbo].[Branchs] b WITH (NOLOCK) ON p.[Branch_Code] = b.[Code]
+            WHERE b.[Type] = @sectorType
+              AND b.[Code] NOT IN ('12', '13', '1019', '1020', '1026', '1028')
+              AND (p.[Void] = 0 OR p.[Void] IS NULL)
+              AND p.[Doc_Date] >= CAST(@startDate AS DATE)
+              AND p.[Doc_Date] < DATEADD(DAY, 1, CAST(@endDate AS DATE))
+            GROUP BY ${selectPeriod}
+            ORDER BY [Period] ASC;
+        `;
+
+        const startTime = Date.now();
+        const [itemsRes, payRes] = await Promise.all([
+            request.query(itemsQuery),
+            payRequest.query(paymentsQuery)
+        ]);
+        const duration = Date.now() - startTime;
+
+        const rawItemRecords = itemsRes.recordset || [];
+        const rawPayments = payRes.recordset || [];
+
+        const dailyPayMap = new Map();
+        for (const p of rawPayments) {
+            dailyPayMap.set(String(p.Period), {
+                cover: Number(p.Cover) || 0,
+                cash: Number(p.Cash) || 0,
+                visa: Number(p.Visa) || 0,
+                cl: Number(p.CL) || 0,
+                total: Number(p.Total) || 0
+            });
+        }
+
+        let totalSales = 0;
+        let totalCash = 0;
+        let totalVisa = 0;
+        let totalCL = 0;
+        let totalCover = 0;
+
+        if (isFiltered) {
+            // Filtered specific game(s): Calculate solely from game items
+            for (const item of rawItemRecords) {
+                totalSales += Number(item.Total) || 0;
+                totalCover += Number(item.Cover) || 0;
+            }
+            totalCash = totalSales;
+        } else {
+            // All games: Use POS_Post payments to prevent double counting
+            for (const p of rawPayments) {
+                totalSales += Number(p.Total) || 0;
+                totalCash += Number(p.Cash) || 0;
+                totalVisa += Number(p.Visa) || 0;
+                totalCL += Number(p.CL) || 0;
+                totalCover += Number(p.Cover) || 0;
+            }
+        }
+
+        totalSales = Math.round(totalSales * 100) / 100;
+        totalCash = Math.round(totalCash * 100) / 100;
+        totalVisa = Math.round(totalVisa * 100) / 100;
+        totalCL = Math.round(totalCL * 100) / 100;
+        const totalNetRevenue = Math.round((totalSales / 1.14) * 100) / 100;
+        const totalSalesTax = Math.round((totalSales - totalNetRevenue) * 100) / 100;
+
+        const records = rawItemRecords.map((r) => {
+            const itemTotal = Number(r.Total) || 0;
+            const itemCover = Number(r.Cover) || 0;
+            const itemNetRev = Math.round((itemTotal / 1.14) * 100) / 100;
+            const itemTax = Math.round((itemTotal - itemNetRev) * 100) / 100;
+
+            const dPay = dailyPayMap.get(String(r.Period)) || {
+                cash: 0,
+                visa: 0,
+                cl: 0,
+                total: itemTotal
+            };
+
+            return {
+                branchCode: String(r.Branch_Code),
+                name: r.Name,
+                period: r.Period || null,
+                cover: itemCover,
+                cash: isFiltered ? itemTotal : 0,
+                visa: 0,
+                creditLine: 0,
+                total: itemTotal,
+                netRevenue: itemNetRev,
+                serviceCharge: 0,
+                salesTax: itemTax,
+                grandTotal: itemTotal,
+                totalCollected: itemTotal,
+                totalVoids: 0,
+                voidCount: 0,
+                voidDetails: [],
+                variance: 0,
+                dailyCash: isFiltered ? itemTotal : dPay.cash,
+                dailyVisa: isFiltered ? 0 : dPay.visa,
+                dailyCl: isFiltered ? 0 : dPay.cl,
+                dailyTotal: isFiltered ? itemTotal : dPay.total,
+                marketShare: totalSales > 0 ? Math.round((itemTotal / totalSales) * 1000) / 10 : 0,
+                avgTicket: itemCover > 0 ? Math.round((itemTotal / itemCover) * 100) / 100 : 0
+            };
+        });
+
+        return {
+            executionTimeMs: duration,
+            filters: { startDate, endDate, granularity, branches, sectorType: secType },
+            summary: {
+                totalSales,
+                totalCash,
+                totalVisa,
+                totalCL,
+                totalCover,
+                totalNetRevenue,
+                totalServiceCharge: 0,
+                totalSalesTax,
+                totalVoids: 0,
+                totalVariance: 0,
+                cashPct: totalSales > 0 ? Math.round((totalCash / totalSales) * 1000) / 10 : 0,
+                visaPct: totalSales > 0 ? Math.round((totalVisa / totalSales) * 1000) / 10 : 0,
+                clPct: totalSales > 0 ? Math.round((totalCL / totalSales) * 1000) / 10 : 0,
+                avgTicket: totalCover > 0 ? Math.round((totalSales / totalCover) * 100) / 100 : 0,
+                rowCount: records.length,
+                topOutlet: records.length > 0 ? {
+                    name: records[0].name,
+                    total: records[0].total,
+                    cover: records[0].cover
+                } : null,
+                topCaravan: records.length > 0 ? {
+                    name: records[0].name,
+                    total: records[0].total,
+                    cover: records[0].cover
+                } : null
+            },
+            records
+        };
     }
 
     /**
@@ -57,9 +288,22 @@ export class CaravanReportService {
         sortBy = 'total_desc',
         sectorType = 4
     }) {
+        const secType = Number(sectorType) || 4;
+
+        // قطاعات الألعاب (Type = 2) والفيديو جيم (Type = 3): تجميع على مستوى الأصناف/الألعاب
+        if (secType === 2 || secType === 3) {
+            return this.getItemLevelReportData({
+                startDate,
+                endDate,
+                branches,
+                granularity,
+                sortBy,
+                sectorType: secType
+            });
+        }
+
         const pool = await getPool();
         const request = pool.request();
-        const secType = Number(sectorType) || 4;
 
         // 1. تثبيت بارامترات التواريخ والقطاع الآمنة
         request.input('startDate', sql.VarChar, startDate);

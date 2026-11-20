@@ -62,8 +62,8 @@ export interface LocalBranchStat {
   cover: number;
 }
 
-export type ItemRow = { name: string; qty?: number; revenue?: number; [k: string]: any };
-export type OutletRow = { name: string; [k: string]: any };
+export type ItemRow = { name: string; qty?: number; revenue?: number;[k: string]: any };
+export type OutletRow = { name: string;[k: string]: any };
 
 export const ymd = (d: Date): string => {
   const y = d.getFullYear();
@@ -466,7 +466,12 @@ export function useSectorDashboard(sector: SectorConfig = DEFAULT_SECTOR) {
     resetStaleData();
 
     let active = true;
-    fetch(`/api/caravans/branches?sectorType=${sector.type}`)
+    const branchesUrl =
+      sector.type === 2 || sector.type === 3
+        ? `/api/caravans/branches?sectorType=${sector.type}&startDate=${start}&endDate=${end}`
+        : `/api/caravans/branches?sectorType=${sector.type}`;
+
+    fetch(branchesUrl)
       .then((r) => r.json())
       .then((j: { status: string; branches?: BranchOption[] }) => {
         if (active && j.status === 'success' && Array.isArray(j.branches)) {
@@ -478,342 +483,358 @@ export function useSectorDashboard(sector: SectorConfig = DEFAULT_SECTOR) {
     return () => {
       active = false;
     };
-  }, [sector.type, resetStaleData]);
+}, [sector.type, start, end, resetStaleData]);
 
-  const applyPreset = useCallback(
-    (id: Exclude<PresetId, 'custom'>) => {
-      resetStaleData();
-      const r = presetRange(id);
-      setPreset(id);
-      setStart(r.start);
-      setEnd(r.end);
-    },
-    [resetStaleData]
-  );
+const applyPreset = useCallback(
+  (id: Exclude<PresetId, 'custom'>) => {
+    resetStaleData();
+    const r = presetRange(id);
+    setPreset(id);
+    setStart(r.start);
+    setEnd(r.end);
+  },
+  [resetStaleData]
+);
 
-  const applyCompPreset = useCallback((id: Exclude<CompPresetId, 'custom'>) => {
-    const dates = getComparisonPresetDates(id);
-    setCompPreset(id);
-    setCompStartA(dates.startA);
-    setCompEndA(dates.endA);
-    setCompStartB(dates.startB);
-    setCompEndB(dates.endB);
-  }, []);
+const applyCompPreset = useCallback((id: Exclude<CompPresetId, 'custom'>) => {
+  const dates = getComparisonPresetDates(id);
+  setCompPreset(id);
+  setCompStartA(dates.startA);
+  setCompEndA(dates.endA);
+  setCompStartB(dates.startB);
+  setCompEndB(dates.endB);
+}, []);
 
-  // Standard report data loader (Table records & Trends)
-  const load = useCallback(async () => {
-    abortRef.current?.abort();
-    const ctrl = new AbortController();
-    abortRef.current = ctrl;
-    setLoading(true);
-    setError(null);
+// Standard report data loader (Table records & Trends)
+const load = useCallback(async () => {
+  abortRef.current?.abort();
+  const ctrl = new AbortController();
+  abortRef.current = ctrl;
+  setLoading(true);
+  setError(null);
 
-    try {
-      const s = parseYmd(start);
-      const e = parseYmd(end);
-      const days = Math.max(1, Math.round((e.getTime() - s.getTime()) / 86_400_000) + 1);
-      const trendGran: Granularity = days > 92 ? 'month' : 'day';
-      const branches = effectiveSelectedKey ? effectiveSelectedKey.split(',') : [];
+  try {
+    const s = parseYmd(start);
+    const e = parseYmd(end);
+    const days = Math.max(1, Math.round((e.getTime() - s.getTime()) / 86_400_000) + 1);
+    const trendGran: Granularity = days > 92 ? 'month' : 'day';
+    const branches = effectiveSelectedKey ? effectiveSelectedKey.split(',') : [];
 
-      const [main, totals, trendRes] = await Promise.all([
-        fetchReport(start, end, granularity, branches, ctrl.signal, sector.type),
-        granularity === 'summary'
-          ? Promise.resolve(null)
-          : fetchReport(start, end, 'summary', branches, ctrl.signal, sector.type),
-        fetchReport(start, end, trendGran, branches, ctrl.signal, sector.type),
-      ]);
+    const [main, totals, trendRes] = await Promise.all([
+      fetchReport(start, end, granularity, branches, ctrl.signal, sector.type),
+      granularity === 'summary'
+        ? Promise.resolve(null)
+        : fetchReport(start, end, 'summary', branches, ctrl.signal, sector.type),
+      fetchReport(start, end, trendGran, branches, ctrl.signal, sector.type),
+    ]);
 
-      setRecords(main.records);
-      const effectiveTotals = totals ?? main;
-      setSummary(effectiveTotals.summary);
-      setTrend(buildTrend(trendRes.records));
-      setBranchStats(buildBranchStats(effectiveTotals.records));
-      setUpdatedAt(new Date());
-    } catch (err) {
-      if ((err as Error).name === 'AbortError') return;
-      setError((err as Error).message || 'تعذر الاتصال بخادم التقارير');
-    } finally {
-      if (abortRef.current === ctrl) setLoading(false);
-    }
-  }, [start, end, granularity, effectiveSelectedKey, sector.type]);
-
-  useEffect(() => {
-    void load();
-    return () => abortRef.current?.abort();
-  }, [load, refreshTick]);
-
-  // Operational items & outlets summary
-  useEffect(() => {
-    const ctrl = new AbortController();
-    setItemsLoading(true);
-    setItemsError(null);
-    const params = new URLSearchParams({
-      startDate: start,
-      endDate: end,
-      metricType: itemMetric,
-      mode: itemMode,
-      sectorType: String(sector.type),
-    });
-    if (effectiveSelectedKey) params.set('branchCode', effectiveSelectedKey);
-
-    fetch(`/api/reports/caravans/items-summary?${params.toString()}`, { signal: ctrl.signal })
-      .then(async (res) => {
-        if (!res.ok) {
-          const text = await res.text();
-          throw new Error(`خطأ في استجابة الخادم (${res.status}): ${text.slice(0, 80)}`);
+    setRecords(main.records);
+    if (sector.type === 2 || sector.type === 3) {
+      if (selected.length === 0 && Array.isArray(main.records) && main.records.length > 0) {
+        const gameMap = new Map<string, string>();
+        main.records.forEach((r) => {
+          if (r.branchCode && !gameMap.has(String(r.branchCode))) {
+            gameMap.set(String(r.branchCode), r.name || `لعبة ${r.branchCode}`);
+          }
+        });
+        const gameOptions: BranchOption[] = Array.from(gameMap.entries())
+          .map(([Code, Name]) => ({ Code, Name }))
+          .sort((a, b) => a.Name.localeCompare(b.Name));
+        if (gameOptions.length > 0) {
+          setBranchOptions(gameOptions);
         }
-        const json = await res.json();
-        const data = normalizeItemsSummary(json);
+      }
+    }
+    const effectiveTotals = totals ?? main;
+    setSummary(effectiveTotals.summary);
+    setTrend(buildTrend(trendRes.records));
+    setBranchStats(buildBranchStats(effectiveTotals.records));
+    setUpdatedAt(new Date());
+  } catch (err) {
+    if ((err as Error).name === 'AbortError') return;
+    setError((err as Error).message || 'تعذر الاتصال بخادم التقارير');
+  } finally {
+    if (abortRef.current === ctrl) setLoading(false);
+  }
+}, [start, end, granularity, effectiveSelectedKey, sector.type]);
 
-        setGuests(data.guests);
-        setSpendPerGuest(data.spendPerGuest);
-        setTopItems(data.topItems);
-        setSlowItems(data.slowItems);
-        setOutlets(data.outlets);
+useEffect(() => {
+  void load();
+  return () => abortRef.current?.abort();
+}, [load, refreshTick]);
 
-        const payload: ItemsSummary = {
-          ...json,
-          status: 'success',
-          topItems: data.topItems,
-          slowItems: data.slowItems,
-          outlets: data.outlets,
-          allOutlets: data.allOutlets,
-          duel: data.duel,
-          guests: data.guests,
-          spendPerGuest: data.spendPerGuest,
-          capture: {
-            caravanRevenue: data.caravanRevenue,
-            grossRevenue: data.grossRevenue,
-            gateTickets: data.gateTickets,
-            guests: data.guests,
-            spendPerGuest: data.spendPerGuest,
-            visitDivisor: Number(json.capture?.visitDivisor ?? 6) || 6,
-            gateBranchCodes: Array.isArray(json.capture?.gateBranchCodes)
-              ? json.capture.gateBranchCodes
-              : [],
-          },
-        };
-        setItemsData(payload);
-      })
-      .catch((err: Error) => {
-        if (err.name !== 'AbortError') setItemsError(err.message || 'تحليلات الأصناف غير متوفرة');
-      })
-      .finally(() => {
-        if (!ctrl.signal.aborted) setItemsLoading(false);
-      });
+// Operational items & outlets summary
+useEffect(() => {
+  const ctrl = new AbortController();
+  setItemsLoading(true);
+  setItemsError(null);
+  const params = new URLSearchParams({
+    startDate: start,
+    endDate: end,
+    metricType: itemMetric,
+    mode: itemMode,
+    sectorType: String(sector.type),
+  });
+  if (effectiveSelectedKey) params.set('branchCode', effectiveSelectedKey);
 
-    return () => ctrl.abort();
-  }, [start, end, effectiveSelectedKey, itemMetric, itemMode, refreshTick, sector.type]);
-
-  // Period-over-Period comparison loader
-  const loadComparison = useCallback(async () => {
-    setComparisonLoading(true);
-    setComparisonError(null);
-    try {
-      const params = new URLSearchParams({
-        periodAStart: compStartA,
-        periodAEnd: compEndA,
-        periodBStart: compStartB,
-        periodBEnd: compEndB,
-        sectorType: String(sector.type),
-      });
-      if (effectiveSelectedKey) params.set('branchCode', effectiveSelectedKey);
-
-      const res = await fetch(`/api/reports/caravans/comparison?${params.toString()}`);
+  fetch(`/api/reports/caravans/items-summary?${params.toString()}`, { signal: ctrl.signal })
+    .then(async (res) => {
       if (!res.ok) {
         const text = await res.text();
         throw new Error(`خطأ في استجابة الخادم (${res.status}): ${text.slice(0, 80)}`);
       }
-      const json = (await res.json()) as PeriodComparisonResponse;
-      if (json.status !== 'success') throw new Error(json.message || 'فشل جلب بيانات المقارنة');
-      setComparisonData(json);
-    } catch (err) {
-      setComparisonError((err as Error).message || 'تعذر تحميل المقارنة التحليلية');
-    } finally {
-      setComparisonLoading(false);
+      const json = await res.json();
+      const data = normalizeItemsSummary(json);
+
+      setGuests(data.guests);
+      setSpendPerGuest(data.spendPerGuest);
+      setTopItems(data.topItems);
+      setSlowItems(data.slowItems);
+      setOutlets(data.outlets);
+
+      const payload: ItemsSummary = {
+        ...json,
+        status: 'success',
+        topItems: data.topItems,
+        slowItems: data.slowItems,
+        outlets: data.outlets,
+        allOutlets: data.allOutlets,
+        duel: data.duel,
+        guests: data.guests,
+        spendPerGuest: data.spendPerGuest,
+        capture: {
+          caravanRevenue: data.caravanRevenue,
+          grossRevenue: data.grossRevenue,
+          gateTickets: data.gateTickets,
+          guests: data.guests,
+          spendPerGuest: data.spendPerGuest,
+          visitDivisor: Number(json.capture?.visitDivisor ?? 6) || 6,
+          gateBranchCodes: Array.isArray(json.capture?.gateBranchCodes)
+            ? json.capture.gateBranchCodes
+            : [],
+        },
+      };
+      setItemsData(payload);
+    })
+    .catch((err: Error) => {
+      if (err.name !== 'AbortError') setItemsError(err.message || 'تحليلات الأصناف غير متوفرة');
+    })
+    .finally(() => {
+      if (!ctrl.signal.aborted) setItemsLoading(false);
+    });
+
+  return () => ctrl.abort();
+}, [start, end, effectiveSelectedKey, itemMetric, itemMode, refreshTick, sector.type]);
+
+// Period-over-Period comparison loader
+const loadComparison = useCallback(async () => {
+  setComparisonLoading(true);
+  setComparisonError(null);
+  try {
+    const params = new URLSearchParams({
+      periodAStart: compStartA,
+      periodAEnd: compEndA,
+      periodBStart: compStartB,
+      periodBEnd: compEndB,
+      sectorType: String(sector.type),
+    });
+    if (effectiveSelectedKey) params.set('branchCode', effectiveSelectedKey);
+
+    const res = await fetch(`/api/reports/caravans/comparison?${params.toString()}`);
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(`خطأ في استجابة الخادم (${res.status}): ${text.slice(0, 80)}`);
     }
-  }, [compStartA, compEndA, compStartB, compEndB, effectiveSelectedKey, sector.type]);
+    const json = (await res.json()) as PeriodComparisonResponse;
+    if (json.status !== 'success') throw new Error(json.message || 'فشل جلب بيانات المقارنة');
+    setComparisonData(json);
+  } catch (err) {
+    setComparisonError((err as Error).message || 'تعذر تحميل المقارنة التحليلية');
+  } finally {
+    setComparisonLoading(false);
+  }
+}, [compStartA, compEndA, compStartB, compEndB, effectiveSelectedKey, sector.type]);
 
-  useEffect(() => {
-    if (viewMode === 'comparison') {
-      void loadComparison();
-    }
-  }, [viewMode, loadComparison, refreshTick]);
+useEffect(() => {
+  if (viewMode === 'comparison') {
+    void loadComparison();
+  }
+}, [viewMode, loadComparison, refreshTick]);
 
-  // Map click toggle: single branch filter (click again to clear)
-  const selectFromMap = useCallback((code: string) => {
-    setSelected((cur) => (cur.length === 1 && cur[0] === code ? [] : [code]));
-  }, []);
+// Map click toggle: single branch filter (click again to clear)
+const selectFromMap = useCallback((code: string) => {
+  setSelected((cur) => (cur.length === 1 && cur[0] === code ? [] : [code]));
+}, []);
 
-  // Dynamic scope label incorporating sector and selection
-  const topScopeLabel = useMemo(() => {
-    if (sector.type === 4) {
-      const facilityLabel =
-        facilityType === 'caravans'
-          ? 'قطاع الكرفانات'
-          : facilityType === 'shops'
-            ? 'قطاع المحلات'
-            : 'القطاع الكامل (كرفانات ومحلات)';
-
-      if (selected.length === 0) {
-        return facilityType === 'all'
-          ? 'عبر جميع كرفانات ومحلات الحديقة (القطاع الكامل)'
-          : `عبر جميع منافذ ${facilityLabel}`;
-      }
-      if (selected.length === 1) {
-        const match = branchOptions.find((o) => String(o.Code) === selected[0]);
-        return `منفذ محدد (${facilityLabel}): ${match?.Name ?? selected[0]}`;
-      }
-      return `${selected.length} منافذ محددة (${facilityLabel}): ${selected
-        .map((c) => branchOptions.find((o) => String(o.Code) === c)?.Name ?? c)
-        .slice(0, 3)
-        .join('، ')}${selected.length > 3 ? '...' : ''}`;
-    }
+// Dynamic scope label incorporating sector and selection
+const topScopeLabel = useMemo(() => {
+  if (sector.type === 4) {
+    const facilityLabel =
+      facilityType === 'caravans'
+        ? 'قطاع الكرفانات'
+        : facilityType === 'shops'
+          ? 'قطاع المحلات'
+          : 'القطاع الكامل (كرفانات ومحلات)';
 
     if (selected.length === 0) {
-      return `عبر جميع منافذ ${sector.label} (${branchOptions.length} منفذ)`;
+      return facilityType === 'all'
+        ? 'عبر جميع كرفانات ومحلات الحديقة (القطاع الكامل)'
+        : `عبر جميع منافذ ${facilityLabel}`;
     }
     if (selected.length === 1) {
       const match = branchOptions.find((o) => String(o.Code) === selected[0]);
-      return `منفذ محدد (${sector.label}): ${match?.Name ?? selected[0]}`;
+      return `منفذ محدد (${facilityLabel}): ${match?.Name ?? selected[0]}`;
     }
-    return `${selected.length} منافذ محددة (${sector.label}): ${selected
+    return `${selected.length} منافذ محددة (${facilityLabel}): ${selected
       .map((c) => branchOptions.find((o) => String(o.Code) === c)?.Name ?? c)
       .slice(0, 3)
       .join('، ')}${selected.length > 3 ? '...' : ''}`;
-  }, [sector.type, sector.label, facilityType, selected, branchOptions]);
+  }
 
-  const exportExcel = useCallback(() => {
-    const params = new URLSearchParams({
-      startDate: start,
-      endDate: end,
-      granularity,
-      sectorType: String(sector.type),
-    });
-    if (effectiveBranches.length > 0) params.set('branches', effectiveBranches.join(','));
-    window.location.href = `/api/caravans/export?${params.toString()}`;
-  }, [start, end, granularity, effectiveBranches, sector.type]);
+  if (selected.length === 0) {
+    return `عبر جميع منافذ ${sector.label} (${branchOptions.length} منفذ)`;
+  }
+  if (selected.length === 1) {
+    const match = branchOptions.find((o) => String(o.Code) === selected[0]);
+    return `منفذ محدد (${sector.label}): ${match?.Name ?? selected[0]}`;
+  }
+  return `${selected.length} منافذ محددة (${sector.label}): ${selected
+    .map((c) => branchOptions.find((o) => String(o.Code) === c)?.Name ?? c)
+    .slice(0, 3)
+    .join('، ')}${selected.length > 3 ? '...' : ''}`;
+}, [sector.type, sector.label, facilityType, selected, branchOptions]);
 
-  const comparisonStats = useMemo<OutletMetricStat[]>(() => {
-    if (branchStats.length > 0) {
-      return branchStats.map((s) => ({
-        code: s.code,
-        name: s.name,
-        revenue: s.total,
-        orders: s.cover,
-        avgTicket: s.cover > 0 ? s.total / s.cover : 0,
-      }));
-    }
-    const list = outlets.length > 0 ? outlets : itemsData?.outlets ?? [];
-    if (list.length > 0) {
-      return list.map((o: any) => ({
-        code: String(o.branchCode || o.code),
-        name: String(o.name || o.branchCode || ''),
-        revenue: Number(o.revenue) || 0,
-        orders: Number(o.orders) || 0,
-        avgTicket:
-          Number(o.avgTicket) ||
-          (Number(o.orders) > 0 ? Number(o.revenue) / Number(o.orders) : 0),
-      }));
-    }
-    return [];
-  }, [branchStats, outlets, itemsData]);
-
-  const triggerRefresh = useCallback(() => {
-    setRefreshTick((t) => t + 1);
-  }, []);
-
-  return {
-    sector,
-
-    // Auth
-    isAuthorized,
-    authUser,
-    handleSignOut,
-
-    // Modes & Toggles
-    viewMode,
-    setViewMode,
-    facilityType,
-    setFacilityType: handleFacilityTypeChange,
-    barMetric,
-    setBarMetric,
-    itemMetric,
-    setItemMetric,
-    itemMode,
-    setItemMode,
-
-    // Branches & Segmentation
-    branchOptions,
-    filteredBranchOptions,
-    rawBranchOptions: branchOptions,
-    selected,
-    setSelected,
-    effectiveBranches,
-    selectFromMap,
-    topScopeLabel,
-
-    // Standard Filters
-    start,
-    setStart,
-    end,
-    setEnd,
-    preset,
-    setPreset,
+const exportExcel = useCallback(() => {
+  const params = new URLSearchParams({
+    startDate: start,
+    endDate: end,
     granularity,
-    setGranularity,
-    applyPreset,
-    resetStaleData,
+    sectorType: String(sector.type),
+  });
+  if (effectiveBranches.length > 0) params.set('branches', effectiveBranches.join(','));
+  window.location.href = `/api/caravans/export?${params.toString()}`;
+}, [start, end, granularity, effectiveBranches, sector.type]);
 
-    // Comparison Filters & State
-    compPreset,
-    setCompPreset,
-    compStartA,
-    setCompStartA,
-    compEndA,
-    setCompEndA,
-    compStartB,
-    setCompStartB,
-    compEndB,
-    setCompEndB,
-    applyCompPreset,
-    comparisonData,
-    setComparisonData,
-    comparisonLoading,
-    comparisonError,
+const comparisonStats = useMemo<OutletMetricStat[]>(() => {
+  if (branchStats.length > 0) {
+    return branchStats.map((s) => ({
+      code: s.code,
+      name: s.name,
+      revenue: s.total,
+      orders: s.cover,
+      avgTicket: s.cover > 0 ? s.total / s.cover : 0,
+    }));
+  }
+  const list = outlets.length > 0 ? outlets : itemsData?.outlets ?? [];
+  if (list.length > 0) {
+    return list.map((o: any) => ({
+      code: String(o.branchCode || o.code),
+      name: String(o.name || o.branchCode || ''),
+      revenue: Number(o.revenue) || 0,
+      orders: Number(o.orders) || 0,
+      avgTicket:
+        Number(o.avgTicket) ||
+        (Number(o.orders) > 0 ? Number(o.revenue) / Number(o.orders) : 0),
+    }));
+  }
+  return [];
+}, [branchStats, outlets, itemsData]);
 
-    // Operational Data
-    records,
-    summary,
-    trend,
-    branchStats,
-    itemsData,
-    guests,
-    spendPerGuest,
-    topItems,
-    slowItems,
-    outlets,
-    comparisonStats,
-    invoicesData,
+const triggerRefresh = useCallback(() => {
+  setRefreshTick((t) => t + 1);
+}, []);
 
-    // Status & Lifecycles
-    loading,
-    error,
-    itemsLoading,
-    itemsError,
-    isLoading,
-    updatedAt,
-    refreshTick,
-    triggerRefresh,
+return {
+  sector,
 
-    // Export & Print
-    exportExcel,
-    printModalOpen,
-    setPrintModalOpen,
-    printConfig,
-    setPrintConfig,
-    handlePrint,
-  };
+  // Auth
+  isAuthorized,
+  authUser,
+  handleSignOut,
+
+  // Modes & Toggles
+  viewMode,
+  setViewMode,
+  facilityType,
+  setFacilityType: handleFacilityTypeChange,
+  barMetric,
+  setBarMetric,
+  itemMetric,
+  setItemMetric,
+  itemMode,
+  setItemMode,
+
+  // Branches & Segmentation
+  branchOptions,
+  filteredBranchOptions,
+  rawBranchOptions: branchOptions,
+  selected,
+  setSelected,
+  effectiveBranches,
+  selectFromMap,
+  topScopeLabel,
+
+  // Standard Filters
+  start,
+  setStart,
+  end,
+  setEnd,
+  preset,
+  setPreset,
+  granularity,
+  setGranularity,
+  applyPreset,
+  resetStaleData,
+
+  // Comparison Filters & State
+  compPreset,
+  setCompPreset,
+  compStartA,
+  setCompStartA,
+  compEndA,
+  setCompEndA,
+  compStartB,
+  setCompStartB,
+  compEndB,
+  setCompEndB,
+  applyCompPreset,
+  comparisonData,
+  setComparisonData,
+  comparisonLoading,
+  comparisonError,
+
+  // Operational Data
+  records,
+  summary,
+  trend,
+  branchStats,
+  itemsData,
+  guests,
+  spendPerGuest,
+  topItems,
+  slowItems,
+  outlets,
+  comparisonStats,
+  invoicesData,
+
+  // Status & Lifecycles
+  loading,
+  error,
+  itemsLoading,
+  itemsError,
+  isLoading,
+  updatedAt,
+  refreshTick,
+  triggerRefresh,
+
+  // Export & Print
+  exportExcel,
+  printModalOpen,
+  setPrintModalOpen,
+  printConfig,
+  setPrintConfig,
+  handlePrint,
+};
 }
 
 export default useSectorDashboard;

@@ -8,14 +8,16 @@ interface Props {
   options: BranchOption[];
   value: string[];
   onChange: (codes: string[]) => void;
+  sectorType?: number;
 }
 
 /**
- * Accessible multi-select combobox for branches / caravans.
- * Row 0 is always the "All branches" option (empty selection = all).
+ * Accessible multi-select combobox for branches / games.
+ * Row 0 is always the "All" option (empty selection = all).
  * Keyboard: ArrowUp/Down, Home/End, Enter/Space toggle, Escape close, typing filters.
  */
-export function BranchSelect({ options, value, onChange }: Props) {
+export function BranchSelect({ options, value, onChange, sectorType }: Props) {
+  const isGameSector = sectorType === 2 || sectorType === 3;
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [active, setActive] = useState(0);
@@ -107,10 +109,10 @@ export function BranchSelect({ options, value, onChange }: Props) {
   };
 
   const label = allSelected
-    ? 'جميع الفروع والمحلات'
+    ? (isGameSector ? 'كل الألعاب' : 'جميع الفروع والمحلات')
     : value.length === 1
-      ? options.find((o) => String(o.Code) === value[0])?.Name ?? 'فرع واحد'
-      : `تم تحديد ${value.length} فروع`;
+      ? options.find((o) => String(o.Code) === value[0])?.Name ?? (isGameSector ? 'لعبة واحدة' : 'فرع واحد')
+      : `تم تحديد ${value.length} ${isGameSector ? 'ألعاب' : 'فروع'}`;
 
   return (
     <div ref={rootRef} className="relative z-50" onKeyDown={onKeyDown}>
@@ -120,7 +122,7 @@ export function BranchSelect({ options, value, onChange }: Props) {
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-controls={listId}
-        aria-label="اختيار الفروع / الكرافانات"
+        aria-label={isGameSector ? "اختيار الألعاب" : "اختيار الفروع / الكرافانات"}
         onClick={() => setOpen((o) => !o)}
         className={`flex h-10 w-full min-w-[230px] items-center justify-between gap-2 rounded-lg border bg-white px-3 text-xs font-semibold shadow-sm ring-1 ring-slate-200/50 transition dark:border-zinc-800 dark:bg-zinc-900/80 dark:ring-white/10 ${open
             ? 'border-orange-500 ring-2 ring-orange-500/20'
@@ -149,7 +151,7 @@ export function BranchSelect({ options, value, onChange }: Props) {
               ref={searchRef}
               value={query}
               onChange={(e) => { setQuery(e.target.value); setActive(0); }}
-              placeholder="ابحث باسم المحل أو الكود..."
+              placeholder={isGameSector ? "ابحث باسم اللعبة أو الكود..." : "ابحث باسم المحل أو الكود..."}
               aria-controls={listId}
               aria-activedescendant={`${listId}-${active}`}
               className="w-full rounded-lg bg-slate-50 py-2 pl-3 pr-9 text-sm text-slate-700 outline-none dark:bg-zinc-950 dark:text-slate-200"
@@ -167,7 +169,7 @@ export function BranchSelect({ options, value, onChange }: Props) {
               className={`flex cursor-pointer items-center justify-between rounded-lg px-3 py-2 text-sm font-semibold ${active === 0 ? 'bg-slate-100 dark:bg-zinc-950' : ''
                 } ${allSelected ? 'text-violet-300 font-bold' : 'text-slate-700 dark:text-slate-200'}`}
             >
-              <span>جميع الفروع والمحلات</span>
+              <span>{isGameSector ? 'كل الألعاب' : 'جميع الفروع والمحلات'}</span>
               {allSelected && <Check className="h-4 w-4" />}
             </li>
 
