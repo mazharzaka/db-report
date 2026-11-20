@@ -104,31 +104,32 @@ export class CaravanReportService {
                 p.[ServiceCharge],
                 p.[SalesTax],
                 -- فارق التسوية المحسوب: (النقدية + الفيزا + الآجل) - صافي الإيراد الشامل (المطلوب تحصيله)
-                ROUND((p.[Cash] + p.[Visa] + p.[CL]) - p.[Total], 2) AS [Variance],
+                ((p.[Cash] + p.[Visa] + p.[CL]) - p.[Total]) AS [Variance],
                 -- إجمالي المرتجعات / الإلغاءات المسترجعة عبر OUTER APPLY
                 ISNULL(v.[TotalVoids], 0) AS [TotalVoids],
                 ISNULL(v.[VoidCount], 0) AS [VoidCount],
-                ROUND(SUM(p.[Total]) OVER (), 2) AS [GrandTotalNet],
-                ROUND(SUM(p.[Cash]) OVER (), 2) AS [GrandTotalCash],
-                ROUND(SUM(p.[CL]) OVER (), 2) AS [GrandTotalCL],
+                SUM(p.[Total]) OVER () AS [GrandTotalNet],
+                SUM(p.[Cash]) OVER () AS [GrandTotalCash],
+                SUM(p.[CL]) OVER () AS [GrandTotalCL],
+                SUM(p.[Visa]) OVER () AS [GrandTotalVisa],
                 SUM(p.[Cover]) OVER () AS [GrandTotalCover]
             FROM [dbo].[Branchs] b WITH (NOLOCK)
             INNER JOIN (
                 SELECT 
                     p.[Branch_Code],
                     ${selectPeriod}
-                    SUM(ISNULL(p.[cover], 0)) AS [Cover],
-                    ROUND(SUM(ISNULL(p.[Cash], 0)), 2) AS [Cash],
-                    ROUND(SUM(ISNULL(p.[Visa], 0) + ISNULL(p.[Visa2], 0) + ISNULL(p.[Visa3], 0)), 2) AS [Visa],
-                    ROUND(SUM(ISNULL(p.[C/L], 0)), 2) AS [CL],
-                    ROUND(SUM(ISNULL(p.[NetOfInv], 0)), 2) AS [Total],
-                    ROUND(SUM(ISNULL(p.[TotalInv], 0)), 2) AS [TotalInv],
-                    ROUND(SUM(ISNULL(p.[serves_tax], 0)), 2) AS [ServiceCharge],
-                    ROUND(SUM(ISNULL(p.[Sels_Tax], 0)), 2) AS [SalesTax]
+                    SUM(CAST(ISNULL(p.[cover], 0) AS INT)) AS [Cover],
+                    SUM(CAST(ISNULL(p.[Cash], 0) AS DECIMAL(18, 4))) AS [Cash],
+                    SUM(CAST(ISNULL(p.[Visa], 0) + ISNULL(p.[Visa2], 0) + ISNULL(p.[Visa3], 0) AS DECIMAL(18, 4))) AS [Visa],
+                    SUM(CAST(ISNULL(p.[C/L], 0) AS DECIMAL(18, 4))) AS [CL],
+                    SUM(CAST(ISNULL(p.[Cash], 0) + ISNULL(p.[Visa], 0) + ISNULL(p.[Visa2], 0) + ISNULL(p.[Visa3], 0) + ISNULL(p.[C/L], 0) AS DECIMAL(18, 4))) AS [Total],
+                    SUM(CAST(ISNULL(p.[TotalInv], 0) AS DECIMAL(18, 4))) AS [TotalInv],
+                    SUM(CAST(ISNULL(p.[serves_tax], 0) AS DECIMAL(18, 4))) AS [ServiceCharge],
+                    SUM(CAST(ISNULL(p.[Sels_Tax], 0) AS DECIMAL(18, 4))) AS [SalesTax]
                 FROM [dbo].[POS_Post] p WITH (NOLOCK)
                 WHERE p.[Doc_Date] >= CAST(@startDate AS DATE)
                   AND p.[Doc_Date] < DATEADD(DAY, 1, CAST(@endDate AS DATE))
-                  AND ISNULL(p.[Void], 0) <> 1
+                  AND (p.[Void] = 0 OR p.[Void] IS NULL)
                 GROUP BY p.[Branch_Code] ${groupByPeriod}
             ) p ON p.[Branch_Code] = b.[Code]
             /* ========================================================================= */
@@ -136,7 +137,7 @@ export class CaravanReportService {
             /* ========================================================================= */
             OUTER APPLY (
                 SELECT 
-                    ROUND(SUM(ISNULL(v.[Item_Qunt] * v.[Item_Price] * (1.0 + ISNULL(v.[item_Sels_Tax_P], 0) / 100.0 + ISNULL(v.[item_Serves_Tax_P], 0) / 100.0), 0)), 2) AS [TotalVoids],
+                    SUM(CAST(ISNULL(v.[Item_Qunt] * v.[Item_Price] * (1.0 + ISNULL(v.[item_Sels_Tax_P], 0) / 100.0 + ISNULL(v.[item_Serves_Tax_P], 0) / 100.0), 0) AS DECIMAL(18, 4))) AS [TotalVoids],
                     COUNT(*) AS [VoidCount]
                 FROM [dbo].[Pos_item_post_void] v WITH (NOLOCK)
                 WHERE v.[Branch_Code] = b.[Code]
@@ -258,32 +259,25 @@ export class CaravanReportService {
         totalVariance = Math.round(totalVariance * 100) / 100;
         if (Math.abs(totalVariance) < 0.005) totalVariance = 0;
 
-        // مواءمة الفوارق العشرية الناتجة عن تجميع الكسور المقربة (0.01 EGP) مع الإجمالي المحاسبي الموحد
-        if (rawRecords.length > 0 && Number.isFinite(sqlGrandTotal) && sqlGrandTotal > 0) {
-            const salesDiff = Math.round((sqlGrandTotal - totalSales) * 100) / 100;
-            if (Math.abs(salesDiff) <= 0.05 && Math.abs(salesDiff) > 0) {
-                rawRecords[0].Total = Math.round((Number(rawRecords[0].Total) + salesDiff) * 100) / 100;
-                totalSales = sqlGrandTotal;
-            }
-            if (Number.isFinite(sqlGrandCash)) totalCash = sqlGrandCash;
-            if (Number.isFinite(sqlGrandCL)) totalCL = sqlGrandCL;
-            if (Number.isFinite(sqlGrandCover)) totalCover = sqlGrandCover;
-        }
+        if (Number.isFinite(sqlGrandTotal) && sqlGrandTotal > 0) totalSales = Math.round(sqlGrandTotal * 100) / 100;
+        if (Number.isFinite(sqlGrandCash)) totalCash = Math.round(sqlGrandCash * 100) / 100;
+        if (Number.isFinite(sqlGrandCL)) totalCL = Math.round(sqlGrandCL * 100) / 100;
+        if (Number.isFinite(sqlGrandCover)) totalCover = sqlGrandCover;
 
         const records = rawRecords.map(r => {
-            const itemTotal = Number(r.Total) || 0;
-            const itemCover = Number(r.Cover) || 0;
             const itemCash = Number(r.Cash) || 0;
             const itemVisa = Number(r.Visa) || 0;
             const itemCL = Number(r['C/L'] ?? r.CL) || 0;
-            const itemNetRev = Number(r.TotalInv) || (itemTotal - (Number(r.SalesTax) || 0) - (Number(r.ServiceCharge) || 0)) || itemCash;
+            const itemTotal = Number(r.Total) || (itemCash + itemVisa + itemCL);
+            const itemCover = Number(r.Cover) || 0;
+            const itemNetRev = Number(r.TotalInv) || (itemTotal / 1.14);
             const itemServ = Number(r.ServiceCharge) || 0;
             const itemTax = Number(r.SalesTax) || 0;
             const itemVoids = Number(r.TotalVoids) || 0;
             const itemVoidCount = Number(r.VoidCount) || 0;
 
-            const totalCollected = Math.round((itemCash + itemVisa + itemCL) * 100) / 100;
-            let variance = Math.round((totalCollected - itemTotal) * 100) / 100;
+            const totalCollected = itemCash + itemVisa + itemCL;
+            let variance = totalCollected - itemTotal;
             if (Math.abs(variance) < 0.005) {
                 variance = 0;
             }

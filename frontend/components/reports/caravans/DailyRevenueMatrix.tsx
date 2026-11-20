@@ -131,14 +131,14 @@ export function DailyRevenueMatrix({
       return sortOrder === 'asc' ? cmp : -cmp;
     });
 
-    const colTotalsAcc: Record<string, number> = {};
+    const rawColTotals: Record<string, number> = {};
     cols.forEach((c) => {
-      colTotalsAcc[c.branchCode] = 0;
+      rawColTotals[c.branchCode] = 0;
     });
 
-    let overallTotal = 0;
-    let overallCashVisa = 0;
-    let overallCoupons = 0;
+    let rawOverallTotal = 0;
+    let rawOverallCashVisa = 0;
+    let rawOverallCoupons = 0;
 
     const applyCalcMode = (val: number, mode: CalcMode) => {
       if (mode === 'net') return val / 1.14;
@@ -149,7 +149,7 @@ export function DailyRevenueMatrix({
     const mRows = dates.map((date) => {
       const branchValues = dateMap.get(date);
       const values: Record<string, number> = {};
-      let rowTotal = 0;
+      let rawDailyTotal = 0;
       let rawDailyCashVisa = 0;
       let rawDailyCoupons = 0;
 
@@ -161,29 +161,32 @@ export function DailyRevenueMatrix({
           rawTotal: 0,
         };
 
+        const itemCashVisa = item.cash + item.visa;
+        const itemCl = item.cl;
         // Always calculate using All sources: baseTotal = cash + visa + cl
-        const baseTotal =
-          item.cash + item.visa + item.cl > 0
-            ? item.cash + item.visa + item.cl
+        const itemBaseTotal =
+          itemCashVisa + itemCl > 0
+            ? itemCashVisa + itemCl
             : item.rawTotal;
 
-        const val = applyCalcMode(baseTotal, calcMode);
+        const val = applyCalcMode(itemBaseTotal, calcMode);
 
         values[col.branchCode] = val;
-        rowTotal += val;
-        colTotalsAcc[col.branchCode] += val;
+        rawDailyTotal += itemBaseTotal;
+        rawDailyCashVisa += itemCashVisa;
+        rawDailyCoupons += itemCl;
 
-        rawDailyCashVisa += item.cash + item.visa;
-        rawDailyCoupons += item.cl;
+        rawColTotals[col.branchCode] = (rawColTotals[col.branchCode] || 0) + itemBaseTotal;
       });
 
       // Apply calcMode to daily aggregate columns
+      const rowTotal = applyCalcMode(rawDailyTotal, calcMode);
       const rowCashVisa = applyCalcMode(rawDailyCashVisa, calcMode);
       const rowCoupons = applyCalcMode(rawDailyCoupons, calcMode);
 
-      overallTotal += rowTotal;
-      overallCashVisa += rowCashVisa;
-      overallCoupons += rowCoupons;
+      rawOverallTotal += rawDailyTotal;
+      rawOverallCashVisa += rawDailyCashVisa;
+      rawOverallCoupons += rawDailyCoupons;
 
       return {
         date,
@@ -194,13 +197,23 @@ export function DailyRevenueMatrix({
       };
     });
 
+    // Compute Grand Totals directly from raw unrounded aggregates to eliminate drift
+    const colTotalsAcc: Record<string, number> = {};
+    cols.forEach((c) => {
+      colTotalsAcc[c.branchCode] = applyCalcMode(rawColTotals[c.branchCode] || 0, calcMode);
+    });
+
+    const grandTotal = applyCalcMode(rawOverallTotal, calcMode);
+    const grandCashVisa = applyCalcMode(rawOverallCashVisa, calcMode);
+    const grandCoupons = applyCalcMode(rawOverallCoupons, calcMode);
+
     return {
       columns: cols,
       matrixRows: mRows,
       columnTotals: colTotalsAcc,
-      grandTotal: overallTotal,
-      grandCashVisa: overallCashVisa,
-      grandCoupons: overallCoupons,
+      grandTotal,
+      grandCashVisa,
+      grandCoupons,
     };
   }, [aggregatedData, sortOrder, calcMode]);
 
@@ -451,33 +464,30 @@ export function DailyRevenueMatrix({
             <button
               type="button"
               onClick={() => setCalcMode('total')}
-              className={`px-4 py-2 text-sm font-bold rounded-lg transition-all ${
-                calcMode === 'total'
+              className={`px-4 py-2 text-sm font-bold rounded-lg transition-all ${calcMode === 'total'
                   ? 'bg-white text-slate-900 shadow-sm dark:bg-zinc-700 dark:text-white'
                   : 'text-slate-500 hover:text-slate-700 dark:text-zinc-400 dark:hover:text-zinc-200'
-              }`}
+                }`}
             >
               الإجمالي الشامل (Total Gross)
             </button>
             <button
               type="button"
               onClick={() => setCalcMode('net')}
-              className={`px-4 py-2 text-sm font-bold rounded-lg transition-all ${
-                calcMode === 'net'
+              className={`px-4 py-2 text-sm font-bold rounded-lg transition-all ${calcMode === 'net'
                   ? 'bg-white text-slate-900 shadow-sm dark:bg-zinc-700 dark:text-white'
                   : 'text-slate-500 hover:text-slate-700 dark:text-zinc-400 dark:hover:text-zinc-200'
-              }`}
+                }`}
             >
               الصافي (Net Sales)
             </button>
             <button
               type="button"
               onClick={() => setCalcMode('vat')}
-              className={`px-4 py-2 text-sm font-bold rounded-lg transition-all ${
-                calcMode === 'vat'
+              className={`px-4 py-2 text-sm font-bold rounded-lg transition-all ${calcMode === 'vat'
                   ? 'bg-white text-slate-900 shadow-sm dark:bg-zinc-700 dark:text-white'
                   : 'text-slate-500 hover:text-slate-700 dark:text-zinc-400 dark:hover:text-zinc-200'
-              }`}
+                }`}
             >
               الضريبة (VAT 14%)
             </button>
@@ -564,11 +574,10 @@ export function DailyRevenueMatrix({
                     return (
                       <td
                         key={col.branchCode}
-                        className={`px-4 py-3.5 text-left font-bold text-base lg:text-lg tabular-nums border-l border-slate-200/60 dark:border-zinc-800/40 group-hover:bg-blue-50/50 dark:group-hover:bg-blue-900/20 transition-colors ${
-                          val > 0
+                        className={`px-4 py-3.5 text-left font-bold text-base lg:text-lg tabular-nums border-l border-slate-200/60 dark:border-zinc-800/40 group-hover:bg-blue-50/50 dark:group-hover:bg-blue-900/20 transition-colors ${val > 0
                             ? 'text-slate-900 dark:text-white'
                             : 'text-slate-300 dark:text-zinc-600 font-normal'
-                        }`}
+                          }`}
                       >
                         {val > 0 ? (
                           val.toLocaleString('en-US', {

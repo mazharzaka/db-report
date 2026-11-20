@@ -27,8 +27,8 @@ export function BranchSelect({ options, value, onChange }: Props) {
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     return q
-      ? options.cdfilter((o) => o.Name.toLowerCase().includes(q) || String(o.Code).toLowerCase().includes(q))
-      : options;
+        ? options.filter((o) => o.Name.toLowerCase().includes(q) || String(o.Code).toLowerCase().includes(q))
+        : options;
   }, [options, query]);
 
   // Row 0 = "all", rows 1..n = filtered branches
@@ -109,8 +109,8 @@ export function BranchSelect({ options, value, onChange }: Props) {
   const label = allSelected
     ? 'جميع الفروع والمحلات'
     : value.length === 1
-    ? options.find((o) => String(o.Code) === value[0])?.Name ?? 'فرع واحد'
-    : `تم تحديد ${value.length} فروع`;
+      ? options.find((o) => String(o.Code) === value[0])?.Name ?? 'فرع واحد'
+      : `تم تحديد ${value.length} فروع`;
 
   return (
     <div ref={rootRef} className="relative z-50" onKeyDown={onKeyDown}>
@@ -122,11 +122,10 @@ export function BranchSelect({ options, value, onChange }: Props) {
         aria-controls={listId}
         aria-label="اختيار الفروع / الكرافانات"
         onClick={() => setOpen((o) => !o)}
-        className={`flex h-10 w-full min-w-[230px] items-center justify-between gap-2 rounded-lg border bg-white px-3 text-xs font-semibold shadow-sm ring-1 ring-slate-200/50 transition dark:border-zinc-800 dark:bg-zinc-900/80 dark:ring-white/10 ${
-          open
+        className={`flex h-10 w-full min-w-[230px] items-center justify-between gap-2 rounded-lg border bg-white px-3 text-xs font-semibold shadow-sm ring-1 ring-slate-200/50 transition dark:border-zinc-800 dark:bg-zinc-900/80 dark:ring-white/10 ${open
             ? 'border-orange-500 ring-2 ring-orange-500/20'
             : 'border-slate-200/80 hover:border-slate-300 dark:hover:border-zinc-700'
-        }`}
+          }`}
       >
         <span className="flex min-w-0 items-center gap-2">
           <Store className="h-4 w-4 shrink-0 text-slate-400" />
@@ -165,9 +164,8 @@ export function BranchSelect({ options, value, onChange }: Props) {
               aria-selected={allSelected}
               onMouseEnter={() => setActive(0)}
               onClick={() => onChange([])}
-              className={`flex cursor-pointer items-center justify-between rounded-lg px-3 py-2 text-sm font-semibold ${
-                active === 0 ? 'bg-slate-100 dark:bg-zinc-950' : ''
-              } ${allSelected ? 'text-violet-300 font-bold' : 'text-slate-700 dark:text-slate-200'}`}
+              className={`flex cursor-pointer items-center justify-between rounded-lg px-3 py-2 text-sm font-semibold ${active === 0 ? 'bg-slate-100 dark:bg-zinc-950' : ''
+                } ${allSelected ? 'text-violet-300 font-bold' : 'text-slate-700 dark:text-slate-200'}`}
             >
               <span>جميع الفروع والمحلات</span>
               {allSelected && <Check className="h-4 w-4" />}
@@ -193,16 +191,14 @@ export function BranchSelect({ options, value, onChange }: Props) {
                   aria-selected={selected}
                   onMouseEnter={() => setActive(idx)}
                   onClick={() => toggle(String(o.Code))}
-                  className={`flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2 text-sm ${
-                    active === idx ? 'bg-slate-100 dark:bg-zinc-950' : ''
-                  }`}
+                  className={`flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2 text-sm ${active === idx ? 'bg-slate-100 dark:bg-zinc-950' : ''
+                    }`}
                 >
                   <span
-                    className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border transition ${
-                      selected
+                    className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border transition ${selected
                         ? 'border-violet-300 bg-violet-300 text-black'
                         : 'border-slate-300 dark:border-slate-600'
-                    }`}
+                      }`}
                   >
                     {selected && <Check className="h-3 w-3" strokeWidth={3} />}
                   </span>

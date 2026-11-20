@@ -49,18 +49,19 @@ export default function CaravanDashboardHomePage() {
 
   // Dynamic calculations for the 3 Core KPI Cards based on currently displayed rows
   const financialTotals = React.useMemo(() => {
-    let total = 0;
+    let rawTotal = 0;
     (dash.records || []).forEach((r) => {
       const cash = Number(r.cash) || 0;
       const visa = Number(r.visa) || 0;
       const cl = Number(r.creditLine ?? (r as any).cl) || 0;
-      total += (cash + visa + cl);
+      const rowSum = (cash + visa + cl) > 0 ? (cash + visa + cl) : (Number(r.total) || 0);
+      rawTotal += rowSum;
     });
 
-    const net = total / 1.14;
-    const vat = total - net;
+    const net = rawTotal / 1.14;
+    const vat = rawTotal - net;
 
-    return { total, net, retail: net, vat };
+    return { total: rawTotal, net, retail: net, vat };
   }, [dash.records]);
 
   // Unauthenticated screen guard
