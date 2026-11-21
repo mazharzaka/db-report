@@ -54,6 +54,25 @@ export const CARAVAN_DISPLAY_NAMES: Record<string, string> = {
 
 export const SHOP_BRANCH_CODES_SET = new Set(['1021', '1023', '1024', '1025', '1029']);
 
+export const CARAVAN_SECTOR_ORDER: string[] = [
+  '1003', // BAWABA
+  '1004', // AL SHLAL
+  '1005', // DISCOVRY
+  '1006', // ROCET
+  '1007', // DARKNISS
+  '1008', // THE RIVER
+  '1010', // EGYPTION
+  '1015', // AL PATATS
+  '1018', // 229
+  '1027', // ZOO
+  '1030', // ALTAAWWSS
+  '1021', // DOPY (Shop)
+  '1023', // LIMO (Shop)
+  '1024', // TOYES (Shop)
+  '1025', // BONBON (Shop)
+  '1029', // Funny (Shop)
+];
+
 interface DailyRevenueMatrixProps {
   rows?: (CaravanRecord | MatrixRowItem)[];
   title?: string;
@@ -189,6 +208,13 @@ export function DailyRevenueMatrix({
     const cols: MatrixColumn[] = Array.from(colMap.entries())
       .map(([branchCode, name]) => ({ branchCode, name }))
       .sort((a, b) => {
+        if (sectorType === 4) {
+          const idxA = CARAVAN_SECTOR_ORDER.indexOf(a.branchCode);
+          const idxB = CARAVAN_SECTOR_ORDER.indexOf(b.branchCode);
+          if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+          if (idxA !== -1) return -1;
+          if (idxB !== -1) return 1;
+        }
         const numA = Number(a.branchCode);
         const numB = Number(b.branchCode);
         if (!isNaN(numA) && !isNaN(numB)) {

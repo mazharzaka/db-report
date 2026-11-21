@@ -549,6 +549,9 @@ export function SectorDashboard({ sector }: SectorDashboardProps) {
                 rows={dash.records}
                 showPeriod={dash.granularity !== 'summary'}
                 loading={dash.loading}
+                singularLabel={sector.singularLabel}
+                pluralLabel={sector.pluralLabel}
+                sectorType={sector.type}
               />
             </div>
 

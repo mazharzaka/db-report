@@ -29,30 +29,61 @@ export class CaravanReportService {
         const secType = Number(sectorType) || 4;
         request.input('sectorType', sql.Int, secType);
 
-        if (secType === 2 || secType === 3) {
-            const sDate = startDate || new Date(Date.now() - 30 * 86400000).toISOString().split('T')[0];
-            const eDate = endDate || new Date().toISOString().split('T')[0];
-            request.input('startDate', sql.VarChar, sDate);
-            request.input('endDate', sql.VarChar, eDate);
+            if (secType === 2) {
+                const sDate = startDate || new Date(Date.now() - 30 * 86400000).toISOString().split('T')[0];
+                const eDate = endDate || new Date().toISOString().split('T')[0];
+                request.input('startDate', sql.VarChar, sDate);
+                request.input('endDate', sql.VarChar, eDate);
 
-            const query = `
+                const query = `
                 SELECT DISTINCT 
-                    CAST(p.[item_Code] AS VARCHAR(50)) AS [Code],
-                    p.[item_name] AS [Name]
+                    CAST(p.[Group_code] AS VARCHAR(50)) AS [Code],
+                    p.[Groupitem_name] AS [Name]
                 FROM [dbo].[Pos_item_post] p WITH (NOLOCK)
                 INNER JOIN [dbo].[Branchs] b WITH (NOLOCK) ON p.[Branch_Code] = b.[Code]
-                WHERE b.[Type] = @sectorType
+                WHERE b.[Type] = 2
                   AND b.[Code] NOT IN ('12', '13', '1019', '1020', '1026', '1028')
                   AND ISNULL(p.[Void_item], 0) = 0
                   AND p.[Doc_Date] >= CAST(@startDate AS DATE)
                   AND p.[Doc_Date] < DATEADD(DAY, 1, CAST(@endDate AS DATE))
-                ORDER BY p.[item_name] ASC;
+                ORDER BY p.[Groupitem_name] ASC;
             `;
-            const result = await request.query(query);
-            return result.recordset || [];
-        }
+                const result = await request.query(query);
+                return result.recordset || [];
+            }
 
-        const query = `
+            if (secType === 3) {
+                const sDate = startDate || new Date(Date.now() - 30 * 86400000).toISOString().split('T')[0];
+                const eDate = endDate || new Date().toISOString().split('T')[0];
+                request.input('startDate', sql.VarChar, sDate);
+                request.input('endDate', sql.VarChar, eDate);
+
+                const query = `
+                SELECT DISTINCT 
+                    CASE 
+                        WHEN p.[Group_code] = 5 AND (p.[item_Code] = '19' OR p.[item_name] LIKE '%روديو%') THEN '19'
+                        WHEN p.[Group_code] = 5 THEN '18'
+                        ELSE CAST(100 + p.[Group_code] AS VARCHAR(50))
+                    END AS [Code],
+                    CASE 
+                        WHEN p.[Group_code] = 5 AND (p.[item_Code] = '19' OR p.[item_name] LIKE '%روديو%') THEN N'الروديو'
+                        WHEN p.[Group_code] = 5 THEN N'الموفى'
+                        ELSE p.[Groupitem_name]
+                    END AS [Name]
+                FROM [dbo].[Pos_item_post] p WITH (NOLOCK)
+                INNER JOIN [dbo].[Branchs] b WITH (NOLOCK) ON p.[Branch_Code] = b.[Code]
+                WHERE b.[Type] = 3
+                  AND b.[Code] NOT IN ('12', '13', '1019', '1020', '1026', '1028')
+                  AND ISNULL(p.[Void_item], 0) = 0
+                  AND p.[Doc_Date] >= CAST(@startDate AS DATE)
+                  AND p.[Doc_Date] < DATEADD(DAY, 1, CAST(@endDate AS DATE))
+                ORDER BY [Name] ASC;
+            `;
+                const result = await request.query(query);
+                return result.recordset || [];
+            }
+
+            const query = `
             SELECT 
                 [Code], 
                 [Aname] AS [Name]
@@ -61,21 +92,21 @@ export class CaravanReportService {
               AND [Code] NOT IN ('12', '13', '1019', '1020', '1026', '1028')
             ORDER BY [Aname] ASC;
         `;
-        const result = await request.query(query);
-        return result.recordset || [];
-    }
+            const result = await request.query(query);
+            return result.recordset || [];
+        }
 
     /**
      * تقرير تحليلي على مستوى الأصناف/الألعاب الفردية لقطاعي الألعاب (Type = 2) والفيديو جيم (Type = 3)
      */
     static async getItemLevelReportData({
-        startDate = '2026-01-01',
-        endDate = new Date().toISOString().split('T')[0],
-        branches = [],
-        granularity = 'summary',
-        sortBy = 'total_desc',
-        sectorType = 3
-    }) {
+            startDate = '2026-01-01',
+            endDate = new Date().toISOString().split('T')[0],
+            branches = [],
+            granularity = 'summary',
+            sortBy = 'total_desc',
+            sectorType = 3
+        }) {
         const pool = await getPool();
         const request = pool.request();
         const secType = Number(sectorType) || 3;
@@ -88,11 +119,21 @@ export class CaravanReportService {
         const isFiltered = Array.isArray(branches) && branches.length > 0;
         if (isFiltered) {
             const placeholders = branches.map((code, index) => {
-                const paramName = `item_${index}`;
+                const paramName = `grp_${index}`;
                 request.input(paramName, sql.VarChar, String(code).trim());
                 return `@${paramName}`;
             });
-            itemFilterClause = ` AND p.[item_Code] IN (${placeholders.join(', ')})`;
+            if (secType === 2) {
+                itemFilterClause = ` AND CAST(p.[Group_code] AS VARCHAR(50)) IN (${placeholders.join(', ')})`;
+            } else {
+                itemFilterClause = ` AND (
+                    CASE 
+                        WHEN p.[Group_code] = 5 AND (p.[item_Code] = '19' OR p.[item_name] LIKE '%روديو%') THEN '19'
+                        WHEN p.[Group_code] = 5 THEN '18'
+                        ELSE CAST(100 + p.[Group_code] AS VARCHAR(50))
+                    END
+                ) IN (${placeholders.join(', ')})`;
+            }
         }
 
         let selectPeriod = "CONVERT(VARCHAR(10), p.[Doc_Date], 120)";
@@ -100,25 +141,67 @@ export class CaravanReportService {
             selectPeriod = "CONVERT(VARCHAR(7), p.[Doc_Date], 120)";
         }
 
-        const itemsQuery = `
-            SELECT 
-                ${selectPeriod} AS [Period],
-                CAST(p.[item_Code] AS VARCHAR(50)) AS [Branch_Code],
-                p.[item_name] AS [Name],
-                SUM(CAST(p.[Item_Qunt] AS INT)) AS [Cover],
-                SUM(CAST(p.[Item_Qunt] AS DECIMAL(18, 4)) * CAST(p.[Item_Price] AS DECIMAL(18, 4)) * (1.0 + ISNULL(CAST(p.[item_Sels_Tax_P] AS DECIMAL(18, 4)), 0) / 100.0)) AS [Total]
-            FROM [dbo].[Pos_item_post] p WITH (NOLOCK)
-            INNER JOIN [dbo].[Branchs] b WITH (NOLOCK) ON p.[Branch_Code] = b.[Code]
-            WHERE b.[Type] = @sectorType
-              AND b.[Code] NOT IN ('12', '13', '1019', '1020', '1026', '1028')
-              AND ISNULL(p.[Void_item], 0) = 0
-              AND p.[Doc_Date] >= CAST(@startDate AS DATE)
-              AND p.[Doc_Date] < DATEADD(DAY, 1, CAST(@endDate AS DATE))
-              ${itemFilterClause}
-            GROUP BY ${selectPeriod}, p.[item_Code], p.[item_name]
-            HAVING SUM(CAST(p.[Item_Qunt] AS DECIMAL(18, 4)) * CAST(p.[Item_Price] AS DECIMAL(18, 4)) * (1.0 + ISNULL(CAST(p.[item_Sels_Tax_P] AS DECIMAL(18, 4)), 0) / 100.0)) > 0
-            ORDER BY [Period] ASC, [Total] DESC;
-        `;
+        let itemsQuery = '';
+        if (secType === 2) {
+            itemsQuery = `
+                SELECT 
+                    ${selectPeriod} AS [Period],
+                    CAST(p.[Group_code] AS VARCHAR(50)) AS [Branch_Code],
+                    p.[Groupitem_name] AS [Name],
+                    SUM(CAST(p.[Item_Qunt] AS INT)) AS [Cover],
+                    SUM(CAST(p.[Item_Qunt] AS DECIMAL(18, 4)) * CAST(p.[Item_Price] AS DECIMAL(18, 4)) * (1.0 + ISNULL(CAST(p.[item_Sels_Tax_P] AS DECIMAL(18, 4)), 0) / 100.0)) AS [Total]
+                FROM [dbo].[Pos_item_post] p WITH (NOLOCK)
+                INNER JOIN [dbo].[Branchs] b WITH (NOLOCK) ON p.[Branch_Code] = b.[Code]
+                WHERE b.[Type] = @sectorType
+                  AND b.[Code] NOT IN ('12', '13', '1019', '1020', '1026', '1028')
+                  AND ISNULL(p.[Void_item], 0) = 0
+                  AND p.[Doc_Date] >= CAST(@startDate AS DATE)
+                  AND p.[Doc_Date] < DATEADD(DAY, 1, CAST(@endDate AS DATE))
+                  ${itemFilterClause}
+                GROUP BY ${selectPeriod}, p.[Group_code], p.[Groupitem_name]
+                HAVING SUM(CAST(p.[Item_Qunt] AS DECIMAL(18, 4)) * CAST(p.[Item_Price] AS DECIMAL(18, 4)) * (1.0 + ISNULL(CAST(p.[item_Sels_Tax_P] AS DECIMAL(18, 4)), 0) / 100.0)) > 0
+                ORDER BY [Period] ASC, [Total] DESC;
+            `;
+        } else {
+            itemsQuery = `
+                SELECT 
+                    ${selectPeriod} AS [Period],
+                    CASE 
+                        WHEN p.[Group_code] = 5 AND (p.[item_Code] = '19' OR p.[item_name] LIKE '%روديو%') THEN '19'
+                        WHEN p.[Group_code] = 5 THEN '18'
+                        ELSE CAST(100 + p.[Group_code] AS VARCHAR(50))
+                    END AS [Branch_Code],
+                    CASE 
+                        WHEN p.[Group_code] = 5 AND (p.[item_Code] = '19' OR p.[item_name] LIKE '%روديو%') THEN N'الروديو'
+                        WHEN p.[Group_code] = 5 THEN N'الموفى'
+                        ELSE p.[Groupitem_name]
+                    END AS [Name],
+                    SUM(CAST(p.[Item_Qunt] AS INT)) AS [Cover],
+                    SUM(CAST(p.[Item_Qunt] AS DECIMAL(18, 4)) * CAST(p.[Item_Price] AS DECIMAL(18, 4)) * (1.0 + ISNULL(CAST(p.[item_Sels_Tax_P] AS DECIMAL(18, 4)), 0) / 100.0)) AS [Total]
+                FROM [dbo].[Pos_item_post] p WITH (NOLOCK)
+                INNER JOIN [dbo].[Branchs] b WITH (NOLOCK) ON p.[Branch_Code] = b.[Code]
+                WHERE b.[Type] = @sectorType
+                  AND b.[Code] NOT IN ('12', '13', '1019', '1020', '1026', '1028')
+                  AND ISNULL(p.[Void_item], 0) = 0
+                  AND p.[Doc_Date] >= CAST(@startDate AS DATE)
+                  AND p.[Doc_Date] < DATEADD(DAY, 1, CAST(@endDate AS DATE))
+                  ${itemFilterClause}
+                GROUP BY 
+                    ${selectPeriod},
+                    CASE 
+                        WHEN p.[Group_code] = 5 AND (p.[item_Code] = '19' OR p.[item_name] LIKE '%روديو%') THEN '19'
+                        WHEN p.[Group_code] = 5 THEN '18'
+                        ELSE CAST(100 + p.[Group_code] AS VARCHAR(50))
+                    END,
+                    CASE 
+                        WHEN p.[Group_code] = 5 AND (p.[item_Code] = '19' OR p.[item_name] LIKE '%روديو%') THEN N'الروديو'
+                        WHEN p.[Group_code] = 5 THEN N'الموفى'
+                        ELSE p.[Groupitem_name]
+                    END
+                HAVING SUM(CAST(p.[Item_Qunt] AS DECIMAL(18, 4)) * CAST(p.[Item_Price] AS DECIMAL(18, 4)) * (1.0 + ISNULL(CAST(p.[item_Sels_Tax_P] AS DECIMAL(18, 4)), 0) / 100.0)) > 0
+                ORDER BY [Period] ASC, [Total] DESC;
+            `;
+        }
 
         const payRequest = pool.request();
         payRequest.input('startDate', sql.VarChar, startDate);

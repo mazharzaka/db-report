@@ -8,6 +8,8 @@ export interface SectorConfig {
   id: 'caravans' | 'restaurants' | 'rides' | 'vr' | 'gates' | 'parking';
   type: number;
   label: string;
+  singularLabel: string;
+  pluralLabel: string;
   matrixTitle: string;
   pageTitle: string;
   breadcrumb: string;
@@ -24,6 +26,8 @@ export const SECTORS_CONFIG: Record<SectorConfig['id'], SectorConfig> = {
     id: 'caravans',
     type: 4,
     label: 'الكرفانات',
+    singularLabel: 'كرفان / محل',
+    pluralLabel: 'الكرفانات والمحلات',
     matrixTitle: 'مصفوفة الإيرادات - الكرفانات',
     pageTitle: 'إيرادات قطاع الكرفانات والمحلات',
     breadcrumb: 'لوحة تقارير الكرفانات',
@@ -38,6 +42,8 @@ export const SECTORS_CONFIG: Record<SectorConfig['id'], SectorConfig> = {
     id: 'restaurants',
     type: 1,
     label: 'المطاعم',
+    singularLabel: 'مطعم',
+    pluralLabel: 'المطاعم',
     matrixTitle: 'مصفوفة الإيرادات - المطاعم',
     pageTitle: 'إيرادات قطاع المطاعم',
     breadcrumb: 'لوحة تقارير المطاعم',
@@ -52,6 +58,8 @@ export const SECTORS_CONFIG: Record<SectorConfig['id'], SectorConfig> = {
     id: 'rides',
     type: 2,
     label: 'الألعاب الكبرى',
+    singularLabel: 'لعبة',
+    pluralLabel: 'الألعاب الكبرى',
     matrixTitle: 'مصفوفة الإيرادات - الألعاب الكبرى',
     pageTitle: 'إيرادات قطاع الألعاب الكبرى',
     breadcrumb: 'لوحة تقارير الألعاب الكبرى',
@@ -66,6 +74,8 @@ export const SECTORS_CONFIG: Record<SectorConfig['id'], SectorConfig> = {
     id: 'vr',
     type: 3,
     label: 'الفيديو جيم والـ VR',
+    singularLabel: 'لعبة',
+    pluralLabel: 'الفيديو جيم والـ VR',
     matrixTitle: 'مصفوفة الإيرادات - الفيديو جيم والـ VR',
     pageTitle: 'إيرادات قطاع الفيديو جيم والـ VR',
     breadcrumb: 'لوحة تقارير الفيديو جيم والـ VR',
@@ -80,6 +90,8 @@ export const SECTORS_CONFIG: Record<SectorConfig['id'], SectorConfig> = {
     id: 'gates',
     type: 5,
     label: 'بوابات التذاكر',
+    singularLabel: 'بوابة',
+    pluralLabel: 'بوابات التذاكر',
     matrixTitle: 'مصفوفة الإيرادات - بوابات التذاكر',
     pageTitle: 'إيرادات قطاع بوابات التذاكر',
     breadcrumb: 'لوحة تقارير بوابات التذاكر',
@@ -94,6 +106,8 @@ export const SECTORS_CONFIG: Record<SectorConfig['id'], SectorConfig> = {
     id: 'parking',
     type: 6,
     label: 'الأمانات والانتظار',
+    singularLabel: 'منفذ',
+    pluralLabel: 'الأمانات والانتظار',
     matrixTitle: 'مصفوفة الإيرادات - الأمانات والانتظار',
     pageTitle: 'إيرادات قطاع الأمانات والانتظار',
     breadcrumb: 'لوحة تقارير الأمانات والانتظار',

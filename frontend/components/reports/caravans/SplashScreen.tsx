@@ -34,9 +34,8 @@ export function SplashScreen({ isLoading, minDurationMs = 1400 }: SplashScreenPr
   return (
     <div
       dir="rtl"
-      className={`fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#09090b] text-slate-100 transition-opacity duration-500 ${
-        isFading ? 'opacity-0 pointer-events-none' : 'opacity-100'
-      }`}
+      className={`fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#09090b] text-slate-100 transition-opacity duration-500 ${isFading ? 'opacity-0 pointer-events-none' : 'opacity-100'
+        }`}
     >
       <div className="relative z-10 flex flex-col items-center text-center px-4 max-w-md">
         {/* Dream Park Official Logo */}
@@ -50,10 +49,10 @@ export function SplashScreen({ isLoading, minDurationMs = 1400 }: SplashScreenPr
 
         {/* Brand Typography */}
         <h1 className="text-xl font-bold tracking-tight text-white sm:text-2xl">
-          منظومة دريم بارك المركزية للعمليات
+          إيرادات دريم بارك
         </h1>
         <p className="mt-1 text-xs font-semibold tracking-wider text-violet-300 uppercase font-mono" dir="ltr">
-          DREAM PARK &amp; ZOO — F&amp;B REVENUES &amp; FINANCIAL REPORTING
+          DREAM PARK &amp; ZOO — FINANCIAL REVENUES &amp; REPORTING
         </p>
 
         {/* Professional Minimalist Loader */}

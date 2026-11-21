@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import type { CaravanRecord } from '@/types/reports';
 import { fmtInt, fmtMoney } from './charts';
+import { SHOP_BRANCH_CODES_SET } from './DailyRevenueMatrix';
 
 type ColKey =
   | 'branchCode'
@@ -44,10 +45,13 @@ interface Props {
   showPeriod: boolean;
   loading: boolean;
   className?: string;
+  singularLabel?: string;
+  pluralLabel?: string;
+  sectorType?: number;
 }
 
-const BASE_COLS: Col[] = [
-  { key: 'name', header: 'المنفذ / الكرافان', numeric: false },
+const STATIC_BASE_COLS: Col[] = [
+  { key: 'name', header: 'المنفذ / الكرفان', numeric: false },
   { key: 'branchCode', header: 'الكود', numeric: false },
   { key: 'period', header: 'الفترة', numeric: false },
   { key: 'netRevenue', header: 'صافي الإيراد (Net)', numeric: true, sumFormat: 'money' },
@@ -69,6 +73,9 @@ export function CaravanGrid({
   showPeriod,
   loading,
   className = '',
+  singularLabel,
+  pluralLabel,
+  sectorType,
 }: Props) {
   const [query, setQuery] = useState('');
   const [sortKey, setSortKey] = useState<ColKey>('total');
@@ -77,9 +84,19 @@ export function CaravanGrid({
   const [menuOpen, setMenuOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'standard' | 'transposed'>('standard');
 
+  const baseCols: Col[] = useMemo(
+    () =>
+      STATIC_BASE_COLS.map((c) =>
+        c.key === 'name' && singularLabel
+          ? { ...c, header: `اسم ال${singularLabel}` }
+          : c
+      ),
+    [singularLabel]
+  );
+
   const cols = useMemo(
-    () => BASE_COLS.filter((c) => (c.key !== 'period' || showPeriod) && !hidden[c.key]),
-    [showPeriod, hidden]
+    () => baseCols.filter((c) => (c.key !== 'period' || showPeriod) && !hidden[c.key]),
+    [baseCols, showPeriod, hidden]
   );
 
   const view = useMemo(() => {
@@ -146,15 +163,26 @@ export function CaravanGrid({
             {r.branchCode}
           </span>
         );
-      case 'name':
+      case 'name': {
+        const isShop = sectorType === 4 && SHOP_BRANCH_CODES_SET.has(r.branchCode);
+        const tagText = sectorType === 4
+          ? (isShop ? 'محل' : 'كرفان')
+          : (singularLabel || 'منفذ');
         return (
           <div className="flex items-center gap-2">
             <span className="font-bold text-slate-900 dark:text-white whitespace-nowrap">{r.name}</span>
-            <span className="rounded-full bg-orange-50 border border-orange-200 px-2.5 py-0.5 text-[10px] font-medium text-orange-700 dark:bg-violet-500/10 dark:border-violet-500/20 dark:text-violet-300">
-              كرافان
+            <span
+              className={`rounded-full border px-2.5 py-0.5 text-[10px] font-medium ${
+                isShop
+                  ? 'bg-rose-50 border-rose-200 text-rose-700 dark:bg-rose-500/10 dark:border-rose-500/20 dark:text-rose-300'
+                  : 'bg-orange-50 border-orange-200 text-orange-700 dark:bg-violet-500/10 dark:border-violet-500/20 dark:text-violet-300'
+              }`}
+            >
+              {tagText}
             </span>
           </div>
         );
+      }
       case 'period':
         return <span className="font-mono text-xs text-slate-500 dark:text-zinc-400">{r.period ?? '-'}</span>;
       case 'netRevenue': {
@@ -483,7 +511,7 @@ export function CaravanGrid({
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="ابحث عن كرافان أو كود..."
+              placeholder={`ابحث عن ${singularLabel || 'منفذ'} أو كود...`}
               className="w-52 rounded-xl border border-slate-200 bg-slate-50 py-1.5 pl-3 pr-9 text-xs text-slate-900 outline-none transition focus:border-orange-500 focus:ring-1 focus:ring-orange-500 dark:border-white/5 dark:bg-zinc-950 dark:text-zinc-200 dark:focus:border-violet-400 dark:focus:ring-violet-400 placeholder:text-slate-400"
             />
           </div>
@@ -506,7 +534,7 @@ export function CaravanGrid({
                     <div className="px-2 py-1 text-[11px] font-bold text-slate-500 dark:text-zinc-400 border-b border-slate-100 dark:border-white/5 mb-1">
                       تحديد أعمدة الجدول:
                     </div>
-                    {BASE_COLS.filter((c) => c.key !== 'period' || showPeriod).map((c) => (
+                    {baseCols.filter((c) => c.key !== 'period' || showPeriod).map((c) => (
                       <label
                         key={c.key}
                         className="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-xs text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-slate-800 select-none"
