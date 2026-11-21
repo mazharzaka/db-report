@@ -103,11 +103,11 @@ export function CaravanGrid({
     const q = query.trim().toLowerCase();
     const filtered = q
       ? rows.filter(
-          (r) =>
-            r.name.toLowerCase().includes(q) ||
-            String(r.branchCode).toLowerCase().includes(q) ||
-            (r.period ?? '').includes(q)
-        )
+        (r) =>
+          r.name.toLowerCase().includes(q) ||
+          String(r.branchCode).toLowerCase().includes(q) ||
+          (r.period ?? '').includes(q)
+      )
       : rows;
     return [...filtered].sort((a, b) => {
       const av = a[sortKey] as string | number | null | undefined;
@@ -172,11 +172,10 @@ export function CaravanGrid({
           <div className="flex items-center gap-2">
             <span className="font-bold text-slate-900 dark:text-white whitespace-nowrap">{r.name}</span>
             <span
-              className={`rounded-full border px-2.5 py-0.5 text-[10px] font-medium ${
-                isShop
-                  ? 'bg-rose-50 border-rose-200 text-rose-700 dark:bg-rose-500/10 dark:border-rose-500/20 dark:text-rose-300'
-                  : 'bg-orange-50 border-orange-200 text-orange-700 dark:bg-violet-500/10 dark:border-violet-500/20 dark:text-violet-300'
-              }`}
+              className={`rounded-full border px-2.5 py-0.5 text-[10px] font-medium ${isShop
+                ? 'bg-rose-50 border-rose-200 text-rose-700 dark:bg-rose-500/10 dark:border-rose-500/20 dark:text-rose-300'
+                : 'bg-orange-50 border-orange-200 text-orange-700 dark:bg-violet-500/10 dark:border-violet-500/20 dark:text-violet-300'
+                }`}
             >
               {tagText}
             </span>
@@ -201,11 +200,10 @@ export function CaravanGrid({
         const voids = Number(r.totalVoids) || 0;
         return (
           <span
-            className={`font-mono font-semibold transition-colors ${
-              voids > 0
-                ? 'text-rose-600 dark:text-rose-400 print:text-black print:font-bold'
-                : 'text-slate-400 dark:text-zinc-500 print:text-black'
-            }`}
+            className={`font-mono font-semibold transition-colors ${voids > 0
+              ? 'text-rose-600 dark:text-rose-400 print:text-black print:font-bold'
+              : 'text-slate-400 dark:text-zinc-500 print:text-black'
+              }`}
           >
             {fmtMoney(voids)}
           </span>
@@ -368,9 +366,8 @@ export function CaravanGrid({
       label: 'إجمالي المرتجعات (Total Voids)',
       getValue: (r: CaravanRecord) => (
         <span
-          className={`font-mono font-semibold ${
-            (r.totalVoids || 0) > 0 ? 'text-rose-600 dark:text-rose-400 print:text-black' : 'text-slate-400 dark:text-zinc-500 print:text-black'
-          }`}
+          className={`font-mono font-semibold ${(r.totalVoids || 0) > 0 ? 'text-rose-600 dark:text-rose-400 print:text-black' : 'text-slate-400 dark:text-zinc-500 print:text-black'
+            }`}
         >
           {fmtMoney(r.totalVoids || 0)}
         </span>
@@ -429,8 +426,8 @@ export function CaravanGrid({
         Math.abs(grandVariance) < 0.005
           ? 'text-emerald-700 dark:text-emerald-400 font-bold'
           : grandVariance < 0
-          ? 'text-red-700 dark:text-red-400 font-extrabold'
-          : 'text-amber-800 dark:text-amber-300 font-bold',
+            ? 'text-red-700 dark:text-red-400 font-extrabold'
+            : 'text-amber-800 dark:text-amber-300 font-bold',
     },
     {
       key: 'avgTicket',
@@ -482,11 +479,10 @@ export function CaravanGrid({
             <button
               type="button"
               onClick={() => setViewMode('standard')}
-              className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition ${
-                viewMode === 'standard'
-                  ? 'bg-white text-slate-900 shadow-sm dark:bg-white dark:text-black font-medium'
-                  : 'text-slate-600 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-zinc-200'
-              }`}
+              className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition ${viewMode === 'standard'
+                ? 'bg-white text-slate-900 shadow-sm dark:bg-white dark:text-black font-medium'
+                : 'text-slate-600 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-zinc-200'
+                }`}
             >
               <TableIcon className="h-3.5 w-3.5" />
               <span>العرض القياسي</span>
@@ -494,11 +490,10 @@ export function CaravanGrid({
             <button
               type="button"
               onClick={() => setViewMode('transposed')}
-              className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition ${
-                viewMode === 'transposed'
-                  ? 'bg-white text-slate-900 shadow-sm dark:bg-white dark:text-black font-medium'
-                  : 'text-slate-600 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-zinc-200'
-              }`}
+              className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition ${viewMode === 'transposed'
+                ? 'bg-white text-slate-900 shadow-sm dark:bg-white dark:text-black font-medium'
+                : 'text-slate-600 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-zinc-200'
+                }`}
             >
               <RotateCw className="h-3.5 w-3.5" />
               <span>العرض المعكوس (مقارن)</span>
@@ -534,20 +529,22 @@ export function CaravanGrid({
                     <div className="px-2 py-1 text-[11px] font-bold text-slate-500 dark:text-zinc-400 border-b border-slate-100 dark:border-white/5 mb-1">
                       تحديد أعمدة الجدول:
                     </div>
-                    {baseCols.filter((c) => c.key !== 'period' || showPeriod).map((c) => (
-                      <label
-                        key={c.key}
-                        className="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-xs text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-slate-800 select-none"
-                      >
-                        <input
-                          type="checkbox"
-                          checked={!hidden[c.key]}
-                          onChange={(e) => setHidden({ ...hidden, [c.key]: !e.target.checked })}
-                          className="h-3.5 w-3.5 rounded accent-orange-600 dark:accent-violet-400"
-                        />
-                        {c.header}
-                      </label>
-                    ))}
+                    {
+                      baseCols.filter((c) => c.key !== 'period' || showPeriod).map((c) => (
+                        <label
+                          key={c.key}
+                          className="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-xs text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-slate-800 select-none"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={!hidden[c.key]}
+                            onChange={(e) => setHidden({ ...hidden, [c.key]: !e.target.checked })}
+                            className="h-3.5 w-3.5 rounded accent-orange-600 dark:accent-violet-400"
+                          />
+                          {c.header}
+                        </label>
+                      ))
+                    }
                   </div>
                 </>
               )}
@@ -570,11 +567,10 @@ export function CaravanGrid({
                     <th
                       key={c.key}
                       onClick={() => toggleSort(c.key)}
-                      className={`cursor-pointer select-none whitespace-nowrap px-4 py-3 font-bold transition hover:text-slate-900 dark:hover:text-white print:px-2 print:py-2 print:text-black ${
-                        isFirstCol
-                          ? 'sticky right-0 z-30 bg-slate-100 text-slate-900 shadow-[2px_0_5px_rgba(0,0,0,0.06)] dark:bg-zinc-950 dark:text-slate-100 dark:shadow-[2px_0_5px_rgba(0,0,0,0.4)] print:shadow-none print:bg-transparent'
-                          : 'text-slate-600 dark:text-zinc-400'
-                      } ${c.numeric ? 'text-left' : 'text-right'}`}
+                      className={`cursor-pointer select-none whitespace-nowrap px-4 py-3 font-bold transition hover:text-slate-900 dark:hover:text-white print:px-2 print:py-2 print:text-black ${isFirstCol
+                        ? 'sticky right-0 z-30 bg-slate-100 text-slate-900 shadow-[2px_0_5px_rgba(0,0,0,0.06)] dark:bg-zinc-950 dark:text-slate-100 dark:shadow-[2px_0_5px_rgba(0,0,0,0.4)] print:shadow-none print:bg-transparent'
+                        : 'text-slate-600 dark:text-zinc-400'
+                        } ${c.numeric ? 'text-left' : 'text-right'}`}
                     >
                       <span className={`inline-flex items-center gap-1.5 ${c.numeric ? 'flex-row-reverse' : ''}`}>
                         {c.header}
@@ -609,20 +605,18 @@ export function CaravanGrid({
                   return (
                     <tr
                       key={`${r.branchCode}-${r.period ?? ''}-${i}`}
-                      className={`transition-colors hover:bg-slate-100/60 dark:hover:bg-white/5 ${
-                        isEven ? 'bg-white dark:bg-zinc-950/40' : 'bg-slate-50/50 dark:bg-zinc-950/70'
-                      }`}
+                      className={`transition-colors hover:bg-slate-100/60 dark:hover:bg-white/5 ${isEven ? 'bg-white dark:bg-zinc-950/40' : 'bg-slate-50/50 dark:bg-zinc-950/70'
+                        }`}
                     >
                       {cols.map((c, colIndex) => {
                         const isFirstCol = colIndex === 0;
                         return (
                           <td
                             key={c.key}
-                            className={`whitespace-nowrap px-4 py-3 print:px-2 print:py-1.5 ${
-                              isFirstCol
-                                ? 'sticky right-0 z-10 bg-white text-slate-900 font-bold shadow-[2px_0_5px_rgba(0,0,0,0.04)] dark:bg-zinc-900 dark:text-slate-100 dark:shadow-[2px_0_5px_rgba(0,0,0,0.3)] print:shadow-none print:bg-transparent'
-                                : 'text-slate-800 dark:text-zinc-300'
-                            } ${c.numeric ? 'text-left font-mono tabular-nums tracking-tight' : 'text-right'}`}
+                            className={`whitespace-nowrap px-4 py-3 print:px-2 print:py-1.5 ${isFirstCol
+                              ? 'sticky right-0 z-10 bg-white text-slate-900 font-bold shadow-[2px_0_5px_rgba(0,0,0,0.04)] dark:bg-zinc-900 dark:text-slate-100 dark:shadow-[2px_0_5px_rgba(0,0,0,0.3)] print:shadow-none print:bg-transparent'
+                              : 'text-slate-800 dark:text-zinc-300'
+                              } ${c.numeric ? 'text-left font-mono tabular-nums tracking-tight' : 'text-right'}`}
                             dir={c.numeric ? 'ltr' : undefined}
                           >
                             {renderCell(r, c)}
@@ -643,11 +637,10 @@ export function CaravanGrid({
                     return (
                       <td
                         key={c.key}
-                        className={`whitespace-nowrap px-4 py-3.5 text-slate-900 dark:text-slate-100 print:px-2 print:py-2 ${
-                          isFirstCol
-                            ? 'sticky right-0 z-30 bg-slate-100 font-extrabold text-orange-600 shadow-[2px_0_5px_rgba(0,0,0,0.06)] dark:bg-zinc-950 dark:text-[#c4b5fd] dark:shadow-[2px_0_5px_rgba(0,0,0,0.4)] print:shadow-none print:bg-transparent print:text-black'
-                            : ''
-                        } ${c.numeric ? 'text-left tabular-nums' : 'text-right'}`}
+                        className={`whitespace-nowrap px-4 py-3.5 text-slate-900 dark:text-slate-100 print:px-2 print:py-2 ${isFirstCol
+                          ? 'sticky right-0 z-30 bg-slate-100 font-extrabold text-orange-600 shadow-[2px_0_5px_rgba(0,0,0,0.06)] dark:bg-zinc-950 dark:text-[#c4b5fd] dark:shadow-[2px_0_5px_rgba(0,0,0,0.4)] print:shadow-none print:bg-transparent print:text-black'
+                          : ''
+                          } ${c.numeric ? 'text-left tabular-nums' : 'text-right'}`}
                         dir={c.numeric ? 'ltr' : undefined}
                       >
                         {renderFooter(c, idx)}
@@ -694,9 +687,8 @@ export function CaravanGrid({
                 return (
                   <tr
                     key={m.key}
-                    className={`transition-colors hover:bg-slate-100/60 dark:hover:bg-slate-800/50 ${
-                      isEven ? 'bg-white dark:bg-zinc-950/40' : 'bg-slate-50/50 dark:bg-zinc-950/70'
-                    }`}
+                    className={`transition-colors hover:bg-slate-100/60 dark:hover:bg-slate-800/50 ${isEven ? 'bg-white dark:bg-zinc-950/40' : 'bg-slate-50/50 dark:bg-zinc-950/70'
+                      }`}
                   >
                     {/* Fixed First Column: Metric Name */}
                     <td className="sticky right-0 z-10 min-w-[200px] bg-white px-4 py-3 font-bold text-slate-900 shadow-[2px_0_5px_rgba(0,0,0,0.04)] whitespace-nowrap dark:bg-[#18181b] dark:text-zinc-200 dark:shadow-[2px_0_5px_rgba(0,0,0,0.3)] print:shadow-none print:bg-transparent print:text-black">

@@ -13,6 +13,64 @@ import { getPool, sql } from '../config/db.js';
 // =========================================================================
 const VOIDS_SOURCE = '[dbo].[Pos_item_post_void]';
 
+/**
+ * خريطة التوجيه المرن للألعاب بين القطاعين (Type = 2: الألعاب الكبرى، Type = 3: الفيديو جيم والـ VR)
+ */
+export const GAME_SECTOR_OVERRIDES = {
+    // 1. Move Hammer (all its variants) -> targetSector: 3 (Video Games & VR)
+    '20': 3,
+    '74': 3,
+    '80': 3,
+    'hammer': 3,
+    'hammer20': 3,
+    'الهامر': 3,
+    'هامر': 3,
+
+    // 2. Move Shooting2 (الرمايه 2) -> targetSector: 3 (Video Games & VR)
+    '12': 3,
+    '40': 3,
+    'الرمايه 2': 3,
+    'رمايه 2': 3,
+    'shooting2': 3,
+
+    // 3. Move Upside Down House (البيت المقلوب) -> targetSector: 3 (Video Games & VR)
+    '3': 3,
+    '21': 3,
+    '22': 3,
+    '151': 3,
+    'البيت المقلوب': 3,
+    'upside down house': 3,
+
+    // 4. Move Funny Slides (شلال المرح) -> targetSector: 2 (Paid Rides)
+    '15': 2,
+    '115': 2,
+    'شلال المرح': 2,
+    'funny slides': 2,
+
+    // 5. Move VR 2 -> targetSector: 2 (Paid Rides)
+    '118': 2,
+    'vr2': 2,
+    'vr 2': 2,
+
+    // 6. Move Horse (الخيل) -> targetSector: 2 (Paid Rides)
+    '13': 2,
+    '113': 2,
+    'الخيل': 2,
+    'horse': 2,
+
+    // 7. Ensure Discovery -> targetSector: 2 (Amusement Rides)
+    '1': 2,
+    'ديسكفري': 2,
+    'الديسكفري': 2,
+    'discovery': 2,
+
+    // 8. Ensure Selsela / Chains -> targetSector: 2 (Amusement Rides)
+    '23': 2,
+    'سلسلة': 2,
+    'السلسلة': 2,
+    'chains': 2,
+};
+
 export class CaravanReportService {
     /**
      * استرجاع قائمة جميع منافذ القطاع المحددة (افتراضياً الكرفانات Type = 4)
@@ -29,61 +87,102 @@ export class CaravanReportService {
         const secType = Number(sectorType) || 4;
         request.input('sectorType', sql.Int, secType);
 
-            if (secType === 2) {
-                const sDate = startDate || new Date(Date.now() - 30 * 86400000).toISOString().split('T')[0];
-                const eDate = endDate || new Date().toISOString().split('T')[0];
-                request.input('startDate', sql.VarChar, sDate);
-                request.input('endDate', sql.VarChar, eDate);
-
-                const query = `
-                SELECT DISTINCT 
-                    CAST(p.[Group_code] AS VARCHAR(50)) AS [Code],
-                    p.[Groupitem_name] AS [Name]
-                FROM [dbo].[Pos_item_post] p WITH (NOLOCK)
-                INNER JOIN [dbo].[Branchs] b WITH (NOLOCK) ON p.[Branch_Code] = b.[Code]
-                WHERE b.[Type] = 2
-                  AND b.[Code] NOT IN ('12', '13', '1019', '1020', '1026', '1028')
-                  AND ISNULL(p.[Void_item], 0) = 0
-                  AND p.[Doc_Date] >= CAST(@startDate AS DATE)
-                  AND p.[Doc_Date] < DATEADD(DAY, 1, CAST(@endDate AS DATE))
-                ORDER BY p.[Groupitem_name] ASC;
-            `;
-                const result = await request.query(query);
-                return result.recordset || [];
-            }
-
-            if (secType === 3) {
-                const sDate = startDate || new Date(Date.now() - 30 * 86400000).toISOString().split('T')[0];
-                const eDate = endDate || new Date().toISOString().split('T')[0];
-                request.input('startDate', sql.VarChar, sDate);
-                request.input('endDate', sql.VarChar, eDate);
-
-                const query = `
-                SELECT DISTINCT 
-                    CASE 
-                        WHEN p.[Group_code] = 5 AND (p.[item_Code] = '19' OR p.[item_name] LIKE '%روديو%') THEN '19'
-                        WHEN p.[Group_code] = 5 THEN '18'
-                        ELSE CAST(100 + p.[Group_code] AS VARCHAR(50))
-                    END AS [Code],
-                    CASE 
-                        WHEN p.[Group_code] = 5 AND (p.[item_Code] = '19' OR p.[item_name] LIKE '%روديو%') THEN N'الروديو'
-                        WHEN p.[Group_code] = 5 THEN N'الموفى'
-                        ELSE p.[Groupitem_name]
-                    END AS [Name]
-                FROM [dbo].[Pos_item_post] p WITH (NOLOCK)
-                INNER JOIN [dbo].[Branchs] b WITH (NOLOCK) ON p.[Branch_Code] = b.[Code]
-                WHERE b.[Type] = 3
-                  AND b.[Code] NOT IN ('12', '13', '1019', '1020', '1026', '1028')
-                  AND ISNULL(p.[Void_item], 0) = 0
-                  AND p.[Doc_Date] >= CAST(@startDate AS DATE)
-                  AND p.[Doc_Date] < DATEADD(DAY, 1, CAST(@endDate AS DATE))
-                ORDER BY [Name] ASC;
-            `;
-                const result = await request.query(query);
-                return result.recordset || [];
-            }
+        if (secType === 2 || secType === 3) {
+            const sDate = startDate || new Date(Date.now() - 30 * 86400000).toISOString().split('T')[0];
+            const eDate = endDate || new Date().toISOString().split('T')[0];
+            request.input('startDate', sql.VarChar, sDate);
+            request.input('endDate', sql.VarChar, eDate);
 
             const query = `
+                SELECT DISTINCT 
+                    g.[Game_Code] AS [Code],
+                    g.[Game_Name] AS [Name]
+                FROM [dbo].[Pos_item_post] p WITH (NOLOCK)
+                LEFT JOIN [dbo].[Branchs] b WITH (NOLOCK) ON p.[Branch_Code] = b.[Code]
+                CROSS APPLY (
+                    SELECT 
+                        -- Target Sector Routing:
+                        CASE 
+                            -- Exclude Zoo (Group 21 / separate promotion) from Type 3:
+                            WHEN b.[Type] IN (2, 3) AND (p.[Group_code] = 21 OR p.[Groupitem_name] LIKE '%zoo%' OR p.[item_name] LIKE '%zoo%') THEN 0
+                            -- Funny Slides (شلال المرح / Group 15) to Sector 2 (Paid Rides):
+                            WHEN b.[Type] IN (2, 3) AND (p.[Group_code] = 15 OR p.[Groupitem_name] LIKE '%شلال%' OR p.[item_name] LIKE '%شلال%') THEN 2
+                            -- VR 2 (Group 18) to Sector 2 (Paid Rides):
+                            WHEN b.[Type] IN (2, 3) AND (p.[Group_code] = 18 OR p.[Groupitem_name] LIKE '%vr2%' OR p.[Groupitem_name] LIKE '%vr 2%') THEN 2
+                            -- Horse (الخيل / Group 13) to Sector 2 (Paid Rides):
+                            WHEN b.[Type] IN (2, 3) AND (p.[Group_code] = 13 OR p.[Groupitem_name] LIKE '%خيل%' OR p.[item_name] LIKE '%خيل%') THEN 2
+                            -- Hammer to Sector 3 (Video Games & VR):
+                            WHEN b.[Type] IN (2, 3) AND (p.[Group_code] = 20 OR p.[item_Code] IN ('74', '80') OR p.[Groupitem_name] LIKE '%hammer%' OR p.[item_name] LIKE '%hammer%' OR p.[item_name] LIKE '%هامر%') THEN 3
+                            -- Shooting2 (الرمايه 2) to Sector 3:
+                            WHEN b.[Type] IN (2, 3) AND (p.[Group_code] = 12 OR p.[item_Code] = '40' OR p.[Groupitem_name] LIKE '%رمايه 2%' OR p.[item_name] LIKE '%رمايه 2%' OR p.[Groupitem_name] LIKE '%الرمايه 2%' OR p.[item_name] LIKE '%الرمايه 2%') THEN 3
+                            -- Upside Down House (البيت المقلوب) to Sector 3:
+                            WHEN b.[Type] IN (2, 3) AND (p.[Group_code] = 3 OR p.[Groupitem_name] LIKE '%مقلوب%' OR p.[item_name] LIKE '%مقلوب%') THEN 3
+                            -- Discovery & Selsela to Sector 2 (Amusement Rides):
+                            WHEN b.[Type] IN (2, 3) AND (p.[Group_code] = 1 OR p.[Groupitem_name] LIKE '%ديسكفر%' OR p.[item_name] LIKE '%ديسكفر%') THEN 2
+                            WHEN b.[Type] IN (2, 3) AND (p.[Groupitem_name] LIKE '%سلسل%' OR p.[item_name] LIKE '%سلسل%') THEN 2
+                            -- Default to Branch Type:
+                            ELSE b.[Type]
+                        END AS [Target_Sector],
+
+                        -- Canonical Game Code:
+                        CASE 
+                            -- Discovery always Code '1'
+                            WHEN p.[Group_code] = 1 OR p.[Groupitem_name] LIKE '%ديسكفر%' THEN '1'
+                            -- Selsela always Code '23'
+                            WHEN p.[Groupitem_name] LIKE '%سلسل%' OR p.[item_name] LIKE '%سلسل%' THEN '23'
+                            -- Movie hall split: Radio is '19', Movie is '18'
+                            WHEN p.[Group_code] = 5 AND (p.[item_Code] = '19' OR p.[item_name] LIKE '%روديو%') THEN '19'
+                            WHEN p.[Group_code] = 5 THEN '18'
+                            -- Hammer always Code '20'
+                            WHEN p.[Group_code] = 20 OR p.[item_Code] IN ('74', '80') OR p.[item_name] LIKE '%hammer%' THEN '20'
+                            -- Shooting2 always Code '12'
+                            WHEN p.[Group_code] = 12 OR p.[item_Code] = '40' OR p.[Groupitem_name] LIKE '%رمايه 2%' OR p.[item_name] LIKE '%رمايه 2%' THEN '12'
+                            -- Upside Down House always Code '3'
+                            WHEN p.[Group_code] = 3 OR p.[Groupitem_name] LIKE '%مقلوب%' OR p.[item_name] LIKE '%مقلوب%' THEN '3'
+                            -- Misplaced Paid Rides moved to Type 2:
+                            WHEN p.[Group_code] = 15 OR p.[Groupitem_name] LIKE '%شلال%' THEN '115'
+                            WHEN p.[Group_code] = 18 OR p.[Groupitem_name] LIKE '%vr2%' OR p.[Groupitem_name] LIKE '%vr 2%' THEN '118'
+                            WHEN p.[Group_code] = 13 OR p.[Groupitem_name] LIKE '%خيل%' THEN '113'
+                            -- Standard Rides (Type 2 games): keep Group_code as Code
+                            WHEN p.[Group_code] IN (2, 4, 6, 7, 8, 14, 16) THEN CAST(p.[Group_code] AS VARCHAR(50))
+                            -- Type 3 Games: Code with 100 + Group_code to prevent collision
+                            ELSE CAST(100 + p.[Group_code] AS VARCHAR(50))
+                        END AS [Game_Code],
+
+                        -- Canonical Game Name:
+                        CASE 
+                            WHEN p.[Group_code] = 1 OR p.[Groupitem_name] LIKE '%ديسكفر%' THEN N'الديسكفري'
+                            WHEN p.[Groupitem_name] LIKE '%سلسل%' OR p.[item_name] LIKE '%سلسل%' THEN N'السلسلة'
+                            WHEN p.[Group_code] = 5 AND (p.[item_Code] = '19' OR p.[item_name] LIKE '%روديو%') THEN N'الروديو'
+                            WHEN p.[Group_code] = 5 THEN N'الموفى'
+                            WHEN p.[Group_code] = 20 OR p.[item_Code] IN ('74', '80') OR p.[item_name] LIKE '%hammer%' THEN N'الهامر'
+                            WHEN p.[Group_code] = 12 OR p.[item_Code] = '40' OR p.[Groupitem_name] LIKE '%رمايه 2%' OR p.[item_name] LIKE '%رمايه 2%' THEN N'شوتينج 2'
+                            WHEN p.[Group_code] = 3 OR p.[Groupitem_name] LIKE '%مقلوب%' OR p.[item_name] LIKE '%مقلوب%' THEN N'البيت المقلوب'
+                            WHEN p.[Group_code] = 15 OR p.[Groupitem_name] LIKE '%شلال%' THEN N'شلال المرح'
+                            WHEN p.[Group_code] = 18 OR p.[Groupitem_name] LIKE '%vr2%' OR p.[Groupitem_name] LIKE '%vr 2%' THEN N'VR 2'
+                            WHEN p.[Group_code] = 13 OR p.[Groupitem_name] LIKE '%خيل%' THEN N'الخيل'
+                            WHEN p.[Group_code] = 19 THEN N'دوبي كاسل'
+                            WHEN p.[Group_code] = 9 THEN N'بابلوني'
+                            WHEN p.[Group_code] = 11 THEN N'شوتينج'
+                            WHEN p.[Group_code] = 22 THEN N'VR3'
+                            WHEN p.[Group_code] = 10 THEN N'ألعاب الأطفال'
+                            WHEN p.[Group_code] = 17 THEN N'VR 1'
+                            ELSE p.[Groupitem_name]
+                        END AS [Game_Name]
+                ) g
+                WHERE b.[Type] IN (2, 3)
+                  AND ISNULL(b.[Code], 0) NOT IN (12, 13, 1019, 1020, 1026, 1028)
+                  AND ISNULL(p.[Void_item], 0) = 0
+                  AND p.[Doc_Date] >= CAST(@startDate AS DATE)
+                  AND p.[Doc_Date] < DATEADD(DAY, 1, CAST(@endDate AS DATE))
+                  AND g.[Target_Sector] = @sectorType
+                ORDER BY [Name] ASC;
+            `;
+            const result = await request.query(query);
+            return result.recordset || [];
+        }
+
+        const query = `
             SELECT 
                 [Code], 
                 [Aname] AS [Name]
@@ -92,21 +191,21 @@ export class CaravanReportService {
               AND [Code] NOT IN ('12', '13', '1019', '1020', '1026', '1028')
             ORDER BY [Aname] ASC;
         `;
-            const result = await request.query(query);
-            return result.recordset || [];
-        }
+        const result = await request.query(query);
+        return result.recordset || [];
+    }
 
     /**
      * تقرير تحليلي على مستوى الأصناف/الألعاب الفردية لقطاعي الألعاب (Type = 2) والفيديو جيم (Type = 3)
      */
     static async getItemLevelReportData({
-            startDate = '2026-01-01',
-            endDate = new Date().toISOString().split('T')[0],
-            branches = [],
-            granularity = 'summary',
-            sortBy = 'total_desc',
-            sectorType = 3
-        }) {
+        startDate = '2026-01-01',
+        endDate = new Date().toISOString().split('T')[0],
+        branches = [],
+        granularity = 'summary',
+        sortBy = 'total_desc',
+        sectorType = 3
+    }) {
         const pool = await getPool();
         const request = pool.request();
         const secType = Number(sectorType) || 3;
@@ -123,17 +222,7 @@ export class CaravanReportService {
                 request.input(paramName, sql.VarChar, String(code).trim());
                 return `@${paramName}`;
             });
-            if (secType === 2) {
-                itemFilterClause = ` AND CAST(p.[Group_code] AS VARCHAR(50)) IN (${placeholders.join(', ')})`;
-            } else {
-                itemFilterClause = ` AND (
-                    CASE 
-                        WHEN p.[Group_code] = 5 AND (p.[item_Code] = '19' OR p.[item_name] LIKE '%روديو%') THEN '19'
-                        WHEN p.[Group_code] = 5 THEN '18'
-                        ELSE CAST(100 + p.[Group_code] AS VARCHAR(50))
-                    END
-                ) IN (${placeholders.join(', ')})`;
-            }
+            itemFilterClause = ` AND g.[Game_Code] IN (${placeholders.join(', ')})`;
         }
 
         let selectPeriod = "CONVERT(VARCHAR(10), p.[Doc_Date], 120)";
@@ -141,140 +230,137 @@ export class CaravanReportService {
             selectPeriod = "CONVERT(VARCHAR(7), p.[Doc_Date], 120)";
         }
 
-        let itemsQuery = '';
-        if (secType === 2) {
-            itemsQuery = `
-                SELECT 
-                    ${selectPeriod} AS [Period],
-                    CAST(p.[Group_code] AS VARCHAR(50)) AS [Branch_Code],
-                    p.[Groupitem_name] AS [Name],
-                    SUM(CAST(p.[Item_Qunt] AS INT)) AS [Cover],
-                    SUM(CAST(p.[Item_Qunt] AS DECIMAL(18, 4)) * CAST(p.[Item_Price] AS DECIMAL(18, 4)) * (1.0 + ISNULL(CAST(p.[item_Sels_Tax_P] AS DECIMAL(18, 4)), 0) / 100.0)) AS [Total]
-                FROM [dbo].[Pos_item_post] p WITH (NOLOCK)
-                INNER JOIN [dbo].[Branchs] b WITH (NOLOCK) ON p.[Branch_Code] = b.[Code]
-                WHERE b.[Type] = @sectorType
-                  AND b.[Code] NOT IN ('12', '13', '1019', '1020', '1026', '1028')
-                  AND ISNULL(p.[Void_item], 0) = 0
-                  AND p.[Doc_Date] >= CAST(@startDate AS DATE)
-                  AND p.[Doc_Date] < DATEADD(DAY, 1, CAST(@endDate AS DATE))
-                  ${itemFilterClause}
-                GROUP BY ${selectPeriod}, p.[Group_code], p.[Groupitem_name]
-                HAVING SUM(CAST(p.[Item_Qunt] AS DECIMAL(18, 4)) * CAST(p.[Item_Price] AS DECIMAL(18, 4)) * (1.0 + ISNULL(CAST(p.[item_Sels_Tax_P] AS DECIMAL(18, 4)), 0) / 100.0)) > 0
-                ORDER BY [Period] ASC, [Total] DESC;
-            `;
-        } else {
-            itemsQuery = `
-                SELECT 
-                    ${selectPeriod} AS [Period],
-                    CASE 
-                        WHEN p.[Group_code] = 5 AND (p.[item_Code] = '19' OR p.[item_name] LIKE '%روديو%') THEN '19'
-                        WHEN p.[Group_code] = 5 THEN '18'
-                        ELSE CAST(100 + p.[Group_code] AS VARCHAR(50))
-                    END AS [Branch_Code],
-                    CASE 
-                        WHEN p.[Group_code] = 5 AND (p.[item_Code] = '19' OR p.[item_name] LIKE '%روديو%') THEN N'الروديو'
-                        WHEN p.[Group_code] = 5 THEN N'الموفى'
-                        ELSE p.[Groupitem_name]
-                    END AS [Name],
-                    SUM(CAST(p.[Item_Qunt] AS INT)) AS [Cover],
-                    SUM(CAST(p.[Item_Qunt] AS DECIMAL(18, 4)) * CAST(p.[Item_Price] AS DECIMAL(18, 4)) * (1.0 + ISNULL(CAST(p.[item_Sels_Tax_P] AS DECIMAL(18, 4)), 0) / 100.0)) AS [Total]
-                FROM [dbo].[Pos_item_post] p WITH (NOLOCK)
-                INNER JOIN [dbo].[Branchs] b WITH (NOLOCK) ON p.[Branch_Code] = b.[Code]
-                WHERE b.[Type] = @sectorType
-                  AND b.[Code] NOT IN ('12', '13', '1019', '1020', '1026', '1028')
-                  AND ISNULL(p.[Void_item], 0) = 0
-                  AND p.[Doc_Date] >= CAST(@startDate AS DATE)
-                  AND p.[Doc_Date] < DATEADD(DAY, 1, CAST(@endDate AS DATE))
-                  ${itemFilterClause}
-                GROUP BY 
-                    ${selectPeriod},
-                    CASE 
-                        WHEN p.[Group_code] = 5 AND (p.[item_Code] = '19' OR p.[item_name] LIKE '%روديو%') THEN '19'
-                        WHEN p.[Group_code] = 5 THEN '18'
-                        ELSE CAST(100 + p.[Group_code] AS VARCHAR(50))
-                    END,
-                    CASE 
-                        WHEN p.[Group_code] = 5 AND (p.[item_Code] = '19' OR p.[item_name] LIKE '%روديو%') THEN N'الروديو'
-                        WHEN p.[Group_code] = 5 THEN N'الموفى'
-                        ELSE p.[Groupitem_name]
-                    END
-                HAVING SUM(CAST(p.[Item_Qunt] AS DECIMAL(18, 4)) * CAST(p.[Item_Price] AS DECIMAL(18, 4)) * (1.0 + ISNULL(CAST(p.[item_Sels_Tax_P] AS DECIMAL(18, 4)), 0) / 100.0)) > 0
-                ORDER BY [Period] ASC, [Total] DESC;
-            `;
-        }
-
-        const payRequest = pool.request();
-        payRequest.input('startDate', sql.VarChar, startDate);
-        payRequest.input('endDate', sql.VarChar, endDate);
-        payRequest.input('sectorType', sql.Int, secType);
-
-        const paymentsQuery = `
+        const itemsQuery = `
             SELECT 
                 ${selectPeriod} AS [Period],
-                SUM(CAST(ISNULL(p.[cover], 0) AS INT)) AS [Cover],
-                SUM(CAST(ISNULL(p.[Cash], 0) AS DECIMAL(18, 4))) AS [Cash],
-                SUM(CAST(ISNULL(p.[Visa], 0) + ISNULL(p.[Visa2], 0) + ISNULL(p.[Visa3], 0) AS DECIMAL(18, 4))) AS [Visa],
-                SUM(CAST(ISNULL(p.[C/L], 0) AS DECIMAL(18, 4))) AS [CL],
-                SUM(CAST(ISNULL(p.[Cash], 0) + ISNULL(p.[Visa], 0) + ISNULL(p.[Visa2], 0) + ISNULL(p.[Visa3], 0) + ISNULL(p.[C/L], 0) AS DECIMAL(18, 4))) AS [Total]
-            FROM [dbo].[POS_Post] p WITH (NOLOCK)
-            INNER JOIN [dbo].[Branchs] b WITH (NOLOCK) ON p.[Branch_Code] = b.[Code]
-            WHERE b.[Type] = @sectorType
-              AND b.[Code] NOT IN ('12', '13', '1019', '1020', '1026', '1028')
-              AND (p.[Void] = 0 OR p.[Void] IS NULL)
+                g.[Game_Code] AS [Branch_Code],
+                g.[Game_Name] AS [Name],
+                SUM(CAST(p.[Item_Qunt] AS INT)) AS [Cover],
+                SUM(CAST(p.[Item_Qunt] AS DECIMAL(18, 4)) * CAST(p.[Item_Price] AS DECIMAL(18, 4)) * (1.0 + ISNULL(CAST(p.[item_Sels_Tax_P] AS DECIMAL(18, 4)), 0) / 100.0)) AS [Total],
+                SUM(CAST(ISNULL(p.[C/L], 0) AS DECIMAL(18, 4))) AS [CL]
+            FROM [dbo].[Pos_item_post] p WITH (NOLOCK)
+            LEFT JOIN [dbo].[Branchs] b WITH (NOLOCK) ON p.[Branch_Code] = b.[Code]
+            CROSS APPLY (
+                SELECT 
+                    -- Target Sector Routing:
+                    CASE 
+                        -- Exclude Zoo (Group 21 / separate promotion) from Type 3:
+                        WHEN b.[Type] IN (2, 3) AND (p.[Group_code] = 21 OR p.[Groupitem_name] LIKE '%zoo%' OR p.[item_name] LIKE '%zoo%') THEN 0
+                        -- Funny Slides (شلال المرح / Group 15) to Sector 2 (Paid Rides):
+                        WHEN b.[Type] IN (2, 3) AND (p.[Group_code] = 15 OR p.[Groupitem_name] LIKE '%شلال%' OR p.[item_name] LIKE '%شلال%') THEN 2
+                        -- VR 2 (Group 18) to Sector 2 (Paid Rides):
+                        WHEN b.[Type] IN (2, 3) AND (p.[Group_code] = 18 OR p.[Groupitem_name] LIKE '%vr2%' OR p.[Groupitem_name] LIKE '%vr 2%') THEN 2
+                        -- Horse (الخيل / Group 13) to Sector 2 (Paid Rides):
+                        WHEN b.[Type] IN (2, 3) AND (p.[Group_code] = 13 OR p.[Groupitem_name] LIKE '%خيل%' OR p.[item_name] LIKE '%خيل%') THEN 2
+                        -- Hammer to Sector 3 (Video Games & VR):
+                        WHEN b.[Type] IN (2, 3) AND (p.[Group_code] = 20 OR p.[item_Code] IN ('74', '80') OR p.[Groupitem_name] LIKE '%hammer%' OR p.[item_name] LIKE '%hammer%' OR p.[item_name] LIKE '%هامر%') THEN 3
+                        -- Shooting2 (الرمايه 2) to Sector 3:
+                        WHEN b.[Type] IN (2, 3) AND (p.[Group_code] = 12 OR p.[item_Code] = '40' OR p.[Groupitem_name] LIKE '%رمايه 2%' OR p.[item_name] LIKE '%رمايه 2%' OR p.[Groupitem_name] LIKE '%الرمايه 2%' OR p.[item_name] LIKE '%الرمايه 2%') THEN 3
+                        -- Upside Down House (البيت المقلوب) to Sector 3:
+                        WHEN b.[Type] IN (2, 3) AND (p.[Group_code] = 3 OR p.[Groupitem_name] LIKE '%مقلوب%' OR p.[item_name] LIKE '%مقلوب%') THEN 3
+                        -- Discovery & Selsela to Sector 2 (Amusement Rides):
+                        WHEN b.[Type] IN (2, 3) AND (p.[Group_code] = 1 OR p.[Groupitem_name] LIKE '%ديسكفر%' OR p.[item_name] LIKE '%ديسكفر%') THEN 2
+                        WHEN b.[Type] IN (2, 3) AND (p.[Groupitem_name] LIKE '%سلسل%' OR p.[item_name] LIKE '%سلسل%') THEN 2
+                        -- Default to Branch Type:
+                        ELSE b.[Type]
+                    END AS [Target_Sector],
+
+                    -- Canonical Game Code:
+                    CASE 
+                        -- Discovery always Code '1'
+                        WHEN p.[Group_code] = 1 OR p.[Groupitem_name] LIKE '%ديسكفر%' THEN '1'
+                        -- Selsela always Code '23'
+                        WHEN p.[Groupitem_name] LIKE '%سلسل%' OR p.[item_name] LIKE '%سلسل%' THEN '23'
+                        -- Movie hall split: Radio is '19', Movie is '18'
+                        WHEN p.[Group_code] = 5 AND (p.[item_Code] = '19' OR p.[item_name] LIKE '%روديو%') THEN '19'
+                        WHEN p.[Group_code] = 5 THEN '18'
+                        -- Hammer always Code '20'
+                        WHEN p.[Group_code] = 20 OR p.[item_Code] IN ('74', '80') OR p.[item_name] LIKE '%hammer%' THEN '20'
+                        -- Shooting2 always Code '12'
+                        WHEN p.[Group_code] = 12 OR p.[item_Code] = '40' OR p.[Groupitem_name] LIKE '%رمايه 2%' OR p.[item_name] LIKE '%رمايه 2%' THEN '12'
+                        -- Upside Down House always Code '3'
+                        WHEN p.[Group_code] = 3 OR p.[Groupitem_name] LIKE '%مقلوب%' OR p.[item_name] LIKE '%مقلوب%' THEN '3'
+                        -- Misplaced Paid Rides moved to Type 2:
+                        WHEN p.[Group_code] = 15 OR p.[Groupitem_name] LIKE '%شلال%' THEN '115'
+                        WHEN p.[Group_code] = 18 OR p.[Groupitem_name] LIKE '%vr2%' OR p.[Groupitem_name] LIKE '%vr 2%' THEN '118'
+                        WHEN p.[Group_code] = 13 OR p.[Groupitem_name] LIKE '%خيل%' THEN '113'
+                        -- Standard Rides (Type 2 games): keep Group_code as Code
+                        WHEN p.[Group_code] IN (2, 4, 6, 7, 8, 14, 16) THEN CAST(p.[Group_code] AS VARCHAR(50))
+                        -- Type 3 Games: Code with 100 + Group_code to prevent collision
+                        ELSE CAST(100 + p.[Group_code] AS VARCHAR(50))
+                    END AS [Game_Code],
+
+                    -- Canonical Game Name:
+                    CASE 
+                        WHEN p.[Group_code] = 1 OR p.[Groupitem_name] LIKE '%ديسكفر%' THEN N'الديسكفري'
+                        WHEN p.[Groupitem_name] LIKE '%سلسل%' OR p.[item_name] LIKE '%سلسل%' THEN N'السلسلة'
+                        WHEN p.[Group_code] = 5 AND (p.[item_Code] = '19' OR p.[item_name] LIKE '%روديو%') THEN N'الروديو'
+                        WHEN p.[Group_code] = 5 THEN N'الموفى'
+                        WHEN p.[Group_code] = 20 OR p.[item_Code] IN ('74', '80') OR p.[item_name] LIKE '%hammer%' THEN N'الهامر'
+                        WHEN p.[Group_code] = 12 OR p.[item_Code] = '40' OR p.[Groupitem_name] LIKE '%رمايه 2%' OR p.[item_name] LIKE '%رمايه 2%' THEN N'شوتينج 2'
+                        WHEN p.[Group_code] = 3 OR p.[Groupitem_name] LIKE '%مقلوب%' OR p.[item_name] LIKE '%مقلوب%' THEN N'البيت المقلوب'
+                        WHEN p.[Group_code] = 15 OR p.[Groupitem_name] LIKE '%شلال%' THEN N'شلال المرح'
+                        WHEN p.[Group_code] = 18 OR p.[Groupitem_name] LIKE '%vr2%' OR p.[Groupitem_name] LIKE '%vr 2%' THEN N'VR 2'
+                        WHEN p.[Group_code] = 13 OR p.[Groupitem_name] LIKE '%خيل%' THEN N'الخيل'
+                        WHEN p.[Group_code] = 19 THEN N'دوبي كاسل'
+                        WHEN p.[Group_code] = 9 THEN N'بابلوني'
+                        WHEN p.[Group_code] = 11 THEN N'شوتينج'
+                        WHEN p.[Group_code] = 22 THEN N'VR3'
+                        WHEN p.[Group_code] = 10 THEN N'ألعاب الأطفال'
+                        WHEN p.[Group_code] = 17 THEN N'VR 1'
+                        ELSE p.[Groupitem_name]
+                    END AS [Game_Name]
+            ) g
+            WHERE b.[Type] IN (2, 3)
+              AND ISNULL(b.[Code], 0) NOT IN (12, 13, 1019, 1020, 1026, 1028)
+              AND ISNULL(p.[Void_item], 0) = 0
               AND p.[Doc_Date] >= CAST(@startDate AS DATE)
               AND p.[Doc_Date] < DATEADD(DAY, 1, CAST(@endDate AS DATE))
-            GROUP BY ${selectPeriod}
-            ORDER BY [Period] ASC;
+              AND g.[Target_Sector] = @sectorType
+              ${itemFilterClause}
+            GROUP BY ${selectPeriod}, g.[Game_Code], g.[Game_Name]
+            HAVING SUM(CAST(p.[Item_Qunt] AS DECIMAL(18, 4)) * CAST(p.[Item_Price] AS DECIMAL(18, 4)) * (1.0 + ISNULL(CAST(p.[item_Sels_Tax_P] AS DECIMAL(18, 4)), 0) / 100.0)) > 0
+            ORDER BY [Period] ASC, [Total] DESC;
         `;
 
         const startTime = Date.now();
-        const [itemsRes, payRes] = await Promise.all([
-            request.query(itemsQuery),
-            payRequest.query(paymentsQuery)
-        ]);
+        const itemsRes = await request.query(itemsQuery);
         const duration = Date.now() - startTime;
 
         const rawItemRecords = itemsRes.recordset || [];
-        const rawPayments = payRes.recordset || [];
 
+        // Build precise daily payment aggregates from game items
         const dailyPayMap = new Map();
-        for (const p of rawPayments) {
-            dailyPayMap.set(String(p.Period), {
-                cover: Number(p.Cover) || 0,
-                cash: Number(p.Cash) || 0,
-                visa: Number(p.Visa) || 0,
-                cl: Number(p.CL) || 0,
-                total: Number(p.Total) || 0
-            });
-        }
-
         let totalSales = 0;
-        let totalCash = 0;
-        let totalVisa = 0;
         let totalCL = 0;
         let totalCover = 0;
 
-        if (isFiltered) {
-            // Filtered specific game(s): Calculate solely from game items
-            for (const item of rawItemRecords) {
-                totalSales += Number(item.Total) || 0;
-                totalCover += Number(item.Cover) || 0;
-            }
-            totalCash = totalSales;
-        } else {
-            // All games: Use POS_Post payments to prevent double counting
-            for (const p of rawPayments) {
-                totalSales += Number(p.Total) || 0;
-                totalCash += Number(p.Cash) || 0;
-                totalVisa += Number(p.Visa) || 0;
-                totalCL += Number(p.CL) || 0;
-                totalCover += Number(p.Cover) || 0;
-            }
+        for (const item of rawItemRecords) {
+            const periodKey = String(item.Period || 'all');
+            const itemTot = Number(item.Total) || 0;
+            const itemCl = Number(item.CL) || 0;
+            const itemCash = itemTot - itemCl;
+            const itemCover = Number(item.Cover) || 0;
+
+            totalSales += itemTot;
+            totalCL += itemCl;
+            totalCover += itemCover;
+
+            const existing = dailyPayMap.get(periodKey) || {
+                cash: 0,
+                visa: 0,
+                cl: 0,
+                total: 0
+            };
+            existing.cash += itemCash;
+            existing.cl += itemCl;
+            existing.total += itemTot;
+            dailyPayMap.set(periodKey, existing);
         }
 
         totalSales = Math.round(totalSales * 100) / 100;
-        totalCash = Math.round(totalCash * 100) / 100;
-        totalVisa = Math.round(totalVisa * 100) / 100;
+        const totalCash = Math.round((totalSales - totalCL) * 100) / 100;
+        const totalVisa = 0;
         totalCL = Math.round(totalCL * 100) / 100;
         const totalNetRevenue = Math.round((totalSales / 1.14) * 100) / 100;
         const totalSalesTax = Math.round((totalSales - totalNetRevenue) * 100) / 100;
@@ -284,11 +370,13 @@ export class CaravanReportService {
             const itemCover = Number(r.Cover) || 0;
             const itemNetRev = Math.round((itemTotal / 1.14) * 100) / 100;
             const itemTax = Math.round((itemTotal - itemNetRev) * 100) / 100;
+            const itemCl = Number(r.CL) || 0;
+            const itemCash = itemTotal - itemCl;
 
             const dPay = dailyPayMap.get(String(r.Period)) || {
-                cash: 0,
+                cash: itemCash,
                 visa: 0,
-                cl: 0,
+                cl: itemCl,
                 total: itemTotal
             };
 
@@ -297,9 +385,9 @@ export class CaravanReportService {
                 name: r.Name,
                 period: r.Period || null,
                 cover: itemCover,
-                cash: isFiltered ? itemTotal : 0,
+                cash: itemCash,
                 visa: 0,
-                creditLine: 0,
+                creditLine: itemCl,
                 total: itemTotal,
                 netRevenue: itemNetRev,
                 serviceCharge: 0,
@@ -310,10 +398,10 @@ export class CaravanReportService {
                 voidCount: 0,
                 voidDetails: [],
                 variance: 0,
-                dailyCash: isFiltered ? itemTotal : dPay.cash,
-                dailyVisa: isFiltered ? 0 : dPay.visa,
-                dailyCl: isFiltered ? 0 : dPay.cl,
-                dailyTotal: isFiltered ? itemTotal : dPay.total,
+                dailyCash: dPay.cash,
+                dailyVisa: 0,
+                dailyCl: dPay.cl,
+                dailyTotal: dPay.total,
                 marketShare: totalSales > 0 ? Math.round((itemTotal / totalSales) * 1000) / 10 : 0,
                 avgTicket: itemCover > 0 ? Math.round((itemTotal / itemCover) * 100) / 100 : 0
             };

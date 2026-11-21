@@ -26,16 +26,19 @@ export function BranchComparisonChart({
   stats,
   metric = "revenue",
   isSingleDay = false,
+  chartHex,
 }: {
   stats: OutletMetricStat[];
   metric?: "revenue" | "orders";
   isSingleDay?: boolean;
+  chartHex?: string;
 }) {
   const dark = useIsDark();
   const tick = dark ? "#94a3b8" : "#4b5563";
   const grid = dark ? "#334155" : "#e5e7eb";
-  const barColor = dark ? "#c4b5fd" : "#f97316";
-  const barHoverColor = dark ? "#a78bfa" : "#ea580c";
+  const defaultBar = dark ? "#c4b5fd" : "#f97316";
+  const barColor = chartHex || defaultBar;
+  const barHoverColor = chartHex || (dark ? "#a78bfa" : "#ea580c");
 
   const isRevenue = metric === "revenue";
 

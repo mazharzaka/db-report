@@ -18,16 +18,7 @@ import {
   Sparkles,
   ShieldCheck,
 } from 'lucide-react';
-import { SECTORS_LIST, SectorConfig } from '@/config/sectorsConfig';
-
-const ICON_MAP: Record<SectorConfig['iconName'], React.ComponentType<{ className?: string }>> = {
-  Caravan: Caravan,
-  Utensils: Utensils,
-  FerrisWheel: FerrisWheel,
-  Gamepad2: Gamepad2,
-  Ticket: Ticket,
-  Car: Car,
-};
+import { SECTORS_LIST, SectorConfig, SECTOR_ICONS } from '@/config/sectorsConfig';
 
 export function Sidebar() {
   const pathname = usePathname();
@@ -132,7 +123,7 @@ export function Sidebar() {
         {/* Sector Navigation Links */}
         <nav className="flex-1 space-y-1.5 overflow-y-auto px-3 py-2">
           {SECTORS_LIST.map((sector) => {
-            const Icon = ICON_MAP[sector.iconName] || Caravan;
+            const Icon = SECTOR_ICONS[sector.iconName] || Caravan;
             const isActive = getIsActive(sector);
 
             return (
@@ -142,14 +133,14 @@ export function Sidebar() {
                 title={`${sector.label} (${sector.badge})`}
                 className={`group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition-all duration-150 ${
                   isActive
-                    ? 'bg-orange-50 text-orange-600 shadow-2xs border-r-4 border-orange-500 dark:bg-orange-500/10 dark:text-orange-400 dark:border-orange-400 font-bold'
+                    ? sector.theme.activeBg
                     : 'text-slate-600 hover:bg-slate-100/80 hover:text-slate-900 dark:text-zinc-400 dark:hover:bg-zinc-900/60 dark:hover:text-zinc-100'
                 }`}
               >
                 <div
                   className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg transition-colors ${
                     isActive
-                      ? 'bg-orange-500/15 text-orange-600 dark:bg-orange-400/20 dark:text-orange-400'
+                      ? sector.theme.activeIconBg
                       : 'bg-slate-100 text-slate-500 group-hover:bg-slate-200/80 group-hover:text-slate-800 dark:bg-zinc-800/80 dark:text-zinc-400 dark:group-hover:bg-zinc-800 dark:group-hover:text-zinc-200'
                   }`}
                 >
@@ -162,7 +153,7 @@ export function Sidebar() {
                     <span
                       className={`font-mono text-[10px] font-semibold rounded-md px-1.5 py-0.5 tracking-tight ${
                         isActive
-                          ? 'bg-orange-100 text-orange-700 dark:bg-orange-950/60 dark:text-orange-300'
+                          ? sector.theme.activeBadge
                           : 'bg-slate-100 text-slate-500 dark:bg-zinc-800/80 dark:text-zinc-400'
                       }`}
                     >
