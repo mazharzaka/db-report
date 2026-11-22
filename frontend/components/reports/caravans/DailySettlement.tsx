@@ -89,7 +89,6 @@ export function DailySettlement({
       setExporting(true);
 
       const ExcelJS = (await import('exceljs')).default;
-      const { saveAs } = (await import('file-saver')).default;
 
       const workbook = new ExcelJS.Workbook();
       workbook.creator = 'Dream Park ERP';
@@ -226,7 +225,36 @@ export function DailySettlement({
         type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
       });
       const fileName = `Daily_Settlement_${date || new Date().toISOString().split('T')[0]}.xlsx`;
-      saveAs(blob, fileName);
+
+      let downloaded = false;
+      try {
+        const fileSaverMod = await import('file-saver');
+        const saveAsFn =
+          (fileSaverMod as any).saveAs ||
+          (fileSaverMod as any).default?.saveAs ||
+          (fileSaverMod as any).default;
+
+        if (typeof saveAsFn === 'function') {
+          saveAsFn(blob, fileName);
+          downloaded = true;
+        }
+      } catch (saveErr) {
+        console.warn('file-saver dynamic import error, using native fallback:', saveErr);
+      }
+
+      if (!downloaded && typeof window !== 'undefined') {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(() => {
+          document.body.removeChild(a);
+          window.URL.revokeObjectURL(url);
+        }, 200);
+      }
     } catch (err) {
       console.error('Error exporting settlement to Excel:', err);
     } finally {

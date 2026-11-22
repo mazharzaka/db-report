@@ -47,10 +47,10 @@ export const GAME_SECTOR_OVERRIDES = {
     'شلال المرح': 2,
     'funny slides': 2,
 
-    // 5. Move VR 2 -> targetSector: 2 (Paid Rides)
-    '118': 2,
-    'vr2': 2,
-    'vr 2': 2,
+    // 5. Move VR 2 -> targetSector: 3 (Video Games & VR)
+    '118': 3,
+    'vr2': 3,
+    'vr 2': 3,
 
     // 6. Move Horse (الخيل) -> targetSector: 2 (Paid Rides)
     '13': 2,
@@ -103,12 +103,15 @@ export class CaravanReportService {
                     SELECT 
                         -- Target Sector Routing:
                         CASE 
+                            -- Golden (دفتر جولدن / Branch 102 / Group 3) to Sector 2 (Paid Rides):
+                            WHEN (b.[Code] = 102 AND (p.[Group_code] = 3 OR p.[Groupitem_name] LIKE '%gold%')) 
+                              OR (p.[Groupitem_name] LIKE '%gold%' AND p.[item_name] LIKE '%جولدن%') THEN 2
                             -- Exclude Zoo (Group 21 / separate promotion) from Type 3:
                             WHEN b.[Type] IN (2, 3) AND (p.[Group_code] = 21 OR p.[Groupitem_name] LIKE '%zoo%' OR p.[item_name] LIKE '%zoo%') THEN 0
                             -- Funny Slides (شلال المرح / Group 15) to Sector 2 (Paid Rides):
                             WHEN b.[Type] IN (2, 3) AND (p.[Group_code] = 15 OR p.[Groupitem_name] LIKE '%شلال%' OR p.[item_name] LIKE '%شلال%') THEN 2
-                            -- VR 2 (Group 18) to Sector 2 (Paid Rides):
-                            WHEN b.[Type] IN (2, 3) AND (p.[Group_code] = 18 OR p.[Groupitem_name] LIKE '%vr2%' OR p.[Groupitem_name] LIKE '%vr 2%') THEN 2
+                            -- VR 2 (Group 18) to Sector 3 (Video Games & VR):
+                            WHEN b.[Type] IN (2, 3) AND (p.[Group_code] = 18 OR p.[Groupitem_name] LIKE '%vr2%' OR p.[Groupitem_name] LIKE '%vr 2%') THEN 3
                             -- Horse (الخيل / Group 13) to Sector 2 (Paid Rides):
                             WHEN b.[Type] IN (2, 3) AND (p.[Group_code] = 13 OR p.[Groupitem_name] LIKE '%خيل%' OR p.[item_name] LIKE '%خيل%') THEN 2
                             -- Hammer to Sector 3 (Video Games & VR):
@@ -126,6 +129,9 @@ export class CaravanReportService {
 
                         -- Canonical Game Code:
                         CASE 
+                            -- Golden always Code 'golden'
+                            WHEN (b.[Code] = 102 AND (p.[Group_code] = 3 OR p.[Groupitem_name] LIKE '%gold%')) 
+                              OR (p.[Groupitem_name] LIKE '%gold%' AND p.[item_name] LIKE '%جولدن%') THEN 'golden'
                             -- Discovery always Code '1'
                             WHEN p.[Group_code] = 1 OR p.[Groupitem_name] LIKE '%ديسكفر%' THEN '1'
                             -- Selsela always Code '23'
@@ -151,6 +157,8 @@ export class CaravanReportService {
 
                         -- Canonical Game Name:
                         CASE 
+                            WHEN (b.[Code] = 102 AND (p.[Group_code] = 3 OR p.[Groupitem_name] LIKE '%gold%')) 
+                              OR (p.[Groupitem_name] LIKE '%gold%' AND p.[item_name] LIKE '%جولدن%') THEN N'الذهبية'
                             WHEN p.[Group_code] = 1 OR p.[Groupitem_name] LIKE '%ديسكفر%' THEN N'الديسكفري'
                             WHEN p.[Groupitem_name] LIKE '%سلسل%' OR p.[item_name] LIKE '%سلسل%' THEN N'السلسلة'
                             WHEN p.[Group_code] = 5 AND (p.[item_Code] = '19' OR p.[item_name] LIKE '%روديو%') THEN N'الروديو'
@@ -170,7 +178,7 @@ export class CaravanReportService {
                             ELSE p.[Groupitem_name]
                         END AS [Game_Name]
                 ) g
-                WHERE b.[Type] IN (2, 3)
+                WHERE (b.[Type] IN (2, 3) OR (b.[Code] = 102 AND (p.[Group_code] = 3 OR p.[Groupitem_name] LIKE '%gold%')))
                   AND ISNULL(b.[Code], 0) NOT IN (12, 13, 1019, 1020, 1026, 1028)
                   AND ISNULL(p.[Void_item], 0) = 0
                   AND p.[Doc_Date] >= CAST(@startDate AS DATE)
@@ -244,12 +252,15 @@ export class CaravanReportService {
                 SELECT 
                     -- Target Sector Routing:
                     CASE 
+                        -- Golden (دفتر جولدن / Branch 102 / Group 3) to Sector 2 (Paid Rides):
+                        WHEN (b.[Code] = 102 AND (p.[Group_code] = 3 OR p.[Groupitem_name] LIKE '%gold%')) 
+                          OR (p.[Groupitem_name] LIKE '%gold%' AND p.[item_name] LIKE '%جولدن%') THEN 2
                         -- Exclude Zoo (Group 21 / separate promotion) from Type 3:
                         WHEN b.[Type] IN (2, 3) AND (p.[Group_code] = 21 OR p.[Groupitem_name] LIKE '%zoo%' OR p.[item_name] LIKE '%zoo%') THEN 0
                         -- Funny Slides (شلال المرح / Group 15) to Sector 2 (Paid Rides):
                         WHEN b.[Type] IN (2, 3) AND (p.[Group_code] = 15 OR p.[Groupitem_name] LIKE '%شلال%' OR p.[item_name] LIKE '%شلال%') THEN 2
-                        -- VR 2 (Group 18) to Sector 2 (Paid Rides):
-                        WHEN b.[Type] IN (2, 3) AND (p.[Group_code] = 18 OR p.[Groupitem_name] LIKE '%vr2%' OR p.[Groupitem_name] LIKE '%vr 2%') THEN 2
+                        -- VR 2 (Group 18) to Sector 3 (Video Games & VR):
+                        WHEN b.[Type] IN (2, 3) AND (p.[Group_code] = 18 OR p.[Groupitem_name] LIKE '%vr2%' OR p.[Groupitem_name] LIKE '%vr 2%') THEN 3
                         -- Horse (الخيل / Group 13) to Sector 2 (Paid Rides):
                         WHEN b.[Type] IN (2, 3) AND (p.[Group_code] = 13 OR p.[Groupitem_name] LIKE '%خيل%' OR p.[item_name] LIKE '%خيل%') THEN 2
                         -- Hammer to Sector 3 (Video Games & VR):
@@ -267,6 +278,9 @@ export class CaravanReportService {
 
                     -- Canonical Game Code:
                     CASE 
+                        -- Golden always Code 'golden'
+                        WHEN (b.[Code] = 102 AND (p.[Group_code] = 3 OR p.[Groupitem_name] LIKE '%gold%')) 
+                          OR (p.[Groupitem_name] LIKE '%gold%' AND p.[item_name] LIKE '%جولدن%') THEN 'golden'
                         -- Discovery always Code '1'
                         WHEN p.[Group_code] = 1 OR p.[Groupitem_name] LIKE '%ديسكفر%' THEN '1'
                         -- Selsela always Code '23'
@@ -292,6 +306,8 @@ export class CaravanReportService {
 
                     -- Canonical Game Name:
                     CASE 
+                        WHEN (b.[Code] = 102 AND (p.[Group_code] = 3 OR p.[Groupitem_name] LIKE '%gold%')) 
+                          OR (p.[Groupitem_name] LIKE '%gold%' AND p.[item_name] LIKE '%جولدن%') THEN N'الذهبية'
                         WHEN p.[Group_code] = 1 OR p.[Groupitem_name] LIKE '%ديسكفر%' THEN N'الديسكفري'
                         WHEN p.[Groupitem_name] LIKE '%سلسل%' OR p.[item_name] LIKE '%سلسل%' THEN N'السلسلة'
                         WHEN p.[Group_code] = 5 AND (p.[item_Code] = '19' OR p.[item_name] LIKE '%روديو%') THEN N'الروديو'
@@ -311,7 +327,7 @@ export class CaravanReportService {
                         ELSE p.[Groupitem_name]
                     END AS [Game_Name]
             ) g
-            WHERE b.[Type] IN (2, 3)
+            WHERE (b.[Type] IN (2, 3) OR (b.[Code] = 102 AND (p.[Group_code] = 3 OR p.[Groupitem_name] LIKE '%gold%')))
               AND ISNULL(b.[Code], 0) NOT IN (12, 13, 1019, 1020, 1026, 1028)
               AND ISNULL(p.[Void_item], 0) = 0
               AND p.[Doc_Date] >= CAST(@startDate AS DATE)

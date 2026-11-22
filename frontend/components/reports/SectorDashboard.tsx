@@ -50,6 +50,7 @@ interface SectorDashboardProps {
 export function SectorDashboard({ sector }: SectorDashboardProps) {
   const dash = useSectorDashboard(sector);
   const SectorIcon = SECTOR_ICONS[sector.iconName];
+  const [rideStatusFilter, setRideStatusFilter] = React.useState<'active' | 'inactive' | 'all'>('active');
 
   // Dynamic calculations for the 3 Core KPI Cards based on currently displayed rows
   const financialTotals = React.useMemo(() => {
@@ -203,7 +204,7 @@ export function SectorDashboard({ sector }: SectorDashboardProps) {
                                   type="button"
                                   onClick={() => dash.setViewMode('standard')}
                                   className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-bold transition ${dash.viewMode === 'standard'
-                                    ? 'bg-white text-orange-600 shadow-sm dark:bg-zinc-950 dark:text-orange-400 border border-slate-200/80 dark:border-zinc-800'
+                                    ? `${sector.theme.btnActive} shadow-sm border border-slate-200/80 dark:border-zinc-800`
                                     : 'text-slate-600 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-zinc-300'
                                     }`}
                                 >
@@ -214,7 +215,7 @@ export function SectorDashboard({ sector }: SectorDashboardProps) {
                                   type="button"
                                   onClick={() => dash.setViewMode('comparison')}
                                   className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-bold transition ${dash.viewMode === 'comparison'
-                                    ? 'bg-white text-orange-600 shadow-sm dark:bg-zinc-950 dark:text-orange-400 border border-slate-200/80 dark:border-zinc-800'
+                                    ? `${sector.theme.btnActive} shadow-sm border border-slate-200/80 dark:border-zinc-800`
                                     : 'text-slate-600 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-zinc-300'
                                     }`}
                                 >
@@ -228,7 +229,7 @@ export function SectorDashboard({ sector }: SectorDashboardProps) {
                                 onClick={dash.triggerRefresh}
                                 disabled={dash.loading || dash.comparisonLoading}
                                 aria-label="تحديث"
-                                className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200/80 bg-white/80 text-slate-700 shadow-sm ring-1 ring-slate-900/5 transition hover:text-orange-600 hover:bg-slate-50 dark:border-zinc-800/80 dark:bg-zinc-900/60 dark:ring-white/10 dark:text-zinc-300 dark:hover:text-orange-400 dark:hover:bg-zinc-800 disabled:opacity-50 backdrop-blur-xs"
+                                className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200/80 bg-white/80 text-slate-700 shadow-sm ring-1 ring-slate-900/5 transition hover:text-slate-900 hover:bg-slate-50 dark:border-zinc-800/80 dark:bg-zinc-900/60 dark:ring-white/10 dark:text-zinc-300 dark:hover:text-white dark:hover:bg-zinc-800 disabled:opacity-50 backdrop-blur-xs"
                               >
                                 <RefreshCw
                                   className={`h-4 w-4 ${dash.loading || dash.comparisonLoading ? 'animate-spin' : ''}`}
@@ -237,7 +238,7 @@ export function SectorDashboard({ sector }: SectorDashboardProps) {
                               <button
                                 type="button"
                                 onClick={dash.exportExcel}
-                                className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-orange-600 px-3 text-xs font-semibold text-white shadow-sm transition hover:bg-orange-700 active:scale-95"
+                                className={`inline-flex h-9 items-center gap-1.5 rounded-lg ${sector.theme.btnPrimary} px-3 text-xs font-semibold text-white shadow-sm transition active:scale-95`}
                               >
                                 <FileSpreadsheet className="h-4 w-4" />
                                 تصدير Excel
@@ -261,6 +262,8 @@ export function SectorDashboard({ sector }: SectorDashboardProps) {
                           viewMode={dash.viewMode}
                           facilityType={dash.facilityType}
                           onFacilityTypeChange={dash.setFacilityType}
+                          rideStatusFilter={rideStatusFilter}
+                          onRideStatusFilterChange={setRideStatusFilter}
                           branchOptions={dash.branchOptions}
                           selectedBranches={dash.selected}
                           onSelectedBranchesChange={dash.setSelected}
@@ -371,7 +374,7 @@ export function SectorDashboard({ sector }: SectorDashboardProps) {
                           {/* --------------------------------------------------------------------- */}
                           <div className="grid grid-cols-1 gap-4 md:grid-cols-3 break-inside-avoid">
                             {/* Card 1: Total Revenue (شامل الضريبة) */}
-                            <div className={`flex flex-col justify-between rounded-xl border border-blue-200/80 bg-blue-50/50 p-5 shadow-sm ring-1 ring-blue-500/10 backdrop-blur-md transition hover:border-blue-300 dark:border-blue-900/40 dark:bg-blue-950/20 dark:ring-blue-400/10 border-t-2 ${sector.theme.borderAccent}`}>
+                            <div className={`flex flex-col justify-between rounded-xl border ${sector.theme.kpiCard.cardBorder} ${sector.theme.kpiCard.cardBg} p-5 shadow-sm ring-1 ${sector.theme.kpiCard.cardRing} backdrop-blur-md transition ${sector.theme.kpiCard.cardHover} border-t-2 ${sector.theme.borderAccent}`}>
                               <div className="flex items-start justify-between">
                                 <div>
                                   <span className="text-sm font-bold text-slate-800 dark:text-zinc-100">
@@ -381,7 +384,7 @@ export function SectorDashboard({ sector }: SectorDashboardProps) {
                                     Total Sales = Cash &amp; Visa &amp; CL
                                   </p>
                                 </div>
-                                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-500/10 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400 shadow-2xs">
+                                <div className={`flex h-11 w-11 items-center justify-center rounded-xl ${sector.theme.iconBox} shadow-2xs`}>
                                   <DollarSign className="h-5 w-5" />
                                 </div>
                               </div>
@@ -390,19 +393,19 @@ export function SectorDashboard({ sector }: SectorDashboardProps) {
                                 <div className="text-3xl font-extrabold tracking-tight font-mono tabular-nums text-zinc-900 dark:text-white" dir="ltr">
                                   <Money value={financialTotals.total} symbolClassName="text-sm opacity-60 font-normal mr-1.5 select-none" />
                                 </div>
-                                <span className="rounded-full bg-blue-100/80 px-2.5 py-0.5 text-xs font-semibold text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
+                                <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${sector.theme.kpiCard.badge}`}>
                                   الإجمالي
                                 </span>
                               </div>
 
-                              <div className="mt-3 flex items-center justify-between border-t border-blue-100/80 pt-2.5 dark:border-blue-900/30 text-xs text-slate-500 dark:text-zinc-400">
+                              <div className={`mt-3 flex items-center justify-between border-t ${sector.theme.kpiCard.divider} pt-2.5 text-xs text-slate-500 dark:text-zinc-400`}>
                                 <span>محسوب وفق المنافذ المعروضة</span>
                                 <span className="font-mono tabular-nums">{dash.records.length} سجل</span>
                               </div>
                             </div>
 
                             {/* Card 2: Net Sales (الصافي) */}
-                            <div className={`flex flex-col justify-between rounded-xl border border-emerald-200/80 bg-emerald-50/50 p-5 shadow-sm ring-1 ring-emerald-500/10 backdrop-blur-md transition hover:border-emerald-300 dark:border-emerald-900/40 dark:bg-emerald-950/20 dark:ring-emerald-400/10 border-t-2 ${sector.theme.borderAccent}`}>
+                            <div className="flex flex-col justify-between rounded-xl border border-emerald-200/80 bg-emerald-50/50 p-5 shadow-sm ring-1 ring-emerald-500/10 backdrop-blur-md transition hover:border-emerald-300 dark:border-emerald-900/40 dark:bg-emerald-950/20 dark:ring-emerald-400/10 border-t-2 border-emerald-500 dark:border-emerald-400">
                               <div className="flex items-start justify-between">
                                 <div>
                                   <span className="text-sm font-bold text-slate-800 dark:text-zinc-100">
@@ -433,7 +436,7 @@ export function SectorDashboard({ sector }: SectorDashboardProps) {
                             </div>
 
                             {/* Card 3: VAT 14% (ضريبة القيمة المضافة) */}
-                            <div className={`flex flex-col justify-between rounded-xl border border-amber-200/80 bg-amber-50/50 p-5 shadow-sm ring-1 ring-amber-500/10 backdrop-blur-md transition hover:border-amber-300 dark:border-amber-900/40 dark:bg-amber-950/20 dark:ring-amber-400/10 border-t-2 ${sector.theme.borderAccent}`}>
+                            <div className="flex flex-col justify-between rounded-xl border border-amber-200/80 bg-amber-50/50 p-5 shadow-sm ring-1 ring-amber-500/10 backdrop-blur-md transition hover:border-amber-300 dark:border-amber-900/40 dark:bg-amber-950/20 dark:ring-amber-400/10 border-t-2 border-amber-500 dark:border-amber-400">
                               <div className="flex items-start justify-between">
                                 <div>
                                   <span className="text-sm font-bold text-slate-800 dark:text-zinc-100">
@@ -472,6 +475,8 @@ export function SectorDashboard({ sector }: SectorDashboardProps) {
                               rows={dash.records}
                               loading={dash.loading}
                               facilityType={dash.facilityType}
+                              rideStatusFilter={rideStatusFilter}
+                              onRideStatusFilterChange={setRideStatusFilter}
                               startDate={dash.start}
                               endDate={dash.end}
                               sectorType={sector.type}
@@ -578,7 +583,7 @@ export function SectorDashboard({ sector }: SectorDashboardProps) {
                           <details className="group rounded-xl border border-slate-200/80 bg-white p-6 shadow-sm ring-1 ring-slate-900/5 backdrop-blur-md transition-all duration-200 dark:border-zinc-800/80 dark:bg-zinc-900/60 dark:ring-white/10 print:hidden">
                             <summary className="flex cursor-pointer items-center justify-between text-base font-bold text-slate-800 dark:text-zinc-200 select-none list-none">
                               <div className="flex items-center gap-3">
-                                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-orange-50 text-orange-600 dark:bg-zinc-800 dark:text-zinc-300">
+                                <div className={`flex h-9 w-9 items-center justify-center rounded-lg ${sector.theme.iconBox}`}>
                                   <Sparkles className="h-4 w-4" />
                                 </div>
                                 <div>
@@ -590,7 +595,7 @@ export function SectorDashboard({ sector }: SectorDashboardProps) {
                                   </p>
                                 </div>
                               </div>
-                              <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 group-open:text-orange-600 dark:text-zinc-400 dark:group-open:text-orange-400">
+                              <div className={`flex items-center gap-2 text-xs font-semibold text-slate-500 group-open:${sector.theme.accentText} dark:text-zinc-400`}>
                                 <span className="hidden sm:inline">عرض / إخفاء</span>
                                 <ChevronDown className="h-5 w-5 transition-transform duration-300 group-open:rotate-180" />
                               </div>

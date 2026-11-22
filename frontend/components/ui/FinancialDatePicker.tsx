@@ -22,6 +22,7 @@ interface DateRangeProps {
   maxYear?: number;
   disabled?: boolean;
   showQuickPresets?: boolean;
+  sectorType?: number;
 }
 
 const MONTH_NAMES_AR = [
@@ -63,6 +64,7 @@ export function FinancialDatePicker({
   maxYear = 2035,
   disabled = false,
   showQuickPresets = false,
+  sectorType = 4,
 }: DateRangeProps) {
   // Active calendar popover: 'start' | 'end' | null
   const [activePicker, setActivePicker] = useState<'start' | 'end' | null>(null);
@@ -384,11 +386,13 @@ export function FinancialDatePicker({
             disabled={isTriggerDisabled}
             onClick={() => (activePicker === 'start' ? setActivePicker(null) : openPicker('start'))}
             className={`flex items-center gap-2.5 rounded-lg border-2 px-3.5 py-2 font-mono transition shadow-sm ${activePicker === 'start'
-              ? 'border-orange-500 bg-orange-50/80 text-orange-950 ring-2 ring-orange-500/20 dark:border-orange-400 dark:bg-zinc-900 dark:text-orange-200'
+              ? sectorType === 3
+                ? 'border-violet-900 bg-violet-50/50 text-violet-950 ring-1 ring-violet-900/20 dark:border-violet-700 dark:bg-zinc-900 dark:text-violet-200'
+                : 'border-orange-500 bg-orange-50/80 text-orange-950 ring-2 ring-orange-500/20 dark:border-orange-400 dark:bg-zinc-900 dark:text-orange-200'
               : 'border-slate-300 bg-white text-slate-900 hover:border-slate-400 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:border-zinc-500'
               } disabled:opacity-50 disabled:cursor-not-allowed`}
           >
-            <CalendarIcon className="h-4 w-4 text-orange-600 dark:text-orange-400 shrink-0" />
+            <CalendarIcon className={`h-4 w-4 ${sectorType === 3 ? 'text-violet-800 dark:text-violet-400' : 'text-orange-600 dark:text-orange-400'} shrink-0`} />
             <span className="font-sans text-sm font-bold text-slate-700 dark:text-zinc-300">من :</span>
             <span className="tabular-nums tracking-tight font-extrabold text-sm sm:text-base text-slate-900 dark:text-white" dir="ltr">
               {activePicker ? draftStart : startDate}
@@ -406,11 +410,13 @@ export function FinancialDatePicker({
             disabled={isTriggerDisabled}
             onClick={() => (activePicker === 'end' ? setActivePicker(null) : openPicker('end'))}
             className={`flex items-center gap-2.5 rounded-lg border-2 px-3.5 py-2 font-mono transition shadow-sm ${activePicker === 'end'
-              ? 'border-orange-500 bg-orange-50/80 text-orange-950 ring-2 ring-orange-500/20 dark:border-orange-400 dark:bg-zinc-900 dark:text-orange-200'
+              ? sectorType === 3
+                ? 'border-violet-900 bg-violet-50/50 text-violet-950 ring-1 ring-violet-900/20 dark:border-violet-700 dark:bg-zinc-900 dark:text-violet-200'
+                : 'border-orange-500 bg-orange-50/80 text-orange-950 ring-2 ring-orange-500/20 dark:border-orange-400 dark:bg-zinc-900 dark:text-orange-200'
               : 'border-slate-300 bg-white text-slate-900 hover:border-slate-400 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:border-zinc-500'
               } disabled:opacity-50 disabled:cursor-not-allowed`}
           >
-            <CalendarIcon className="h-4 w-4 text-orange-600 dark:text-orange-400 shrink-0" />
+            <CalendarIcon className={`h-4 w-4 ${sectorType === 3 ? 'text-violet-800 dark:text-violet-400' : 'text-orange-600 dark:text-orange-400'} shrink-0`} />
             <span className="font-sans text-sm font-bold text-slate-700 dark:text-zinc-300">إلى :</span>
             <span className="tabular-nums tracking-tight font-extrabold text-sm sm:text-base text-slate-900 dark:text-white" dir="ltr">
               {activePicker ? draftEnd : endDate}
@@ -576,7 +582,9 @@ export function FinancialDatePicker({
               }
 
               if (inDraftRange && !isSelected) {
-                cellStyle = 'bg-orange-50/70 text-orange-950 dark:bg-orange-500/10 dark:text-orange-200 font-medium';
+                cellStyle = sectorType === 3
+                  ? 'bg-violet-50/40 text-violet-950 dark:bg-violet-950/20 dark:text-violet-200 font-medium'
+                  : 'bg-orange-50/70 text-orange-950 dark:bg-orange-500/10 dark:text-orange-200 font-medium';
               }
 
               if (isImpossibleDate) {
@@ -585,7 +593,9 @@ export function FinancialDatePicker({
               }
 
               if (isSelected) {
-                cellStyle = 'bg-orange-600 text-white font-bold shadow-xs hover:bg-orange-700';
+                cellStyle = sectorType === 3
+                  ? 'bg-violet-900 text-white font-bold shadow-xs hover:bg-violet-800'
+                  : 'bg-orange-600 text-white font-bold shadow-xs hover:bg-orange-700';
               }
 
               return (
@@ -598,7 +608,7 @@ export function FinancialDatePicker({
                 >
                   {cell.dayNum}
                   {isTodayCell && !isSelected && (
-                    <span className="absolute bottom-0.5 h-1 w-1 rounded-full bg-orange-500" />
+                    <span className={`absolute bottom-0.5 h-1 w-1 rounded-full ${sectorType === 3 ? 'bg-violet-700' : 'bg-orange-500'}`} />
                   )}
                 </button>
               );

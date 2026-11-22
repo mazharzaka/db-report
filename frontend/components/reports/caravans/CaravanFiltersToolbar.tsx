@@ -5,6 +5,7 @@ import { ChevronDown, Store, Check, Search, Filter, X } from 'lucide-react';
 import type { BranchOption } from '@/types/reports';
 import { FinancialDatePicker } from '@/components/ui/FinancialDatePicker';
 import { Segmented } from '@/components/ui/Segmented';
+import { getSectorTheme } from '@/config/sectorsConfig';
 
 export type ViewMode = 'standard' | 'comparison';
 export type Granularity = 'day' | 'month' | 'summary';
@@ -95,6 +96,7 @@ export function HybridBranchFilterDropdown({
   selectedBranches,
   onChange,
 }: HybridBranchFilterDropdownProps) {
+  const theme = getSectorTheme(sectorType);
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -309,14 +311,14 @@ export function HybridBranchFilterDropdown({
         className="flex h-10 min-w-[260px] sm:min-w-[290px] items-center justify-between gap-3 rounded-lg border border-slate-200/80 bg-white px-3.5 py-2 text-xs font-semibold text-slate-800 shadow-sm ring-1 ring-slate-200/50 transition hover:bg-slate-50 dark:border-zinc-800 dark:bg-zinc-900/80 dark:text-zinc-200 dark:ring-white/10 dark:hover:bg-zinc-800"
       >
         <div className="flex items-center gap-2 min-w-0">
-          <Store className="h-4 w-4 shrink-0 text-orange-600 dark:text-orange-400" />
+          <Store className={`h-4 w-4 shrink-0 ${theme.accentText}`} />
           <span className="truncate font-bold text-slate-800 dark:text-zinc-100">
             {buttonLabel}
           </span>
         </div>
         <div className="flex items-center gap-2 shrink-0">
           {checkedCount > 0 && checkedCount < allOutlets.length && (
-            <span className="rounded-full bg-orange-600 text-white px-2 py-0.5 text-[10px] font-bold tabular-nums">
+            <span className={`rounded-full ${theme.badgeSolid} px-2 py-0.5 text-[10px] font-bold tabular-nums`}>
               {checkedCount}
             </span>
           )}
@@ -397,7 +399,7 @@ export function HybridBranchFilterDropdown({
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder={sectorType === 2 || sectorType === 3 ? "ابحث باسم اللعبة أو الكود..." : "ابحث بالاسم أو الكود..."}
-              className="w-full rounded-lg border border-slate-200 bg-slate-50 py-1.5 pl-3 pr-8 text-xs text-slate-800 placeholder-slate-400 outline-none transition focus:border-orange-500 focus:bg-white focus:ring-1 focus:ring-orange-500 dark:border-zinc-700/80 dark:bg-zinc-950 dark:text-zinc-200 dark:placeholder-zinc-500 dark:focus:border-orange-500"
+              className="w-full rounded-lg border border-slate-200 bg-slate-50 py-1.5 pl-3 pr-8 text-xs text-slate-800 placeholder-slate-400 outline-none transition focus:border-slate-400 focus:bg-white focus:ring-1 focus:ring-slate-400 dark:border-zinc-700/80 dark:bg-zinc-950 dark:text-zinc-200 dark:placeholder-zinc-500 dark:focus:border-zinc-600"
             />
           </div>
 
@@ -420,7 +422,7 @@ export function HybridBranchFilterDropdown({
                     <div className="flex items-center gap-2.5 min-w-0">
                       <span
                         className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border transition ${isChecked
-                          ? 'border-orange-600 bg-orange-600 text-white dark:border-orange-500 dark:bg-orange-500'
+                          ? theme.checkboxActive
                           : 'border-slate-300 bg-white dark:border-zinc-600 dark:bg-zinc-900'
                           }`}
                       >
@@ -458,7 +460,7 @@ export function HybridBranchFilterDropdown({
               <button
                 type="button"
                 onClick={handleSelectAll}
-                className="text-[11px] font-bold text-slate-600 hover:text-orange-600 dark:text-zinc-400 dark:hover:text-orange-400"
+                className="text-[11px] font-bold text-slate-600 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-white"
               >
                 {sectorType === 2 || sectorType === 3 ? "كل الألعاب" : "تحديد الكل"}
               </button>
@@ -475,7 +477,7 @@ export function HybridBranchFilterDropdown({
             <button
               type="button"
               onClick={() => setOpen(false)}
-              className="rounded-lg bg-orange-600 px-3.5 py-1 text-xs font-bold text-white shadow-sm transition hover:bg-orange-700 active:scale-95"
+              className={`rounded-lg ${theme.btnPrimary} px-3.5 py-1 text-xs font-bold text-white shadow-sm transition active:scale-95`}
             >
               تم
             </button>
@@ -496,6 +498,8 @@ export interface CaravanFiltersToolbarProps {
   viewMode: ViewMode;
   facilityType: FacilityType;
   onFacilityTypeChange: (type: FacilityType) => void;
+  rideStatusFilter?: 'active' | 'inactive' | 'all';
+  onRideStatusFilterChange?: (filter: 'active' | 'inactive' | 'all') => void;
   branchOptions: BranchOption[];
   selectedBranches: string[];
   onSelectedBranchesChange: (branches: string[]) => void;
@@ -526,6 +530,8 @@ export function CaravanFiltersToolbar({
   viewMode,
   facilityType,
   onFacilityTypeChange,
+  rideStatusFilter,
+  onRideStatusFilterChange,
   branchOptions,
   selectedBranches,
   onSelectedBranchesChange,
@@ -547,6 +553,7 @@ export function CaravanFiltersToolbar({
   onCompRangeBChange,
   comparisonLoading = false,
 }: CaravanFiltersToolbarProps) {
+  const theme = getSectorTheme(sectorType);
   if (viewMode === 'standard') {
     return (
       <div className="relative z-50 flex flex-col gap-3 rounded-xl border border-slate-200/80 bg-white p-3.5 shadow-sm ring-1 ring-slate-200/50 backdrop-blur-md print:hidden dark:border-zinc-800 dark:bg-zinc-900/80 dark:ring-white/10">
@@ -562,6 +569,18 @@ export function CaravanFiltersToolbar({
               selectedBranches={selectedBranches}
               onChange={onSelectedBranchesChange}
             />
+
+            {sectorType === 2 && (
+              <Segmented
+                options={[
+                  { id: 'active', label: 'النشطة' },
+                  { id: 'غير النشطة', label: 'غير النشطة' },
+                  { id: 'all', label: 'الكل' },
+                ].map(o => ({ id: o.id === 'غير النشطة' ? 'inactive' : o.id, label: o.label }))}
+                value={rideStatusFilter || 'active'}
+                onChange={(val) => onRideStatusFilterChange?.(val as 'active' | 'inactive' | 'all')}
+              />
+            )}
           </div>
 
           {/* Granularity Switcher */}
@@ -576,18 +595,20 @@ export function CaravanFiltersToolbar({
           <div className="flex flex-wrap items-center gap-2">
             {PRESETS.map((p) => {
               const isToday = p.id === 'today';
+              const isActive = preset === p.id;
               return (
                 <button
                   key={p.id}
                   type="button"
                   disabled={isToday || isLoading}
                   onClick={() => !isToday && onApplyPreset(p.id)}
-                  className={`rounded-lg px-3.5 py-1.5 text-xs font-semibold tabular-nums tracking-tight transition-all duration-200 ${isToday
-                    ? 'opacity-50 cursor-not-allowed pointer-events-none bg-slate-100 text-slate-700 dark:bg-zinc-800 dark:text-zinc-400'
-                    : preset === p.id
-                      ? 'bg-orange-600 text-white shadow-sm dark:bg-white dark:text-black font-bold'
-                      : 'bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-zinc-800/80 dark:text-zinc-300 dark:hover:bg-zinc-700 dark:hover:text-white'
-                    }`}
+                  className={`rounded-lg px-3.5 py-1.5 text-xs font-semibold tabular-nums tracking-tight transition-all duration-200 ${
+                    isToday
+                      ? 'opacity-50 cursor-not-allowed pointer-events-none bg-slate-100 text-slate-700 dark:bg-zinc-800 dark:text-zinc-400'
+                      : isActive
+                        ? `${theme.btnActive} shadow-sm font-bold`
+                        : 'bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-zinc-800/80 dark:text-zinc-300 dark:hover:bg-zinc-700 dark:hover:text-white'
+                  }`}
                 >
                   {p.label}
                 </button>
@@ -601,6 +622,7 @@ export function CaravanFiltersToolbar({
             onChange={onDateChange}
             disabled={isLoading}
             showQuickPresets={false}
+            sectorType={sectorType}
           />
         </div>
       </div>
@@ -612,19 +634,23 @@ export function CaravanFiltersToolbar({
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 dark:border-zinc-800/80 pb-3">
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-xs font-bold text-slate-500 dark:text-zinc-400">أنماط المقارنة الجاهزة:</span>
-          {COMP_PRESETS.map((p) => (
-            <button
-              key={p.id}
-              type="button"
-              onClick={() => onApplyCompPreset(p.id)}
-              className={`rounded-lg px-3 py-1 text-xs font-semibold tabular-nums tracking-tight transition-all duration-200 ${compPreset === p.id
-                ? 'bg-orange-600 text-white shadow-sm dark:bg-white dark:text-black font-bold'
-                : 'bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-zinc-800/80 dark:text-zinc-300 dark:hover:bg-zinc-700 dark:hover:text-white'
+          {COMP_PRESETS.map((p) => {
+            const isActive = compPreset === p.id;
+            return (
+              <button
+                key={p.id}
+                type="button"
+                onClick={() => onApplyCompPreset(p.id)}
+                className={`rounded-lg px-3 py-1 text-xs font-semibold tabular-nums tracking-tight transition-all duration-200 ${
+                  isActive
+                    ? `${theme.btnActive} shadow-sm font-bold`
+                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-zinc-800/80 dark:text-zinc-300 dark:hover:bg-zinc-700 dark:hover:text-white'
                 }`}
-            >
-              {p.label}
-            </button>
-          ))}
+              >
+                {p.label}
+              </button>
+            );
+          })}
         </div>
 
         {/* Hybrid Dropdown in Comparison Mode */}
@@ -644,7 +670,7 @@ export function CaravanFiltersToolbar({
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
         <div className="flex items-center justify-between gap-3 rounded-lg border border-slate-200/80 bg-slate-50/60 p-2.5 shadow-2xs dark:border-zinc-800/80 dark:bg-zinc-900/40">
           <div className="flex items-center gap-2">
-            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-orange-500 text-xs font-bold text-white">A</span>
+            <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-lg ${theme.badgeSolid} text-xs font-bold`}>A</span>
             <span className="text-xs font-bold text-slate-700 dark:text-zinc-300">الفترة الحالية (A):</span>
           </div>
           <FinancialDatePicker
@@ -653,6 +679,7 @@ export function CaravanFiltersToolbar({
             onChange={onCompRangeAChange}
             disabled={comparisonLoading}
             showQuickPresets={false}
+            sectorType={sectorType}
           />
         </div>
 
@@ -667,6 +694,7 @@ export function CaravanFiltersToolbar({
             onChange={onCompRangeBChange}
             disabled={comparisonLoading}
             showQuickPresets={false}
+            sectorType={sectorType}
           />
         </div>
       </div>
