@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useMemo } from "react";
 import { Bar } from "react-chartjs-2";
 import type { ChartOptions } from "chart.js";
 import { fmtCompact, fmtInt, fmtMoney, useIsDark } from "./charts";
@@ -22,7 +22,7 @@ const truncate = (s: string, n: number): string =>
  * Dark Mode: Elegant solid Lavender (#c4b5fd).
  * Light Mode: Solid Orange (#f97316).
  */
-export function BranchComparisonChart({
+export const BranchComparisonChart = React.memo(function BranchComparisonChart({
   stats,
   metric = "revenue",
   isSingleDay = false,
@@ -34,109 +34,116 @@ export function BranchComparisonChart({
   chartHex?: string;
 }) {
   const dark = useIsDark();
-  const tick = dark ? "#94a3b8" : "#4b5563";
-  const grid = dark ? "#334155" : "#e5e7eb";
-  const defaultBar = dark ? "#c4b5fd" : "#f97316";
-  const barColor = chartHex || defaultBar;
-  const barHoverColor = chartHex || (dark ? "#a78bfa" : "#ea580c");
-
   const isRevenue = metric === "revenue";
 
   // When isSingleDay is true, show ALL branches without limit.
   // When false (date range selected), show Top 10 to fit side-by-side layout.
-  const displayedStats = isSingleDay ? stats : stats.slice(0, 10);
-
-  const options: ChartOptions<"bar"> = {
-    responsive: true,
-    maintainAspectRatio: false,
-    interaction: { mode: "index", intersect: false },
-    plugins: {
-      legend: { display: false },
-      tooltip: {
-        rtl: true,
-        backgroundColor: dark
-          ? "rgba(24, 24, 27, 0.95)"
-          : "rgba(255, 255, 255, 0.98)",
-        borderColor: dark ? "rgba(255, 255, 255, 0.08)" : "#e2e8f0",
-        borderWidth: 1,
-        titleColor: dark ? "#ffffff" : "#0f172a",
-        bodyColor: dark ? "#a1a1aa" : "#475569",
-        padding: 12,
-        cornerRadius: 12,
-        usePointStyle: true,
-        callbacks: {
-          title: (items) =>
-            items[0] ? (displayedStats[items[0].dataIndex]?.name ?? "") : "",
-          label: (c) =>
-            isRevenue
-              ? ` الإجمالي الشامل: ${fmtMoney(Number(c.parsed.y))}`
-              : ` عدد العمليات: ${fmtInt(Number(c.parsed.y))} شيك`,
-          footer: (items) => {
-            const s = items[0] ? displayedStats[items[0].dataIndex] : undefined;
-            return s
-              ? `متوسط الفاتورة: ${fmtMoney(s.avgTicket)} | الشيكات: ${fmtInt(s.orders)}`
-              : "";
-          },
-        },
-        footerColor: barColor,
-      },
-    },
-    scales: {
-      x: {
-        grid: { display: false },
-        border: { display: false },
-        ticks: {
-          color: tick,
-          autoSkip: false,
-          maxRotation: isSingleDay ? 45 : 0,
-          font: { size: 11 },
-          callback(value) {
-            return truncate(displayedStats[Number(value)]?.name ?? "", isSingleDay ? 18 : 14);
-          },
-        },
-      },
-      y: {
-        beginAtZero: true,
-        grid: { color: grid },
-        border: { display: false },
-        ticks: {
-          color: tick,
-          font: { size: 11 },
-          callback: (v) =>
-            isRevenue ? fmtCompact(Number(v)) : fmtInt(Number(v)),
-        },
-      },
-    },
-    datasets: {
-      bar: {
-        borderRadius: {
-          topLeft: 8,
-          topRight: 8,
-          bottomLeft: 0,
-          bottomRight: 0,
-        },
-        borderSkipped: false,
-        maxBarThickness: isSingleDay ? 36 : 42,
-      },
-    },
-  };
-
-  const dataValues = displayedStats.map((s) => (isRevenue ? s.revenue : s.orders));
-
-  return (
-    <Bar
-      options={options}
-      data={{
-        labels: displayedStats.map((s) => s.name),
-        datasets: [
-          {
-            label: isRevenue ? "الإجمالي الشامل" : "عدد الشيكات",
-            data: dataValues,
-            backgroundColor: barColor,
-            hoverBackgroundColor: barHoverColor,
-          },
-        ],
-      }}
-    />
+  const displayedStats = useMemo(
+    () => (isSingleDay ? stats : stats.slice(0, 10)),
+    [stats, isSingleDay]
   );
-}
+
+  const isLargeDataset = stats.length > 45 || displayedStats.length > 45;
+
+  const options = useMemo<ChartOptions<"bar">>(() => {
+    const tick = dark ? "#94a3b8" : "#4b5563";
+    const grid = dark ? "#334155" : "#e5e7eb";
+    const defaultBar = dark ? "#c4b5fd" : "#f97316";
+    const barColor = chartHex || defaultBar;
+
+    return {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: isLargeDataset ? false : { duration: 400 },
+      interaction: { mode: "index", intersect: false },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          rtl: true,
+          backgroundColor: dark
+            ? "rgba(24, 24, 27, 0.95)"
+            : "rgba(255, 255, 255, 0.98)",
+          borderColor: dark ? "rgba(255, 255, 255, 0.08)" : "#e2e8f0",
+          borderWidth: 1,
+          titleColor: dark ? "#ffffff" : "#0f172a",
+          bodyColor: dark ? "#a1a1aa" : "#475569",
+          padding: 12,
+          cornerRadius: 12,
+          usePointStyle: true,
+          callbacks: {
+            title: (items) =>
+              items[0] ? (displayedStats[items[0].dataIndex]?.name ?? "") : "",
+            label: (c) =>
+              isRevenue
+                ? ` الإجمالي الشامل: ${fmtMoney(Number(c.parsed.y))}`
+                : ` عدد العمليات: ${fmtInt(Number(c.parsed.y))} شيك`,
+            footer: (items) => {
+              const s = items[0] ? displayedStats[items[0].dataIndex] : undefined;
+              return s
+                ? `متوسط الفاتورة: ${fmtMoney(s.avgTicket)} | الشيكات: ${fmtInt(s.orders)}`
+                : "";
+            },
+          },
+          footerColor: barColor,
+        },
+      },
+      scales: {
+        x: {
+          grid: { display: false },
+          border: { display: false },
+          ticks: {
+            color: tick,
+            autoSkip: false,
+            maxRotation: isSingleDay ? 45 : 0,
+            font: { size: 11 },
+            callback(value) {
+              return truncate(displayedStats[Number(value)]?.name ?? "", isSingleDay ? 18 : 14);
+            },
+          },
+        },
+        y: {
+          beginAtZero: true,
+          grid: { color: grid },
+          border: { display: false },
+          ticks: {
+            color: tick,
+            font: { size: 11 },
+            callback: (v) =>
+              isRevenue ? fmtCompact(Number(v)) : fmtInt(Number(v)),
+          },
+        },
+      },
+      datasets: {
+        bar: {
+          borderRadius: {
+            topLeft: 8,
+            topRight: 8,
+            bottomLeft: 0,
+            bottomRight: 0,
+          },
+          borderSkipped: false,
+          maxBarThickness: isSingleDay ? 36 : 42,
+        },
+      },
+    };
+  }, [dark, chartHex, displayedStats, isRevenue, isSingleDay, isLargeDataset]);
+
+  const chartData = useMemo(() => {
+    const defaultBar = dark ? "#c4b5fd" : "#f97316";
+    const barColor = chartHex || defaultBar;
+    const barHoverColor = chartHex || (dark ? "#a78bfa" : "#ea580c");
+    return {
+      labels: displayedStats.map((s) => s.name),
+      datasets: [
+        {
+          label: isRevenue ? "الإجمالي الشامل" : "عدد الشيكات",
+          data: displayedStats.map((s) => (isRevenue ? s.revenue : s.orders)),
+          backgroundColor: barColor,
+          hoverBackgroundColor: barHoverColor,
+        },
+      ],
+    };
+  }, [displayedStats, isRevenue, dark, chartHex]);
+
+  return <Bar options={options} data={chartData} />;
+});

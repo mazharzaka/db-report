@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useTheme } from "next-themes";
 import {
   Chart as ChartJS,
@@ -29,10 +29,16 @@ ChartJS.register(
 
 /* ---------- Formatting helpers (LTR numbers inside RTL layout) ---------- */
 
-export const fmtMoney = (v: number): string =>
-  `${(Number(v) || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ج.م`;
+const MONEY_FMT = new Intl.NumberFormat("en-US", {
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+});
+const INT_FMT = new Intl.NumberFormat("en-US");
 
-export function Money({
+export const fmtMoney = (v: number): string =>
+  `${MONEY_FMT.format(Number(v) || 0)} ج.م`;
+
+export const Money = React.memo(function Money({
   value,
   className = '',
   symbolClassName = 'text-xs opacity-50 font-normal mr-1 select-none',
@@ -41,20 +47,17 @@ export function Money({
   className?: string;
   symbolClassName?: string;
 }) {
-  const formatted = (Number(value) || 0).toLocaleString('en-US', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
+  const formatted = MONEY_FMT.format(Number(value) || 0);
   return (
     <span className={`tabular-nums tracking-tight font-mono ${className}`} dir="ltr">
       {formatted}
       <span className={symbolClassName}> ج.م</span>
     </span>
   );
-}
+});
 
 export const fmtInt = (v: number): string =>
-  (Number(v) || 0).toLocaleString("en-US");
+  INT_FMT.format(Number(v) || 0);
 
 export const fmtCompact = (v: number): string => {
   const n = Number(v) || 0;
@@ -154,7 +157,7 @@ export interface TrendPoint {
   visa: number;
 }
 
-export function RevenueTrendChart({
+export const RevenueTrendChart = React.memo(function RevenueTrendChart({
   points,
   startDate,
   endDate,
@@ -163,102 +166,102 @@ export function RevenueTrendChart({
   startDate?: string;
   endDate?: string;
 }) {
+  const dark = useIsDark();
+  const isLargeDataset = (points?.length ?? 0) > 45;
+
+  const options = useMemo<ChartOptions<"line">>(() => {
+    const tick = dark ? "#94a3b8" : "#4b5563";
+    const grid = dark ? "#334155" : "#e5e7eb";
+    return {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: isLargeDataset ? false : { duration: 400 },
+      interaction: { mode: "index", intersect: false },
+      plugins: {
+        legend: {
+          rtl: true,
+          position: "top",
+          align: "end",
+          labels: {
+            color: tick,
+            usePointStyle: true,
+            boxWidth: 8,
+            font: { size: 12 },
+          },
+        },
+        tooltip: {
+          ...tooltipBase,
+          backgroundColor: dark ? "rgba(24, 24, 27, 0.95)" : "rgba(255, 255, 255, 0.98)",
+          borderColor: dark ? "rgba(255, 255, 255, 0.08)" : "#e2e8f0",
+          titleColor: dark ? "#ffffff" : "#0f172a",
+          bodyColor: dark ? "#a1a1aa" : "#475569",
+          callbacks: {
+            label: (c) => ` ${c.dataset.label}: ${fmtMoney(Number(c.parsed.y))}`,
+          },
+        },
+      },
+      scales: {
+        x: {
+          grid: { display: false },
+          ticks: { color: tick, maxTicksLimit: 10, font: { size: 11 } },
+          border: { display: false },
+        },
+        y: {
+          beginAtZero: true,
+          grid: { color: grid },
+          border: { display: false },
+          ticks: {
+            color: tick,
+            callback: (v) => fmtCompact(Number(v)),
+            font: { size: 11 },
+          },
+        },
+      },
+      elements: {
+        point: { radius: 0, hoverRadius: isLargeDataset ? 3 : 5 },
+        line: { tension: isLargeDataset ? 0.15 : 0.35, borderWidth: 2.5 },
+      },
+    };
+  }, [dark, isLargeDataset]);
+
+  const chartData = useMemo(() => {
+    const safePoints = points || [];
+    const series = [
+      {
+        key: "total" as const,
+        label: "الإجمالي الشامل",
+        rgb: dark ? PALETTE.lavender : PALETTE.orange,
+      },
+      {
+        key: "cash" as const,
+        label: "النقدية",
+        rgb: dark ? PALETTE.slate : PALETTE.navy,
+      },
+      {
+        key: "visa" as const,
+        label: "الفيزا",
+        rgb: PALETTE.amber,
+      },
+    ];
+    return {
+      labels: safePoints.map((p) => p.label),
+      datasets: series.map((s) => ({
+        label: s.label,
+        data: safePoints.map((p) => p[s.key]),
+        borderColor: `rgb(${s.rgb})`,
+        pointBackgroundColor: `rgb(${s.rgb})`,
+        fill: false, // Strictly NO GRADIENTS: clean solid lines
+      })),
+    };
+  }, [points, dark]);
+
   // Conditional rendering: If single day selected OR points array length <= 1, return null
   if ((startDate && endDate && startDate === endDate) || !points || points.length <= 1) {
     return null;
   }
 
-  const dark = useIsDark();
-  const tick = dark ? "#94a3b8" : "#4b5563";
-  const grid = dark ? "#334155" : "#e5e7eb";
-
-  // Strict Dual-Theme Palette:
-  // Dark: Primary = Lavender (#c4b5fd), Secondary = Slate (#94a3b8), Tertiary = Amber (#f59e0b)
-  // Light: Primary = Solid Orange (#f97316), Secondary = Deep Navy (#1e3a8a), Tertiary = Amber (#f59e0b)
-  const series = [
-    {
-      key: "total" as const,
-      label: "الإجمالي الشامل",
-      rgb: dark ? PALETTE.lavender : PALETTE.orange,
-    },
-    {
-      key: "cash" as const,
-      label: "النقدية",
-      rgb: dark ? PALETTE.slate : PALETTE.navy,
-    },
-    {
-      key: "visa" as const,
-      label: "الفيزا",
-      rgb: PALETTE.amber,
-    },
-  ];
-
-  const options: ChartOptions<"line"> = {
-    responsive: true,
-    maintainAspectRatio: false,
-    interaction: { mode: "index", intersect: false },
-    plugins: {
-      legend: {
-        rtl: true,
-        position: "top",
-        align: "end",
-        labels: {
-          color: tick,
-          usePointStyle: true,
-          boxWidth: 8,
-          font: { size: 12 },
-        },
-      },
-      tooltip: {
-        ...tooltipBase,
-        backgroundColor: dark ? "rgba(24, 24, 27, 0.95)" : "rgba(255, 255, 255, 0.98)",
-        borderColor: dark ? "rgba(255, 255, 255, 0.08)" : "#e2e8f0",
-        titleColor: dark ? "#ffffff" : "#0f172a",
-        bodyColor: dark ? "#a1a1aa" : "#475569",
-        callbacks: {
-          label: (c) => ` ${c.dataset.label}: ${fmtMoney(Number(c.parsed.y))}`,
-        },
-      },
-    },
-    scales: {
-      x: {
-        grid: { display: false },
-        ticks: { color: tick, maxTicksLimit: 10, font: { size: 11 } },
-        border: { display: false },
-      },
-      y: {
-        beginAtZero: true,
-        grid: { color: grid },
-        border: { display: false },
-        ticks: {
-          color: tick,
-          callback: (v) => fmtCompact(Number(v)),
-          font: { size: 11 },
-        },
-      },
-    },
-    elements: {
-      point: { radius: 0, hoverRadius: 5 },
-      line: { tension: 0.35, borderWidth: 2.5 },
-    },
-  };
-
-  return (
-    <Line
-      options={options}
-      data={{
-        labels: points.map((p) => p.label),
-        datasets: series.map((s) => ({
-          label: s.label,
-          data: points.map((p) => p[s.key]),
-          borderColor: `rgb(${s.rgb})`,
-          pointBackgroundColor: `rgb(${s.rgb})`,
-          fill: false, // Strictly NO GRADIENTS: clean solid lines
-        })),
-      }}
-    />
-  );
-}
+  return <Line options={options} data={chartData} />;
+});
 
 /* ---------- Chart B: top caravans (pure HTML progress bars, Light/Dark) ---------- */
 

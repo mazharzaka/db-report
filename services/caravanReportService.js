@@ -4,133 +4,149 @@
  * Fully compatible with Microsoft SQL Server 2014 & dbDream_Park_Resturant schema.
  */
 
-import { getPool, sql } from '../config/db.js';
+import { getPool, sql } from "../config/db.js";
 
 // =========================================================================
 // ⚠️ VOIDS VIEW PLACEHOLDER:
 // Replace '[dbo].[VOIDS_VIEW]' with your exact view name (or set DB_VOIDS_VIEW in .env)
 // Example confirmed view in Dream Park DB: [dbo].[Vw_POS_Post_Void]
 // =========================================================================
-const VOIDS_SOURCE = '[dbo].[Pos_item_post_void]';
+const VOIDS_SOURCE = "[dbo].[Pos_item_post_void]";
 
 /**
  * خريطة التوجيه المرن للألعاب بين القطاعين (Type = 2: الألعاب الكبرى، Type = 3: الفيديو جيم والـ VR)
  */
 export const GAME_SECTOR_OVERRIDES = {
-    // 1. Move Hammer (all its variants) -> targetSector: 3 (Video Games & VR)
-    '20': 3,
-    '74': 3,
-    '80': 3,
-    'hammer': 3,
-    'hammer20': 3,
-    'الهامر': 3,
-    'هامر': 3,
+  // 1. Move Hammer (all its variants) -> targetSector: 3 (Video Games & VR)
+  20: 3,
+  74: 3,
+  80: 3,
+  hammer: 3,
+  hammer20: 3,
+  الهامر: 3,
+  هامر: 3,
 
-    // 2. Move Shooting2 (الرمايه 2) -> targetSector: 3 (Video Games & VR)
-    '12': 3,
-    '40': 3,
-    'الرمايه 2': 3,
-    'رمايه 2': 3,
-    'shooting2': 3,
+  // 2. Move Shooting2 (الرمايه 2) -> targetSector: 3 (Video Games & VR)
+  12: 3,
+  40: 3,
+  "الرمايه 2": 3,
+  "رمايه 2": 3,
+  shooting2: 3,
 
-    // 3. Move Upside Down House (البيت المقلوب) -> targetSector: 3 (Video Games & VR)
-    '3': 3,
-    '21': 3,
-    '22': 3,
-    '151': 3,
-    'البيت المقلوب': 3,
-    'upside down house': 3,
+  // 3. Move Upside Down House (البيت المقلوب) -> targetSector: 3 (Video Games & VR)
+  3: 3,
+  21: 3,
+  22: 3,
+  151: 3,
+  "البيت المقلوب": 3,
+  "upside down house": 3,
 
-    // 4. Move Funny Slides (شلال المرح) -> targetSector: 2 (Paid Rides)
-    '15': 2,
-    '115': 2,
-    'شلال المرح': 2,
-    'funny slides': 2,
+  // 4. Move Funny Slides (شلال المرح) -> targetSector: 2 (Paid Rides)
+  15: 2,
+  115: 2,
+  "شلال المرح": 2,
+  "funny slides": 2,
 
-    // 5. Move VR 2 -> targetSector: 3 (Video Games & VR)
-    '118': 3,
-    'vr2': 3,
-    'vr 2': 3,
+  // 5. Move VR 2 -> targetSector: 3 (Video Games & VR)
+  118: 3,
+  vr2: 3,
+  "vr 2": 3,
 
-    // 6. Move Horse (الخيل) -> targetSector: 2 (Paid Rides)
-    '13': 2,
-    '113': 2,
-    'الخيل': 2,
-    'horse': 2,
+  // 6. Move Horse (الخيل) -> targetSector: 2 (Paid Rides)
+  13: 2,
+  113: 2,
+  الخيل: 2,
+  horse: 2,
 
-    // 7. Ensure Discovery -> targetSector: 2 (Amusement Rides)
-    '1': 2,
-    'ديسكفري': 2,
-    'الديسكفري': 2,
-    'discovery': 2,
+  // 7. Ensure Discovery -> targetSector: 2 (Amusement Rides)
+  1: 2,
+  ديسكفري: 2,
+  الديسكفري: 2,
+  discovery: 2,
 
-    // 8. Ensure Selsela / Chains -> targetSector: 2 (Amusement Rides)
-    '23': 2,
-    'سلسلة': 2,
-    'السلسلة': 2,
-    'chains': 2,
+  // 8. Ensure Selsela / Chains -> targetSector: 2 (Amusement Rides)
+  23: 2,
+  سلسلة: 2,
+  السلسلة: 2,
+  chains: 2,
 };
 
 export class CaravanReportService {
-    /**
-     * استرجاع قائمة جميع منافذ القطاع المحددة (افتراضياً الكرفانات Type = 4)
-     * مع استبعاد الكيانات غير الإيرادية (المخازن والمستشفيات)
-     * بالنسبة لقطاعات الألعاب (Type = 2) والفيديو جيم (Type = 3)، يتم استرجاع الألعاب من Pos_item_post
-     * @param {number} [sectorType=4]
-     * @param {string} [startDate]
-     * @param {string} [endDate]
-     * @returns {Promise<Array<{Code: string, Name: string}>>}
-     */
-    static async getCaravanBranches(sectorType = 4, startDate, endDate) {
-        const pool = await getPool();
-        const request = pool.request();
-        const secType = Number(sectorType) || 4;
-        request.input('sectorType', sql.Int, secType);
+  /**
+   * استرجاع قائمة جميع منافذ القطاع المحددة (افتراضياً الكرفانات Type = 4)
+   * مع استبعاد الكيانات غير الإيرادية (المخازن والمستشفيات)
+   * بالنسبة لقطاعات الألعاب (Type = 2) والفيديو جيم (Type = 3)، يتم استرجاع الألعاب من Pos_item_post
+   * @param {number} [sectorType=4]
+   * @param {string} [startDate]
+   * @param {string} [endDate]
+   * @returns {Promise<Array<{Code: string, Name: string}>>}
+   */
+  static async getCaravanBranches(sectorType = 4, startDate, endDate) {
+    const pool = await getPool();
+    const request = pool.request();
+    const secType = Number(sectorType) || 4;
+    request.input("sectorType", sql.Int, secType);
 
-        if (secType === 2 || secType === 3) {
-            const sDate = startDate || new Date(Date.now() - 30 * 86400000).toISOString().split('T')[0];
-            const eDate = endDate || new Date().toISOString().split('T')[0];
-            request.input('startDate', sql.VarChar, sDate);
-            request.input('endDate', sql.VarChar, eDate);
+    if (secType === 2 || secType === 3) {
+      const sDate =
+        startDate ||
+        new Date(Date.now() - 30 * 86400000).toISOString().split("T")[0];
+      const eDate = endDate || new Date().toISOString().split("T")[0];
+      request.input("startDate", sql.Date, sDate);
+      request.input("endDate", sql.Date, eDate);
 
-            const query = `
-                SELECT DISTINCT 
+      const query = `
+                WITH FilteredItems AS (
+                    SELECT
+                        p.[Branch_Code],
+                        p.[type] AS [Branch_Type],
+                        p.[Group_code],
+                        p.[item_Code],
+                        p.[Groupitem_name],
+                        p.[item_name]
+                    FROM [dbo].[Pos_item_post] p WITH (NOLOCK)
+                    WHERE p.[Doc_Date] >= @startDate
+                      AND p.[Doc_Date] < DATEADD(DAY, 1, @endDate)
+                      AND (p.[type] IN (2, 3) OR (p.[Branch_Code] = 102 AND (p.[Group_code] = 3 OR p.[Groupitem_name] LIKE '%gold%')))
+                      AND p.[Branch_Code] NOT IN (12, 13, 1019, 1020, 1026, 1028)
+                      AND (p.[Void_item] = 0 OR p.[Void_item] IS NULL)
+                )
+                SELECT DISTINCT
                     g.[Game_Code] AS [Code],
                     g.[Game_Name] AS [Name]
-                FROM [dbo].[Pos_item_post] p WITH (NOLOCK)
-                LEFT JOIN [dbo].[Branchs] b WITH (NOLOCK) ON p.[Branch_Code] = b.[Code]
+                FROM FilteredItems p
                 CROSS APPLY (
                     SELECT 
                         -- Target Sector Routing:
                         CASE 
                             -- Golden (دفتر جولدن / Branch 102 / Group 3) to Sector 2 (Paid Rides):
-                            WHEN (b.[Code] = 102 AND (p.[Group_code] = 3 OR p.[Groupitem_name] LIKE '%gold%')) 
+                            WHEN (p.[Branch_Code] = 102 AND (p.[Group_code] = 3 OR p.[Groupitem_name] LIKE '%gold%')) 
                               OR (p.[Groupitem_name] LIKE '%gold%' AND p.[item_name] LIKE '%جولدن%') THEN 2
                             -- Exclude Zoo (Group 21 / separate promotion) from Type 3:
-                            WHEN b.[Type] IN (2, 3) AND (p.[Group_code] = 21 OR p.[Groupitem_name] LIKE '%zoo%' OR p.[item_name] LIKE '%zoo%') THEN 0
+                            WHEN p.[Group_code] = 21 OR p.[Groupitem_name] LIKE '%zoo%' OR p.[item_name] LIKE '%zoo%' THEN 0
                             -- Funny Slides (شلال المرح / Group 15) to Sector 2 (Paid Rides):
-                            WHEN b.[Type] IN (2, 3) AND (p.[Group_code] = 15 OR p.[Groupitem_name] LIKE '%شلال%' OR p.[item_name] LIKE '%شلال%') THEN 2
+                            WHEN p.[Group_code] = 15 OR p.[Groupitem_name] LIKE '%شلال%' OR p.[item_name] LIKE '%شلال%' THEN 2
                             -- VR 2 (Group 18) to Sector 3 (Video Games & VR):
-                            WHEN b.[Type] IN (2, 3) AND (p.[Group_code] = 18 OR p.[Groupitem_name] LIKE '%vr2%' OR p.[Groupitem_name] LIKE '%vr 2%') THEN 3
+                            WHEN p.[Group_code] = 18 OR p.[Groupitem_name] LIKE '%vr2%' OR p.[Groupitem_name] LIKE '%vr 2%' THEN 3
                             -- Horse (الخيل / Group 13) to Sector 2 (Paid Rides):
-                            WHEN b.[Type] IN (2, 3) AND (p.[Group_code] = 13 OR p.[Groupitem_name] LIKE '%خيل%' OR p.[item_name] LIKE '%خيل%') THEN 2
+                            WHEN p.[Group_code] = 13 OR p.[Groupitem_name] LIKE '%خيل%' OR p.[item_name] LIKE '%خيل%' THEN 2
                             -- Hammer to Sector 3 (Video Games & VR):
-                            WHEN b.[Type] IN (2, 3) AND (p.[Group_code] = 20 OR p.[item_Code] IN ('74', '80') OR p.[Groupitem_name] LIKE '%hammer%' OR p.[item_name] LIKE '%hammer%' OR p.[item_name] LIKE '%هامر%') THEN 3
+                            WHEN p.[Group_code] = 20 OR p.[item_Code] IN ('74', '80') OR p.[Groupitem_name] LIKE '%hammer%' OR p.[item_name] LIKE '%hammer%' OR p.[item_name] LIKE '%هامر%' THEN 3
                             -- Shooting2 (الرمايه 2) to Sector 3:
-                            WHEN b.[Type] IN (2, 3) AND (p.[Group_code] = 12 OR p.[item_Code] = '40' OR p.[Groupitem_name] LIKE '%رمايه 2%' OR p.[item_name] LIKE '%رمايه 2%' OR p.[Groupitem_name] LIKE '%الرمايه 2%' OR p.[item_name] LIKE '%الرمايه 2%') THEN 3
+                            WHEN p.[Group_code] = 12 OR p.[item_Code] = '40' OR p.[Groupitem_name] LIKE '%رمايه 2%' OR p.[item_name] LIKE '%رمايه 2%' OR p.[Groupitem_name] LIKE '%الرمايه 2%' OR p.[item_name] LIKE '%الرمايه 2%' THEN 3
                             -- Upside Down House (البيت المقلوب) to Sector 3:
-                            WHEN b.[Type] IN (2, 3) AND (p.[Group_code] = 3 OR p.[Groupitem_name] LIKE '%مقلوب%' OR p.[item_name] LIKE '%مقلوب%') THEN 3
+                            WHEN p.[Group_code] = 3 OR p.[Groupitem_name] LIKE '%مقلوب%' OR p.[item_name] LIKE '%مقلوب%' THEN 3
                             -- Discovery & Selsela to Sector 2 (Amusement Rides):
-                            WHEN b.[Type] IN (2, 3) AND (p.[Group_code] = 1 OR p.[Groupitem_name] LIKE '%ديسكفر%' OR p.[item_name] LIKE '%ديسكفر%') THEN 2
-                            WHEN b.[Type] IN (2, 3) AND (p.[Groupitem_name] LIKE '%سلسل%' OR p.[item_name] LIKE '%سلسل%') THEN 2
+                            WHEN p.[Group_code] = 1 OR p.[Groupitem_name] LIKE '%ديسكفر%' OR p.[item_name] LIKE '%ديسكفر%' THEN 2
+                            WHEN p.[Groupitem_name] LIKE '%سلسل%' OR p.[item_name] LIKE '%سلسل%' THEN 2
                             -- Default to Branch Type:
-                            ELSE b.[Type]
+                            ELSE p.[Branch_Type]
                         END AS [Target_Sector],
 
                         -- Canonical Game Code:
                         CASE 
                             -- Golden always Code 'golden'
-                            WHEN (b.[Code] = 102 AND (p.[Group_code] = 3 OR p.[Groupitem_name] LIKE '%gold%')) 
+                            WHEN (p.[Branch_Code] = 102 AND (p.[Group_code] = 3 OR p.[Groupitem_name] LIKE '%gold%')) 
                               OR (p.[Groupitem_name] LIKE '%gold%' AND p.[item_name] LIKE '%جولدن%') THEN 'golden'
                             -- Discovery always Code '1'
                             WHEN p.[Group_code] = 1 OR p.[Groupitem_name] LIKE '%ديسكفر%' THEN '1'
@@ -157,7 +173,7 @@ export class CaravanReportService {
 
                         -- Canonical Game Name:
                         CASE 
-                            WHEN (b.[Code] = 102 AND (p.[Group_code] = 3 OR p.[Groupitem_name] LIKE '%gold%')) 
+                            WHEN (p.[Branch_Code] = 102 AND (p.[Group_code] = 3 OR p.[Groupitem_name] LIKE '%gold%')) 
                               OR (p.[Groupitem_name] LIKE '%gold%' AND p.[item_name] LIKE '%جولدن%') THEN N'الذهبية'
                             WHEN p.[Group_code] = 1 OR p.[Groupitem_name] LIKE '%ديسكفر%' THEN N'الديسكفري'
                             WHEN p.[Groupitem_name] LIKE '%سلسل%' OR p.[item_name] LIKE '%سلسل%' THEN N'السلسلة'
@@ -178,67 +194,83 @@ export class CaravanReportService {
                             ELSE p.[Groupitem_name]
                         END AS [Game_Name]
                 ) g
-                WHERE (b.[Type] IN (2, 3) OR (b.[Code] = 102 AND (p.[Group_code] = 3 OR p.[Groupitem_name] LIKE '%gold%')))
-                  AND ISNULL(b.[Code], 0) NOT IN (12, 13, 1019, 1020, 1026, 1028)
-                  AND ISNULL(p.[Void_item], 0) = 0
-                  AND p.[Doc_Date] >= CAST(@startDate AS DATE)
-                  AND p.[Doc_Date] < DATEADD(DAY, 1, CAST(@endDate AS DATE))
-                  AND g.[Target_Sector] = @sectorType
-                ORDER BY [Name] ASC;
+                WHERE g.[Target_Sector] = @sectorType
+                ORDER BY [Name] ASC
+                OPTION (HASH JOIN);
             `;
-            const result = await request.query(query);
-            return result.recordset || [];
-        }
+      const result = await request.query(query);
+      return result.recordset || [];
+    }
 
-        const query = `
+    const query = `
             SELECT 
                 [Code], 
                 [Aname] AS [Name]
             FROM [dbo].[Branchs] WITH (NOLOCK)
             WHERE [Type] = @sectorType
-              AND [Code] NOT IN ('12', '13', '1019', '1020', '1026', '1028')
+              AND [Code] NOT IN (12, 13, 1019, 1020, 1026, 1028)
             ORDER BY [Aname] ASC;
         `;
-        const result = await request.query(query);
-        return result.recordset || [];
+    const result = await request.query(query);
+    return result.recordset || [];
+  }
+
+  /**
+   * تقرير تحليلي على مستوى الأصناف/الألعاب الفردية لقطاعي الألعاب (Type = 2) والفيديو جيم (Type = 3)
+   */
+  static async getItemLevelReportData({
+    startDate = "2026-01-01",
+    endDate = new Date().toISOString().split("T")[0],
+    branches = [],
+    granularity = "summary",
+    sortBy = "total_desc",
+    sectorType = 3,
+  }) {
+    const pool = await getPool();
+    const request = pool.request();
+    const secType = Number(sectorType) || 3;
+
+    request.input("startDate", sql.Date, startDate);
+    request.input("endDate", sql.Date, endDate);
+    request.input("sectorType", sql.Int, secType);
+
+    let itemFilterClause = "";
+    const isFiltered = Array.isArray(branches) && branches.length > 0;
+    if (isFiltered) {
+      const placeholders = branches.map((code, index) => {
+        const paramName = `grp_${index}`;
+        request.input(paramName, sql.VarChar, String(code).trim());
+        return `@${paramName}`;
+      });
+      itemFilterClause = ` AND g.[Game_Code] IN (${placeholders.join(", ")})`;
     }
 
-    /**
-     * تقرير تحليلي على مستوى الأصناف/الألعاب الفردية لقطاعي الألعاب (Type = 2) والفيديو جيم (Type = 3)
-     */
-    static async getItemLevelReportData({
-        startDate = '2026-01-01',
-        endDate = new Date().toISOString().split('T')[0],
-        branches = [],
-        granularity = 'summary',
-        sortBy = 'total_desc',
-        sectorType = 3
-    }) {
-        const pool = await getPool();
-        const request = pool.request();
-        const secType = Number(sectorType) || 3;
+    let selectPeriod = "CONVERT(VARCHAR(10), p.[Doc_Date], 120)";
+    if (granularity === "month") {
+      selectPeriod = "CONVERT(VARCHAR(7), p.[Doc_Date], 120)";
+    }
 
-        request.input('startDate', sql.VarChar, startDate);
-        request.input('endDate', sql.VarChar, endDate);
-        request.input('sectorType', sql.Int, secType);
-
-        let itemFilterClause = '';
-        const isFiltered = Array.isArray(branches) && branches.length > 0;
-        if (isFiltered) {
-            const placeholders = branches.map((code, index) => {
-                const paramName = `grp_${index}`;
-                request.input(paramName, sql.VarChar, String(code).trim());
-                return `@${paramName}`;
-            });
-            itemFilterClause = ` AND g.[Game_Code] IN (${placeholders.join(', ')})`;
-        }
-
-        let selectPeriod = "CONVERT(VARCHAR(10), p.[Doc_Date], 120)";
-        if (granularity === 'month') {
-            selectPeriod = "CONVERT(VARCHAR(7), p.[Doc_Date], 120)";
-        }
-
-        const itemsQuery = `
+    const itemsQuery = `
+            WITH FilteredItems AS (
+                SELECT
+                    p.[Doc_Date],
+                    p.[Branch_Code],
+                    p.[type] AS [Branch_Type],
+                    p.[Group_code],
+                    p.[item_Code],
+                    p.[Groupitem_name],
+                    p.[item_name],
+                    p.[Item_Qunt],
+                    p.[Item_Price],
+                    p.[item_Sels_Tax_P],
+                    p.[C/L]
+                FROM [dbo].[Pos_item_post] p WITH (NOLOCK)
+                WHERE p.[Doc_Date] >= @startDate
+                  AND p.[Doc_Date] < DATEADD(DAY, 1, @endDate)
+                  AND (p.[type] IN (2, 3) OR (p.[Branch_Code] = 102 AND (p.[Group_code] = 3 OR p.[Groupitem_name] LIKE '%gold%')))
+                  AND p.[Branch_Code] NOT IN (12, 13, 1019, 1020, 1026, 1028)
+                  AND (p.[Void_item] = 0 OR p.[Void_item] IS NULL)
+            )
             SELECT 
                 ${selectPeriod} AS [Period],
                 g.[Game_Code] AS [Branch_Code],
@@ -246,40 +278,39 @@ export class CaravanReportService {
                 SUM(CAST(p.[Item_Qunt] AS INT)) AS [Cover],
                 SUM(CAST(p.[Item_Qunt] AS DECIMAL(18, 4)) * CAST(p.[Item_Price] AS DECIMAL(18, 4)) * (1.0 + ISNULL(CAST(p.[item_Sels_Tax_P] AS DECIMAL(18, 4)), 0) / 100.0)) AS [Total],
                 SUM(CAST(ISNULL(p.[C/L], 0) AS DECIMAL(18, 4))) AS [CL]
-            FROM [dbo].[Pos_item_post] p WITH (NOLOCK)
-            LEFT JOIN [dbo].[Branchs] b WITH (NOLOCK) ON p.[Branch_Code] = b.[Code]
+            FROM FilteredItems p
             CROSS APPLY (
                 SELECT 
                     -- Target Sector Routing:
                     CASE 
                         -- Golden (دفتر جولدن / Branch 102 / Group 3) to Sector 2 (Paid Rides):
-                        WHEN (b.[Code] = 102 AND (p.[Group_code] = 3 OR p.[Groupitem_name] LIKE '%gold%')) 
+                        WHEN (p.[Branch_Code] = 102 AND (p.[Group_code] = 3 OR p.[Groupitem_name] LIKE '%gold%')) 
                           OR (p.[Groupitem_name] LIKE '%gold%' AND p.[item_name] LIKE '%جولدن%') THEN 2
                         -- Exclude Zoo (Group 21 / separate promotion) from Type 3:
-                        WHEN b.[Type] IN (2, 3) AND (p.[Group_code] = 21 OR p.[Groupitem_name] LIKE '%zoo%' OR p.[item_name] LIKE '%zoo%') THEN 0
+                        WHEN p.[Group_code] = 21 OR p.[Groupitem_name] LIKE '%zoo%' OR p.[item_name] LIKE '%zoo%' THEN 0
                         -- Funny Slides (شلال المرح / Group 15) to Sector 2 (Paid Rides):
-                        WHEN b.[Type] IN (2, 3) AND (p.[Group_code] = 15 OR p.[Groupitem_name] LIKE '%شلال%' OR p.[item_name] LIKE '%شلال%') THEN 2
+                        WHEN p.[Group_code] = 15 OR p.[Groupitem_name] LIKE '%شلال%' OR p.[item_name] LIKE '%شلال%' THEN 2
                         -- VR 2 (Group 18) to Sector 3 (Video Games & VR):
-                        WHEN b.[Type] IN (2, 3) AND (p.[Group_code] = 18 OR p.[Groupitem_name] LIKE '%vr2%' OR p.[Groupitem_name] LIKE '%vr 2%') THEN 3
+                        WHEN p.[Group_code] = 18 OR p.[Groupitem_name] LIKE '%vr2%' OR p.[Groupitem_name] LIKE '%vr 2%' THEN 3
                         -- Horse (الخيل / Group 13) to Sector 2 (Paid Rides):
-                        WHEN b.[Type] IN (2, 3) AND (p.[Group_code] = 13 OR p.[Groupitem_name] LIKE '%خيل%' OR p.[item_name] LIKE '%خيل%') THEN 2
+                        WHEN p.[Group_code] = 13 OR p.[Groupitem_name] LIKE '%خيل%' OR p.[item_name] LIKE '%خيل%' THEN 2
                         -- Hammer to Sector 3 (Video Games & VR):
-                        WHEN b.[Type] IN (2, 3) AND (p.[Group_code] = 20 OR p.[item_Code] IN ('74', '80') OR p.[Groupitem_name] LIKE '%hammer%' OR p.[item_name] LIKE '%hammer%' OR p.[item_name] LIKE '%هامر%') THEN 3
+                        WHEN p.[Group_code] = 20 OR p.[item_Code] IN ('74', '80') OR p.[Groupitem_name] LIKE '%hammer%' OR p.[item_name] LIKE '%hammer%' OR p.[item_name] LIKE '%هامر%' THEN 3
                         -- Shooting2 (الرمايه 2) to Sector 3:
-                        WHEN b.[Type] IN (2, 3) AND (p.[Group_code] = 12 OR p.[item_Code] = '40' OR p.[Groupitem_name] LIKE '%رمايه 2%' OR p.[item_name] LIKE '%رمايه 2%' OR p.[Groupitem_name] LIKE '%الرمايه 2%' OR p.[item_name] LIKE '%الرمايه 2%') THEN 3
+                        WHEN p.[Group_code] = 12 OR p.[item_Code] = '40' OR p.[Groupitem_name] LIKE '%رمايه 2%' OR p.[item_name] LIKE '%رمايه 2%' OR p.[Groupitem_name] LIKE '%الرمايه 2%' OR p.[item_name] LIKE '%الرمايه 2%' THEN 3
                         -- Upside Down House (البيت المقلوب) to Sector 3:
-                        WHEN b.[Type] IN (2, 3) AND (p.[Group_code] = 3 OR p.[Groupitem_name] LIKE '%مقلوب%' OR p.[item_name] LIKE '%مقلوب%') THEN 3
+                        WHEN p.[Group_code] = 3 OR p.[Groupitem_name] LIKE '%مقلوب%' OR p.[item_name] LIKE '%مقلوب%' THEN 3
                         -- Discovery & Selsela to Sector 2 (Amusement Rides):
-                        WHEN b.[Type] IN (2, 3) AND (p.[Group_code] = 1 OR p.[Groupitem_name] LIKE '%ديسكفر%' OR p.[item_name] LIKE '%ديسكفر%') THEN 2
-                        WHEN b.[Type] IN (2, 3) AND (p.[Groupitem_name] LIKE '%سلسل%' OR p.[item_name] LIKE '%سلسل%') THEN 2
+                        WHEN p.[Group_code] = 1 OR p.[Groupitem_name] LIKE '%ديسكفر%' OR p.[item_name] LIKE '%ديسكفر%' THEN 2
+                        WHEN p.[Groupitem_name] LIKE '%سلسل%' OR p.[item_name] LIKE '%سلسل%' THEN 2
                         -- Default to Branch Type:
-                        ELSE b.[Type]
+                        ELSE p.[Branch_Type]
                     END AS [Target_Sector],
 
                     -- Canonical Game Code:
                     CASE 
                         -- Golden always Code 'golden'
-                        WHEN (b.[Code] = 102 AND (p.[Group_code] = 3 OR p.[Groupitem_name] LIKE '%gold%')) 
+                        WHEN (p.[Branch_Code] = 102 AND (p.[Group_code] = 3 OR p.[Groupitem_name] LIKE '%gold%')) 
                           OR (p.[Groupitem_name] LIKE '%gold%' AND p.[item_name] LIKE '%جولدن%') THEN 'golden'
                         -- Discovery always Code '1'
                         WHEN p.[Group_code] = 1 OR p.[Groupitem_name] LIKE '%ديسكفر%' THEN '1'
@@ -306,7 +337,7 @@ export class CaravanReportService {
 
                     -- Canonical Game Name:
                     CASE 
-                        WHEN (b.[Code] = 102 AND (p.[Group_code] = 3 OR p.[Groupitem_name] LIKE '%gold%')) 
+                        WHEN (p.[Branch_Code] = 102 AND (p.[Group_code] = 3 OR p.[Groupitem_name] LIKE '%gold%')) 
                           OR (p.[Groupitem_name] LIKE '%gold%' AND p.[item_name] LIKE '%جولدن%') THEN N'الذهبية'
                         WHEN p.[Group_code] = 1 OR p.[Groupitem_name] LIKE '%ديسكفر%' THEN N'الديسكفري'
                         WHEN p.[Groupitem_name] LIKE '%سلسل%' OR p.[item_name] LIKE '%سلسل%' THEN N'السلسلة'
@@ -327,239 +358,254 @@ export class CaravanReportService {
                         ELSE p.[Groupitem_name]
                     END AS [Game_Name]
             ) g
-            WHERE (b.[Type] IN (2, 3) OR (b.[Code] = 102 AND (p.[Group_code] = 3 OR p.[Groupitem_name] LIKE '%gold%')))
-              AND ISNULL(b.[Code], 0) NOT IN (12, 13, 1019, 1020, 1026, 1028)
-              AND ISNULL(p.[Void_item], 0) = 0
-              AND p.[Doc_Date] >= CAST(@startDate AS DATE)
-              AND p.[Doc_Date] < DATEADD(DAY, 1, CAST(@endDate AS DATE))
-              AND g.[Target_Sector] = @sectorType
+            WHERE g.[Target_Sector] = @sectorType
               ${itemFilterClause}
             GROUP BY ${selectPeriod}, g.[Game_Code], g.[Game_Name]
             HAVING SUM(CAST(p.[Item_Qunt] AS DECIMAL(18, 4)) * CAST(p.[Item_Price] AS DECIMAL(18, 4)) * (1.0 + ISNULL(CAST(p.[item_Sels_Tax_P] AS DECIMAL(18, 4)), 0) / 100.0)) > 0
-            ORDER BY [Period] ASC, [Total] DESC;
+            ORDER BY [Period] ASC, [Total] DESC
+            OPTION (HASH JOIN);
         `;
 
-        const startTime = Date.now();
-        const itemsRes = await request.query(itemsQuery);
-        const duration = Date.now() - startTime;
+    const startTime = Date.now();
+    const itemsRes = await request.query(itemsQuery);
+    const duration = Date.now() - startTime;
 
-        const rawItemRecords = itemsRes.recordset || [];
+    const rawItemRecords = itemsRes.recordset || [];
 
-        // Build precise daily payment aggregates from game items
-        const dailyPayMap = new Map();
-        let totalSales = 0;
-        let totalCL = 0;
-        let totalCover = 0;
+    // Build precise daily payment aggregates from game items
+    const dailyPayMap = new Map();
+    let totalSales = 0;
+    let totalCL = 0;
+    let totalCover = 0;
 
-        for (const item of rawItemRecords) {
-            const periodKey = String(item.Period || 'all');
-            const itemTot = Number(item.Total) || 0;
-            const itemCl = Number(item.CL) || 0;
-            const itemCash = itemTot - itemCl;
-            const itemCover = Number(item.Cover) || 0;
+    for (const item of rawItemRecords) {
+      const periodKey = String(item.Period || "all");
+      const itemTot = Number(item.Total) || 0;
+      const itemCl = Number(item.CL) || 0;
+      const itemCash = itemTot - itemCl;
+      const itemCover = Number(item.Cover) || 0;
 
-            totalSales += itemTot;
-            totalCL += itemCl;
-            totalCover += itemCover;
+      totalSales += itemTot;
+      totalCL += itemCl;
+      totalCover += itemCover;
 
-            const existing = dailyPayMap.get(periodKey) || {
-                cash: 0,
-                visa: 0,
-                cl: 0,
-                total: 0
-            };
-            existing.cash += itemCash;
-            existing.cl += itemCl;
-            existing.total += itemTot;
-            dailyPayMap.set(periodKey, existing);
-        }
-
-        totalSales = Math.round(totalSales * 100) / 100;
-        const totalCash = Math.round((totalSales - totalCL) * 100) / 100;
-        const totalVisa = 0;
-        totalCL = Math.round(totalCL * 100) / 100;
-        const totalNetRevenue = Math.round((totalSales / 1.14) * 100) / 100;
-        const totalSalesTax = Math.round((totalSales - totalNetRevenue) * 100) / 100;
-
-        const records = rawItemRecords.map((r) => {
-            const itemTotal = Number(r.Total) || 0;
-            const itemCover = Number(r.Cover) || 0;
-            const itemNetRev = Math.round((itemTotal / 1.14) * 100) / 100;
-            const itemTax = Math.round((itemTotal - itemNetRev) * 100) / 100;
-            const itemCl = Number(r.CL) || 0;
-            const itemCash = itemTotal - itemCl;
-
-            const dPay = dailyPayMap.get(String(r.Period)) || {
-                cash: itemCash,
-                visa: 0,
-                cl: itemCl,
-                total: itemTotal
-            };
-
-            return {
-                branchCode: String(r.Branch_Code),
-                name: r.Name,
-                period: r.Period || null,
-                cover: itemCover,
-                cash: itemCash,
-                visa: 0,
-                creditLine: itemCl,
-                total: itemTotal,
-                netRevenue: itemNetRev,
-                serviceCharge: 0,
-                salesTax: itemTax,
-                grandTotal: itemTotal,
-                totalCollected: itemTotal,
-                totalVoids: 0,
-                voidCount: 0,
-                voidDetails: [],
-                variance: 0,
-                dailyCash: dPay.cash,
-                dailyVisa: 0,
-                dailyCl: dPay.cl,
-                dailyTotal: dPay.total,
-                marketShare: totalSales > 0 ? Math.round((itemTotal / totalSales) * 1000) / 10 : 0,
-                avgTicket: itemCover > 0 ? Math.round((itemTotal / itemCover) * 100) / 100 : 0
-            };
-        });
-
-        return {
-            executionTimeMs: duration,
-            filters: { startDate, endDate, granularity, branches, sectorType: secType },
-            summary: {
-                totalSales,
-                totalCash,
-                totalVisa,
-                totalCL,
-                totalCover,
-                totalNetRevenue,
-                totalServiceCharge: 0,
-                totalSalesTax,
-                totalVoids: 0,
-                totalVariance: 0,
-                cashPct: totalSales > 0 ? Math.round((totalCash / totalSales) * 1000) / 10 : 0,
-                visaPct: totalSales > 0 ? Math.round((totalVisa / totalSales) * 1000) / 10 : 0,
-                clPct: totalSales > 0 ? Math.round((totalCL / totalSales) * 1000) / 10 : 0,
-                avgTicket: totalCover > 0 ? Math.round((totalSales / totalCover) * 100) / 100 : 0,
-                rowCount: records.length,
-                topOutlet: records.length > 0 ? {
-                    name: records[0].name,
-                    total: records[0].total,
-                    cover: records[0].cover
-                } : null,
-                topCaravan: records.length > 0 ? {
-                    name: records[0].name,
-                    total: records[0].total,
-                    cover: records[0].cover
-                } : null
-            },
-            records
-        };
+      const existing = dailyPayMap.get(periodKey) || {
+        cash: 0,
+        visa: 0,
+        cl: 0,
+        total: 0,
+      };
+      existing.cash += itemCash;
+      existing.cl += itemCl;
+      existing.total += itemTot;
+      dailyPayMap.set(periodKey, existing);
     }
 
-    /**
-     * استعلام وتجميع بيانات إيرادات القطاع المالي مع دعم التصفية الزمنية وتعدد المنافذ والتجميع الديناميكي
-     * @param {Object} params
-     * @param {string} params.startDate 'YYYY-MM-DD'
-     * @param {string} params.endDate 'YYYY-MM-DD'
-     * @param {string[]} [params.branches] قائمة أكواد الفروع
-     * @param {('summary'|'month'|'day')} [params.granularity] مستوى التجميع
-     * @param {string} [params.sortBy] طريقة الترتيب
-     * @param {number} [params.sectorType=4] نوع القطاع (1: مطاعم, 2: ألعاب, 3: فيديو جيم, 4: كرفانات, 5: بوابات, 6: أمانات)
-     */
-    static async getReportData({
-        startDate = '2026-01-01',
-        endDate = new Date().toISOString().split('T')[0],
-        branches = [],
-        granularity = 'summary',
-        sortBy = 'total_desc',
-        sectorType = 4
-    }) {
-        const secType = Number(sectorType) || 4;
+    totalSales = Math.round(totalSales * 100) / 100;
+    const totalCash = Math.round((totalSales - totalCL) * 100) / 100;
+    const totalVisa = 0;
+    totalCL = Math.round(totalCL * 100) / 100;
+    const totalNetRevenue = Math.round((totalSales / 1.14) * 100) / 100;
+    const totalSalesTax =
+      Math.round((totalSales - totalNetRevenue) * 100) / 100;
 
-        // قطاعات الألعاب (Type = 2) والفيديو جيم (Type = 3): تجميع على مستوى الأصناف/الألعاب
-        if (secType === 2 || secType === 3) {
-            return this.getItemLevelReportData({
-                startDate,
-                endDate,
-                branches,
-                granularity,
-                sortBy,
-                sectorType: secType
-            });
-        }
+    const records = rawItemRecords.map((r) => {
+      const itemTotal = Number(r.Total) || 0;
+      const itemCover = Number(r.Cover) || 0;
+      const itemNetRev = Math.round((itemTotal / 1.14) * 100) / 100;
+      const itemTax = Math.round((itemTotal - itemNetRev) * 100) / 100;
+      const itemCl = Number(r.CL) || 0;
+      const itemCash = itemTotal - itemCl;
 
-        const pool = await getPool();
-        const request = pool.request();
+      const dPay = dailyPayMap.get(String(r.Period)) || {
+        cash: itemCash,
+        visa: 0,
+        cl: itemCl,
+        total: itemTotal,
+      };
 
-        // 1. تثبيت بارامترات التواريخ والقطاع الآمنة
-        request.input('startDate', sql.VarChar, startDate);
-        request.input('endDate', sql.VarChar, endDate);
-        request.input('sectorType', sql.Int, secType);
+      return {
+        branchCode: String(r.Branch_Code),
+        name: r.Name,
+        period: r.Period || null,
+        cover: itemCover,
+        cash: itemCash,
+        visa: 0,
+        creditLine: itemCl,
+        total: itemTotal,
+        netRevenue: itemNetRev,
+        serviceCharge: 0,
+        salesTax: itemTax,
+        grandTotal: itemTotal,
+        totalCollected: itemTotal,
+        totalVoids: 0,
+        voidCount: 0,
+        voidDetails: [],
+        variance: 0,
+        dailyCash: dPay.cash,
+        dailyVisa: 0,
+        dailyCl: dPay.cl,
+        dailyTotal: dPay.total,
+        marketShare:
+          totalSales > 0 ? Math.round((itemTotal / totalSales) * 1000) / 10 : 0,
+        avgTicket:
+          itemCover > 0 ? Math.round((itemTotal / itemCover) * 100) / 100 : 0,
+      };
+    });
+
+    return {
+      executionTimeMs: duration,
+      filters: {
+        startDate,
+        endDate,
+        granularity,
+        branches,
+        sectorType: secType,
+      },
+      summary: {
+        totalSales,
+        totalCash,
+        totalVisa,
+        totalCL,
+        totalCover,
+        totalNetRevenue,
+        totalServiceCharge: 0,
+        totalSalesTax,
+        totalVoids: 0,
+        totalVariance: 0,
+        cashPct:
+          totalSales > 0 ? Math.round((totalCash / totalSales) * 1000) / 10 : 0,
+        visaPct:
+          totalSales > 0 ? Math.round((totalVisa / totalSales) * 1000) / 10 : 0,
+        clPct:
+          totalSales > 0 ? Math.round((totalCL / totalSales) * 1000) / 10 : 0,
+        avgTicket:
+          totalCover > 0
+            ? Math.round((totalSales / totalCover) * 100) / 100
+            : 0,
+        rowCount: records.length,
+        topOutlet:
+          records.length > 0
+            ? {
+                name: records[0].name,
+                total: records[0].total,
+                cover: records[0].cover,
+              }
+            : null,
+        topCaravan:
+          records.length > 0
+            ? {
+                name: records[0].name,
+                total: records[0].total,
+                cover: records[0].cover,
+              }
+            : null,
+      },
+      records,
+    };
+  }
+
+  /**
+   * استعلام وتجميع بيانات إيرادات القطاع المالي مع دعم التصفية الزمنية وتعدد المنافذ والتجميع الديناميكي
+   * @param {Object} params
+   * @param {string} params.startDate 'YYYY-MM-DD'
+   * @param {string} params.endDate 'YYYY-MM-DD'
+   * @param {string[]} [params.branches] قائمة أكواد الفروع
+   * @param {('summary'|'month'|'day')} [params.granularity] مستوى التجميع
+   * @param {string} [params.sortBy] طريقة الترتيب
+   * @param {number} [params.sectorType=4] نوع القطاع (1: مطاعم, 2: ألعاب, 3: فيديو جيم, 4: كرفانات, 5: بوابات, 6: أمانات)
+   */
+  static async getReportData({
+    startDate = "2026-01-01",
+    endDate = new Date().toISOString().split("T")[0],
+    branches = [],
+    granularity = "summary",
+    sortBy = "total_desc",
+    sectorType = 4,
+  }) {
+    const secType = Number(sectorType) || 4;
+
+    // قطاعات الألعاب (Type = 2) والفيديو جيم (Type = 3): تجميع على مستوى الأصناف/الألعاب
+    if (secType === 2 || secType === 3) {
+      return this.getItemLevelReportData({
+        startDate,
+        endDate,
+        branches,
+        granularity,
+        sortBy,
+        sectorType: secType,
+      });
+    }
+
+    const pool = await getPool();
+    const request = pool.request();
+
+    // 1. تثبيت بارامترات التواريخ والقطاع الآمنة (SARGable DATE parameters)
+    request.input("startDate", sql.Date, startDate);
+    request.input("endDate", sql.Date, endDate);
+    request.input("sectorType", sql.Int, secType);
 
         // 2. معالجة تصفية المنافذ المختارة
+        const validBranchCodes = Array.isArray(branches)
+            ? branches.map((code) => Number(String(code).trim())).filter((n) => Number.isFinite(n))
+            : [];
+
         let branchClause = '';
-        if (Array.isArray(branches) && branches.length > 0) {
-            const placeholders = branches.map((code, index) => {
+        if (validBranchCodes.length > 0) {
+            const placeholders = validBranchCodes.map((code, index) => {
                 const paramName = `branch_${index}`;
-                request.input(paramName, sql.VarChar, String(code).trim());
+                request.input(paramName, sql.Int, code);
                 return `@${paramName}`;
             });
             branchClause = ` AND b.[Code] IN (${placeholders.join(', ')})`;
         }
 
-        // 3. تحديد ترتيب النتائج
-        let orderClause = '[Total] DESC';
-        if (sortBy === 'total_asc') orderClause = '[Total] ASC';
-        else if (sortBy === 'cover_desc') orderClause = '[Cover] DESC, [Total] DESC';
-        else if (sortBy === 'name_asc') orderClause = 'b.[Aname] ASC';
+    // 3. تحديد ترتيب النتائج
+    let orderClause = "s.[Total] DESC";
+    if (sortBy === "total_asc") orderClause = "s.[Total] ASC";
+    else if (sortBy === "cover_desc")
+      orderClause = "s.[Cover] DESC, s.[Total] DESC";
+    else if (sortBy === "name_asc") orderClause = "s.[Name] ASC";
 
         // 4. بناء الحقول وفق مستوى التجميع (Granularity)
-        let selectPeriod = '';
-        let groupByPeriod = '';
+        // Separate POS_Post (sales) and Pos_item_post_void (voids) into independent parallel queries
+        // so SQL Server 2014 can NEVER inline a voids CTE into a 58s nested loop on 'month' granularity.
+        let selectSalesPeriod = '';
+        let groupBySalesPeriod = '';
+        let selectVoidsPeriod = '';
+        let groupByVoidsPeriod = '';
+        let outerSelectPeriod = '';
         let orderByGranularity = '';
-        let voidsPeriodMatch = '';
 
         if (granularity === 'month') {
-            selectPeriod = `CONVERT(VARCHAR(7), p.[Doc_Date], 120) AS [Period],`;
-            groupByPeriod = `, CONVERT(VARCHAR(7), p.[Doc_Date], 120)`;
-            orderByGranularity = `p.[Period] ASC, `;
-            voidsPeriodMatch = ` AND CONVERT(VARCHAR(7), v.[Doc_Date], 120) = p.[Period]`;
+            selectSalesPeriod = `YEAR(p.[Doc_Date]) AS [PeriodYear], MONTH(p.[Doc_Date]) AS [PeriodMonth],`;
+            groupBySalesPeriod = `, YEAR(p.[Doc_Date]), MONTH(p.[Doc_Date])`;
+            selectVoidsPeriod = `CONVERT(VARCHAR(7), v.[Doc_Date], 120) AS [Period],`;
+            groupByVoidsPeriod = `, CONVERT(VARCHAR(7), v.[Doc_Date], 120)`;
+            outerSelectPeriod = `CAST(s.[PeriodYear] AS VARCHAR(4)) + '-' + RIGHT('0' + CAST(s.[PeriodMonth] AS VARCHAR(2)), 2) AS [Period],`;
+            orderByGranularity = `s.[PeriodYear] ASC, s.[PeriodMonth] ASC, `;
         } else if (granularity === 'day') {
-            selectPeriod = `CONVERT(VARCHAR(10), p.[Doc_Date], 120) AS [Period],`;
-            groupByPeriod = `, CONVERT(VARCHAR(10), p.[Doc_Date], 120)`;
-            orderByGranularity = `p.[Period] ASC, `;
-            voidsPeriodMatch = ` AND CONVERT(VARCHAR(10), v.[Doc_Date], 120) = p.[Period]`;
+            selectSalesPeriod = `p.[Doc_Date] AS [PeriodDate],`;
+            groupBySalesPeriod = `, p.[Doc_Date]`;
+            selectVoidsPeriod = `CONVERT(VARCHAR(10), v.[Doc_Date], 120) AS [Period],`;
+            groupByVoidsPeriod = `, CONVERT(VARCHAR(10), v.[Doc_Date], 120)`;
+            outerSelectPeriod = `CONVERT(VARCHAR(10), s.[PeriodDate], 120) AS [Period],`;
+            orderByGranularity = `s.[PeriodDate] ASC, `;
         }
 
-        const query = `
-            SELECT 
-                b.[Code] AS [Branch_Code],
-                b.[Aname] AS [Name],
-                ${granularity !== 'summary' ? 'p.[Period],' : ''}
-                p.[Cover],
-                p.[Cash],
-                p.[Visa],
-                p.[CL] AS [C/L],
-                p.[Total],
-                p.[TotalInv],
-                p.[ServiceCharge],
-                p.[SalesTax],
-                -- فارق التسوية المحسوب: (النقدية + الفيزا + الآجل) - صافي الإيراد الشامل (المطلوب تحصيله)
-                ((p.[Cash] + p.[Visa] + p.[CL]) - p.[Total]) AS [Variance],
-                -- إجمالي المرتجعات / الإلغاءات المسترجعة عبر OUTER APPLY
-                ISNULL(v.[TotalVoids], 0) AS [TotalVoids],
-                ISNULL(v.[VoidCount], 0) AS [VoidCount],
-                SUM(p.[Total]) OVER () AS [GrandTotalNet],
-                SUM(p.[Cash]) OVER () AS [GrandTotalCash],
-                SUM(p.[CL]) OVER () AS [GrandTotalCL],
-                SUM(p.[Visa]) OVER () AS [GrandTotalVisa],
-                SUM(p.[Cover]) OVER () AS [GrandTotalCover]
-            FROM [dbo].[Branchs] b WITH (NOLOCK)
-            INNER JOIN (
+    const query = `
+            WITH TargetBranches AS (
+                SELECT [Code], [Aname]
+                FROM [dbo].[Branchs] b WITH (NOLOCK)
+                WHERE b.[Type] = @sectorType
+                  AND b.[Code] NOT IN (12, 13, 1019, 1020, 1026, 1028)
+                  ${branchClause}
+            ),
+            SalesAgg AS (
                 SELECT 
-                    p.[Branch_Code],
-                    ${selectPeriod}
+                    tb.[Code] AS [Branch_Code],
+                    tb.[Aname] AS [Name],
+                    ${selectSalesPeriod}
                     SUM(CAST(ISNULL(p.[cover], 0) AS INT)) AS [Cover],
                     SUM(CAST(ISNULL(p.[Cash], 0) AS DECIMAL(18, 4))) AS [Cash],
                     SUM(CAST(ISNULL(p.[Visa], 0) + ISNULL(p.[Visa2], 0) + ISNULL(p.[Visa3], 0) AS DECIMAL(18, 4))) AS [Visa],
@@ -568,50 +614,84 @@ export class CaravanReportService {
                     SUM(CAST(ISNULL(p.[TotalInv], 0) AS DECIMAL(18, 4))) AS [TotalInv],
                     SUM(CAST(ISNULL(p.[serves_tax], 0) AS DECIMAL(18, 4))) AS [ServiceCharge],
                     SUM(CAST(ISNULL(p.[Sels_Tax], 0) AS DECIMAL(18, 4))) AS [SalesTax]
-                FROM [dbo].[POS_Post] p WITH (NOLOCK)
-                WHERE p.[Doc_Date] >= CAST(@startDate AS DATE)
-                  AND p.[Doc_Date] < DATEADD(DAY, 1, CAST(@endDate AS DATE))
+                FROM TargetBranches tb
+                INNER JOIN [dbo].[POS_Post] p WITH (NOLOCK) ON p.[Branch_Code] = tb.[Code]
+                WHERE p.[Doc_Date] >= @startDate
+                  AND p.[Doc_Date] < DATEADD(DAY, 1, @endDate)
                   AND (p.[Void] = 0 OR p.[Void] IS NULL)
-                GROUP BY p.[Branch_Code] ${groupByPeriod}
+                GROUP BY tb.[Code], tb.[Aname] ${groupBySalesPeriod}
                 HAVING SUM(CAST(ISNULL(p.[Cash], 0) + ISNULL(p.[Visa], 0) + ISNULL(p.[Visa2], 0) + ISNULL(p.[Visa3], 0) + ISNULL(p.[C/L], 0) AS DECIMAL(18, 4))) > 0
-            ) p ON p.[Branch_Code] = b.[Code]
-            /* ========================================================================= */
-            /* VOIDS DATA SOURCE: Precise Gross Value from [dbo].[Pos_item_post_void]   */
-            /* ========================================================================= */
-            OUTER APPLY (
-                SELECT 
-                    SUM(CAST(ISNULL(v.[Item_Qunt] * v.[Item_Price] * (1.0 + ISNULL(v.[item_Sels_Tax_P], 0) / 100.0 + ISNULL(v.[item_Serves_Tax_P], 0) / 100.0), 0) AS DECIMAL(18, 4))) AS [TotalVoids],
-                    COUNT(*) AS [VoidCount]
-                FROM [dbo].[Pos_item_post_void] v WITH (NOLOCK)
-                WHERE v.[Branch_Code] = b.[Code]
-                  AND v.[Doc_Date] >= CAST(@startDate AS DATE)
-                  AND v.[Doc_Date] < DATEADD(DAY, 1, CAST(@endDate AS DATE))
-                  ${voidsPeriodMatch}
-            ) v
-            WHERE b.[Type] = @sectorType
-              AND b.[Code] NOT IN ('12', '13', '1019', '1020', '1026', '1028')
-              ${branchClause}
+            )
+            SELECT 
+                s.[Branch_Code],
+                s.[Name],
+                ${outerSelectPeriod}
+                s.[Cover],
+                s.[Cash],
+                s.[Visa],
+                s.[CL] AS [C/L],
+                s.[Total],
+                s.[TotalInv],
+                s.[ServiceCharge],
+                s.[SalesTax],
+                ((s.[Cash] + s.[Visa] + s.[CL]) - s.[Total]) AS [Variance],
+                SUM(s.[Total]) OVER () AS [GrandTotalNet],
+                SUM(s.[Cash]) OVER () AS [GrandTotalCash],
+                SUM(s.[CL]) OVER () AS [GrandTotalCL],
+                SUM(s.[Visa]) OVER () AS [GrandTotalVisa],
+                SUM(s.[Cover]) OVER () AS [GrandTotalCover]
+            FROM SalesAgg s
             ORDER BY ${orderByGranularity}${orderClause};
+        `;
+
+        // Independent single-scan Voids Aggregation Query (runs in parallel with SalesAgg)
+        const voidsAggReq = pool.request();
+        voidsAggReq.input('startDate', sql.Date, startDate);
+        voidsAggReq.input('endDate', sql.Date, endDate);
+        voidsAggReq.input('sectorType', sql.Int, secType);
+        if (validBranchCodes.length > 0) {
+            validBranchCodes.forEach((code, index) => {
+                voidsAggReq.input(`vbranch_${index}`, sql.Int, code);
+            });
+        }
+        const voidsAggBranchClause = validBranchCodes.length > 0
+            ? ` AND v.[Branch_Code] IN (${validBranchCodes.map((_, i) => `@vbranch_${i}`).join(', ')})`
+            : '';
+
+        const voidsAggQuery = `
+            SELECT 
+                v.[Branch_Code],
+                ${selectVoidsPeriod}
+                SUM(CAST(ISNULL(v.[Item_Qunt] * v.[Item_Price] * (1.0 + ISNULL(v.[item_Sels_Tax_P], 0) / 100.0 + ISNULL(v.[item_Serves_Tax_P], 0) / 100.0), 0) AS DECIMAL(18, 4))) AS [TotalVoids],
+                COUNT(*) AS [VoidCount]
+            FROM [dbo].[Pos_item_post_void] v WITH (NOLOCK)
+            INNER JOIN [dbo].[Branchs] b WITH (NOLOCK) ON b.[Code] = v.[Branch_Code]
+            WHERE b.[Type] = @sectorType
+              AND b.[Code] NOT IN (12, 13, 1019, 1020, 1026, 1028)
+              AND v.[Doc_Date] >= @startDate
+              AND v.[Doc_Date] < DATEADD(DAY, 1, @endDate)
+              ${voidsAggBranchClause}
+            GROUP BY v.[Branch_Code] ${groupByVoidsPeriod};
         `;
 
         // Prepare Void Details Query for Expandable Sub-Tables
         const detailsReq = pool.request();
-        detailsReq.input('startDate', sql.VarChar, startDate);
-        detailsReq.input('endDate', sql.VarChar, endDate);
+        detailsReq.input('startDate', sql.Date, startDate);
+        detailsReq.input('endDate', sql.Date, endDate);
         detailsReq.input('sectorType', sql.Int, secType);
-        if (Array.isArray(branches) && branches.length > 0) {
-            branches.forEach((code, index) => {
-                detailsReq.input(`dbranch_${index}`, sql.VarChar, String(code).trim());
+        if (validBranchCodes.length > 0) {
+            validBranchCodes.forEach((code, index) => {
+                detailsReq.input(`dbranch_${index}`, sql.Int, code);
             });
         }
-        const detailsBranchClause = Array.isArray(branches) && branches.length > 0
-            ? ` AND v.[Branch_Code] IN (${branches.map((_, i) => `@dbranch_${i}`).join(', ')})`
+        const detailsBranchClause = validBranchCodes.length > 0
+            ? ` AND v.[Branch_Code] IN (${validBranchCodes.map((_, i) => `@dbranch_${i}`).join(', ')})`
             : '';
 
-        const voidDetailsQuery = `
+    const voidDetailsQuery = `
             SELECT 
                 v.[Branch_Code] AS [branchCode],
-                ${granularity === 'month' ? "CONVERT(VARCHAR(7), v.[Doc_Date], 120) AS [period]," : granularity === 'day' ? "CONVERT(VARCHAR(10), v.[Doc_Date], 120) AS [period]," : ""}
+                ${granularity === "month" ? "CONVERT(VARCHAR(7), v.[Doc_Date], 120) AS [period]," : granularity === "day" ? "CONVERT(VARCHAR(10), v.[Doc_Date], 120) AS [period]," : ""}
                 v.[item_Code] AS [itemCode],
                 ISNULL(v.[item_name], v.[items_name]) AS [itemName],
                 CONVERT(VARCHAR(10), v.[Doc_Date], 120) AS [docDate],
@@ -622,9 +702,9 @@ export class CaravanReportService {
             FROM [dbo].[Pos_item_post_void] v WITH (NOLOCK)
             INNER JOIN [dbo].[Branchs] b WITH (NOLOCK) ON b.[Code] = v.[Branch_Code]
             WHERE b.[Type] = @sectorType
-              AND b.[Code] NOT IN ('12', '13', '1019', '1020', '1026', '1028')
-              AND v.[Doc_Date] >= CAST(@startDate AS DATE)
-              AND v.[Doc_Date] < DATEADD(DAY, 1, CAST(@endDate AS DATE))
+              AND b.[Code] NOT IN (12, 13, 1019, 1020, 1026, 1028)
+              AND v.[Doc_Date] >= @startDate
+              AND v.[Doc_Date] < DATEADD(DAY, 1, @endDate)
               ${detailsBranchClause}
             ORDER BY v.[Doc_Date] DESC, v.[Inv_Time] DESC;
         `;
@@ -634,158 +714,211 @@ export class CaravanReportService {
         let duration = 0;
         try {
             const startTime = Date.now();
-            const [result, detailsResult] = await Promise.all([
+            const [result, voidsAggResult, detailsResult] = await Promise.all([
                 request.query(query),
+                voidsAggReq.query(voidsAggQuery).catch(err => {
+                    console.warn('[CaravanReportService] Voids agg query failed:', err.message);
+                    return { recordset: [] };
+                }),
                 detailsReq.query(voidDetailsQuery).catch(err => {
                     console.warn('[CaravanReportService] Void details query failed:', err.message);
                     return { recordset: [] };
                 })
             ]);
             duration = Date.now() - startTime;
-            rawRecords = (result.recordset || []).filter(r => (Number(r.Total) || 0) > 0);
+
+            // Merge single-scan VoidsAgg into SalesAgg in O(N)
+            const voidsAggMap = new Map();
+            for (const va of (voidsAggResult.recordset || [])) {
+                const key = granularity !== 'summary' ? `${va.Branch_Code}-${va.Period}` : String(va.Branch_Code);
+                voidsAggMap.set(key, {
+                    TotalVoids: Number(va.TotalVoids) || 0,
+                    VoidCount: Number(va.VoidCount) || 0,
+                });
+            }
+
+            rawRecords = (result.recordset || [])
+                .filter(r => (Number(r.Total) || 0) > 0)
+                .map(r => {
+                    const key = granularity !== 'summary' ? `${r.Branch_Code}-${r.Period}` : String(r.Branch_Code);
+                    const va = voidsAggMap.get(key);
+                    return {
+                        ...r,
+                        TotalVoids: va ? va.TotalVoids : 0,
+                        VoidCount: va ? va.VoidCount : 0,
+                    };
+                });
             rawVoidDetails = detailsResult.recordset || [];
         } catch (queryErr) {
             throw queryErr;
         }
 
-        // Map void details by branch (and period if present)
-        const voidMap = new Map();
-        for (const vd of rawVoidDetails) {
-            const key = granularity !== 'summary' ? `${vd.branchCode}-${vd.period}` : String(vd.branchCode);
-            if (!voidMap.has(key)) voidMap.set(key, []);
-            voidMap.get(key).push({
-                itemCode: String(vd.itemCode),
-                itemName: String(vd.itemName || 'صنف غير محدد'),
-                docDate: String(vd.docDate),
-                docTime: vd.docTime ? String(vd.docTime) : undefined,
-                quantity: Number(vd.quantity) || 1,
-                price: Number(vd.price) || 0,
-                total: Number(vd.total) || 0,
-            });
-        }
-
-        // 5. الحسابات المالية التجميعية لملخص الأداء (مطابقة معيار الحسابات الذهبي)
-        const sqlGrandTotal = Number(rawRecords[0]?.GrandTotalNet);
-        const sqlGrandCash = Number(rawRecords[0]?.GrandTotalCash);
-        const sqlGrandCL = Number(rawRecords[0]?.GrandTotalCL);
-        const sqlGrandCover = Number(rawRecords[0]?.GrandTotalCover);
-
-        let totalSales = 0;
-        let totalCash = 0;
-        let totalVisa = 0;
-        let totalCL = 0;
-        let totalCover = 0;
-        let totalNetRevenue = 0;
-        let totalServiceCharge = 0;
-        let totalSalesTax = 0;
-        let totalVoids = 0;
-        let totalVariance = 0;
-
-        for (const row of rawRecords) {
-            totalSales += Number(row.Total) || 0;
-            totalCash += Number(row.Cash) || 0;
-            totalVisa += Number(row.Visa) || 0;
-            totalCL += Number(row['C/L'] ?? row.CL) || 0;
-            totalCover += Number(row.Cover) || 0;
-            totalNetRevenue += Number(row.TotalInv) || 0;
-            totalServiceCharge += Number(row.ServiceCharge) || 0;
-            totalSalesTax += Number(row.SalesTax) || 0;
-            totalVoids += Number(row.TotalVoids) || 0;
-            totalVariance += Number(row.Variance) || 0;
-        }
-
-        totalSales = Math.round(totalSales * 100) / 100;
-        totalCash = Math.round(totalCash * 100) / 100;
-        totalVisa = Math.round(totalVisa * 100) / 100;
-        totalCL = Math.round(totalCL * 100) / 100;
-        totalNetRevenue = Math.round(totalNetRevenue * 100) / 100;
-        totalServiceCharge = Math.round(totalServiceCharge * 100) / 100;
-        totalSalesTax = Math.round(totalSalesTax * 100) / 100;
-        totalVoids = Math.round(totalVoids * 100) / 100;
-        totalVariance = Math.round(totalVariance * 100) / 100;
-        if (Math.abs(totalVariance) < 0.005) totalVariance = 0;
-
-        if (Number.isFinite(sqlGrandTotal) && sqlGrandTotal > 0) totalSales = Math.round(sqlGrandTotal * 100) / 100;
-        if (Number.isFinite(sqlGrandCash)) totalCash = Math.round(sqlGrandCash * 100) / 100;
-        if (Number.isFinite(sqlGrandCL)) totalCL = Math.round(sqlGrandCL * 100) / 100;
-        if (Number.isFinite(sqlGrandCover)) totalCover = sqlGrandCover;
-
-        const records = rawRecords.map(r => {
-            const itemCash = Number(r.Cash) || 0;
-            const itemVisa = Number(r.Visa) || 0;
-            const itemCL = Number(r['C/L'] ?? r.CL) || 0;
-            const itemTotal = Number(r.Total) || (itemCash + itemVisa + itemCL);
-            const itemCover = Number(r.Cover) || 0;
-            const itemNetRev = Number(r.TotalInv) || (itemTotal / 1.14);
-            const itemServ = Number(r.ServiceCharge) || 0;
-            const itemTax = Number(r.SalesTax) || 0;
-            const itemVoids = Number(r.TotalVoids) || 0;
-            const itemVoidCount = Number(r.VoidCount) || 0;
-
-            const totalCollected = itemCash + itemVisa + itemCL;
-            let variance = totalCollected - itemTotal;
-            if (Math.abs(variance) < 0.005) {
-                variance = 0;
-            }
-
-            const rowKey = granularity !== 'summary' ? `${r.Branch_Code}-${r.Period}` : String(r.Branch_Code);
-            const voidDetails = voidMap.get(rowKey) || [];
-
-            return {
-                branchCode: String(r.Branch_Code),
-                name: r.Name,
-                period: r.Period || null,
-                cover: itemCover,
-                cash: itemCash,
-                visa: itemVisa,
-                creditLine: itemCL,
-                total: itemTotal,
-                netRevenue: Math.round(itemNetRev * 100) / 100,
-                serviceCharge: Math.round(itemServ * 100) / 100,
-                salesTax: Math.round(itemTax * 100) / 100,
-                grandTotal: itemTotal,
-                totalCollected,
-                totalVoids: Math.round(itemVoids * 100) / 100,
-                voidCount: itemVoidCount,
-                voidDetails,
-                variance,
-                marketShare: totalSales > 0 ? Math.round((itemTotal / totalSales) * 1000) / 10 : 0,
-                avgTicket: itemCover > 0 ? Math.round((itemTotal / itemCover) * 100) / 100 : 0
-            };
-        });
-
-        return {
-            executionTimeMs: duration,
-            filters: { startDate, endDate, granularity, branches, sectorType: secType },
-            summary: {
-                totalSales,
-                totalCash,
-                totalVisa,
-                totalCL,
-                totalCover,
-                totalNetRevenue,
-                totalServiceCharge,
-                totalSalesTax,
-                totalVoids,
-                totalVariance,
-                cashPct: totalSales > 0 ? Math.round((totalCash / totalSales) * 1000) / 10 : 0,
-                visaPct: totalSales > 0 ? Math.round((totalVisa / totalSales) * 1000) / 10 : 0,
-                clPct: totalSales > 0 ? Math.round((totalCL / totalSales) * 1000) / 10 : 0,
-                avgTicket: totalCover > 0 ? Math.round((totalSales / totalCover) * 100) / 100 : 0,
-                rowCount: records.length,
-                topOutlet: records.length > 0 ? {
-                    name: records[0].name,
-                    total: records[0].total,
-                    cover: records[0].cover
-                } : null,
-                topCaravan: records.length > 0 ? {
-                    name: records[0].name,
-                    total: records[0].total,
-                    cover: records[0].cover
-                } : null
-            },
-            records
-        };
+    // Map void details by branch (and period if present)
+    const voidMap = new Map();
+    for (const vd of rawVoidDetails) {
+      const key =
+        granularity !== "summary"
+          ? `${vd.branchCode}-${vd.period}`
+          : String(vd.branchCode);
+      if (!voidMap.has(key)) voidMap.set(key, []);
+      voidMap.get(key).push({
+        itemCode: String(vd.itemCode),
+        itemName: String(vd.itemName || "صنف غير محدد"),
+        docDate: String(vd.docDate),
+        docTime: vd.docTime ? String(vd.docTime) : undefined,
+        quantity: Number(vd.quantity) || 1,
+        price: Number(vd.price) || 0,
+        total: Number(vd.total) || 0,
+      });
     }
-}
 
+    // 5. الحسابات المالية التجميعية لملخص الأداء (مطابقة معيار الحسابات الذهبي)
+    const sqlGrandTotal = Number(rawRecords[0]?.GrandTotalNet);
+    const sqlGrandCash = Number(rawRecords[0]?.GrandTotalCash);
+    const sqlGrandCL = Number(rawRecords[0]?.GrandTotalCL);
+    const sqlGrandCover = Number(rawRecords[0]?.GrandTotalCover);
+
+    let totalSales = 0;
+    let totalCash = 0;
+    let totalVisa = 0;
+    let totalCL = 0;
+    let totalCover = 0;
+    let totalNetRevenue = 0;
+    let totalServiceCharge = 0;
+    let totalSalesTax = 0;
+    let totalVoids = 0;
+    let totalVariance = 0;
+
+    for (const row of rawRecords) {
+      totalSales += Number(row.Total) || 0;
+      totalCash += Number(row.Cash) || 0;
+      totalVisa += Number(row.Visa) || 0;
+      totalCL += Number(row["C/L"] ?? row.CL) || 0;
+      totalCover += Number(row.Cover) || 0;
+      totalNetRevenue += Number(row.TotalInv) || 0;
+      totalServiceCharge += Number(row.ServiceCharge) || 0;
+      totalSalesTax += Number(row.SalesTax) || 0;
+      totalVoids += Number(row.TotalVoids) || 0;
+      totalVariance += Number(row.Variance) || 0;
+    }
+
+    totalSales = Math.round(totalSales * 100) / 100;
+    totalCash = Math.round(totalCash * 100) / 100;
+    totalVisa = Math.round(totalVisa * 100) / 100;
+    totalCL = Math.round(totalCL * 100) / 100;
+    totalNetRevenue = Math.round(totalNetRevenue * 100) / 100;
+    totalServiceCharge = Math.round(totalServiceCharge * 100) / 100;
+    totalSalesTax = Math.round(totalSalesTax * 100) / 100;
+    totalVoids = Math.round(totalVoids * 100) / 100;
+    totalVariance = Math.round(totalVariance * 100) / 100;
+    if (Math.abs(totalVariance) < 0.005) totalVariance = 0;
+
+    if (Number.isFinite(sqlGrandTotal) && sqlGrandTotal > 0)
+      totalSales = Math.round(sqlGrandTotal * 100) / 100;
+    if (Number.isFinite(sqlGrandCash))
+      totalCash = Math.round(sqlGrandCash * 100) / 100;
+    if (Number.isFinite(sqlGrandCL))
+      totalCL = Math.round(sqlGrandCL * 100) / 100;
+    if (Number.isFinite(sqlGrandCover)) totalCover = sqlGrandCover;
+
+    const records = rawRecords.map((r) => {
+      const itemCash = Number(r.Cash) || 0;
+      const itemVisa = Number(r.Visa) || 0;
+      const itemCL = Number(r["C/L"] ?? r.CL) || 0;
+      const itemTotal = Number(r.Total) || itemCash + itemVisa + itemCL;
+      const itemCover = Number(r.Cover) || 0;
+      const itemNetRev = Number(r.TotalInv) || itemTotal / 1.14;
+      const itemServ = Number(r.ServiceCharge) || 0;
+      const itemTax = Number(r.SalesTax) || 0;
+      const itemVoids = Number(r.TotalVoids) || 0;
+      const itemVoidCount = Number(r.VoidCount) || 0;
+
+      const totalCollected = itemCash + itemVisa + itemCL;
+      let variance = totalCollected - itemTotal;
+      if (Math.abs(variance) < 0.005) {
+        variance = 0;
+      }
+
+      const rowKey =
+        granularity !== "summary"
+          ? `${r.Branch_Code}-${r.Period}`
+          : String(r.Branch_Code);
+      const voidDetails = voidMap.get(rowKey) || [];
+
+      return {
+        branchCode: String(r.Branch_Code),
+        name: r.Name,
+        period: r.Period || null,
+        cover: itemCover,
+        cash: itemCash,
+        visa: itemVisa,
+        creditLine: itemCL,
+        total: itemTotal,
+        netRevenue: Math.round(itemNetRev * 100) / 100,
+        serviceCharge: Math.round(itemServ * 100) / 100,
+        salesTax: Math.round(itemTax * 100) / 100,
+        grandTotal: itemTotal,
+        totalCollected,
+        totalVoids: Math.round(itemVoids * 100) / 100,
+        voidCount: itemVoidCount,
+        voidDetails,
+        variance,
+        marketShare:
+          totalSales > 0 ? Math.round((itemTotal / totalSales) * 1000) / 10 : 0,
+        avgTicket:
+          itemCover > 0 ? Math.round((itemTotal / itemCover) * 100) / 100 : 0,
+      };
+    });
+
+    return {
+      executionTimeMs: duration,
+      filters: {
+        startDate,
+        endDate,
+        granularity,
+        branches,
+        sectorType: secType,
+      },
+      summary: {
+        totalSales,
+        totalCash,
+        totalVisa,
+        totalCL,
+        totalCover,
+        totalNetRevenue,
+        totalServiceCharge,
+        totalSalesTax,
+        totalVoids,
+        totalVariance,
+        cashPct:
+          totalSales > 0 ? Math.round((totalCash / totalSales) * 1000) / 10 : 0,
+        visaPct:
+          totalSales > 0 ? Math.round((totalVisa / totalSales) * 1000) / 10 : 0,
+        clPct:
+          totalSales > 0 ? Math.round((totalCL / totalSales) * 1000) / 10 : 0,
+        avgTicket:
+          totalCover > 0
+            ? Math.round((totalSales / totalCover) * 100) / 100
+            : 0,
+        rowCount: records.length,
+        topOutlet:
+          records.length > 0
+            ? {
+                name: records[0].name,
+                total: records[0].total,
+                cover: records[0].cover,
+              }
+            : null,
+        topCaravan:
+          records.length > 0
+            ? {
+                name: records[0].name,
+                total: records[0].total,
+                cover: records[0].cover,
+              }
+            : null,
+      },
+      records,
+    };
+  }
+}

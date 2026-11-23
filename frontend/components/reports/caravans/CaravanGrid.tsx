@@ -1,10 +1,12 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   ArrowDown,
   ArrowUp,
   ArrowUpDown,
+  ChevronLeft,
+  ChevronRight,
   Columns3,
   Search,
   RotateCw,
@@ -68,7 +70,7 @@ const STATIC_BASE_COLS: Col[] = [
   { key: 'avgTicket', header: 'متوسط الفاتورة', numeric: true },
 ];
 
-export function CaravanGrid({
+export const CaravanGrid = React.memo(function CaravanGrid({
   rows,
   showPeriod,
   loading,
@@ -83,6 +85,8 @@ export function CaravanGrid({
   const [hidden, setHidden] = useState<Partial<Record<ColKey, boolean>>>({});
   const [menuOpen, setMenuOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'standard' | 'transposed'>('standard');
+  const [pageSize, setPageSize] = useState<number>(50);
+  const [page, setPage] = useState<number>(1);
 
   const baseCols: Col[] = useMemo(
     () =>
@@ -122,30 +126,69 @@ export function CaravanGrid({
     });
   }, [rows, query, sortKey, asc]);
 
-  const sum = (k: ColKey): number => {
-    return view.reduce((a, r) => {
-      if (k === 'netRevenue') {
-        const val = r.netRevenue ?? (r.total - (r.salesTax || 0) - (r.serviceCharge || 0));
-        return a + (Number(val) || 0);
-      }
-      if (k === 'serviceCharge') return a + (Number(r.serviceCharge) || 0);
-      if (k === 'salesTax') return a + (Number(r.salesTax) || 0);
-      if (k === 'totalVoids') return a + (Number(r.totalVoids) || 0);
-      if (k === 'variance') return a + (Number(r.variance) || 0);
-      return a + (Number(r[k]) || 0);
-    }, 0);
-  };
+  // Single-pass memoized grand totals over the FULL filtered dataset (zero render-loop reductions)
+  const {
+    grandTotal,
+    grandCover,
+    grandNet,
+    grandService,
+    grandTax,
+    grandCash,
+    grandVisa,
+    grandCL,
+    grandVoids,
+    grandVariance,
+  } = useMemo(() => {
+    let total = 0;
+    let cover = 0;
+    let net = 0;
+    let service = 0;
+    let tax = 0;
+    let cash = 0;
+    let visa = 0;
+    let cl = 0;
+    let voids = 0;
+    let variance = 0;
 
-  const grandTotal = sum('total');
-  const grandCover = sum('cover');
-  const grandNet = sum('netRevenue');
-  const grandService = sum('serviceCharge');
-  const grandTax = sum('salesTax');
-  const grandCash = sum('cash');
-  const grandVisa = sum('visa');
-  const grandCL = sum('creditLine');
-  const grandVoids = sum('totalVoids');
-  const grandVariance = Math.round(sum('variance') * 100) / 100;
+    for (const r of view) {
+      const rTotal = Number(r.total) || 0;
+      const rTax = Number(r.salesTax) || 0;
+      const rServ = Number(r.serviceCharge) || 0;
+      total += rTotal;
+      cover += Number(r.cover) || 0;
+      net += Number(r.netRevenue ?? (rTotal - rTax - rServ)) || 0;
+      service += rServ;
+      tax += rTax;
+      cash += Number(r.cash) || 0;
+      visa += Number(r.visa) || 0;
+      cl += Number(r.creditLine) || 0;
+      voids += Number(r.totalVoids) || 0;
+      variance += Number(r.variance) || 0;
+    }
+
+    return {
+      grandTotal: total,
+      grandCover: cover,
+      grandNet: net,
+      grandService: service,
+      grandTax: tax,
+      grandCash: cash,
+      grandVisa: visa,
+      grandCL: cl,
+      grandVoids: voids,
+      grandVariance: Math.round(variance * 100) / 100,
+    };
+  }, [view]);
+
+  const totalPages = Math.max(1, Math.ceil(view.length / pageSize));
+  useEffect(() => {
+    if (page > totalPages) setPage(1);
+  }, [page, totalPages]);
+
+  const paginatedView = useMemo(() => {
+    const startIdx = (page - 1) * pageSize;
+    return view.slice(startIdx, startIdx + pageSize);
+  }, [view, page, pageSize]);
 
   const toggleSort = (k: ColKey) => {
     if (k === sortKey) setAsc(!asc);
@@ -298,8 +341,20 @@ export function CaravanGrid({
         </span>
       );
     }
-    if (c.sumFormat === 'int') return fmtInt(sum(c.key));
-    if (c.sumFormat === 'money') return fmtMoney(sum(c.key));
+    const memoizedSumMap: Partial<Record<ColKey, number>> = {
+      total: grandTotal,
+      cover: grandCover,
+      netRevenue: grandNet,
+      serviceCharge: grandService,
+      salesTax: grandTax,
+      cash: grandCash,
+      visa: grandVisa,
+      creditLine: grandCL,
+      totalVoids: grandVoids,
+      variance: grandVariance,
+    };
+    if (c.sumFormat === 'int') return fmtInt(memoizedSumMap[c.key] ?? 0);
+    if (c.sumFormat === 'money') return fmtMoney(memoizedSumMap[c.key] ?? 0);
     return '';
   };
 
@@ -600,7 +655,7 @@ export function CaravanGrid({
                   </td>
                 </tr>
               ) : (
-                view.map((r, i) => {
+                paginatedView.map((r, i) => {
                   const isEven = i % 2 === 0;
                   return (
                     <tr
@@ -666,7 +721,7 @@ export function CaravanGrid({
                 <th className="min-w-[150px] bg-slate-200/50 px-4 py-3 text-left font-bold text-orange-700 border-x border-slate-200 dark:bg-white/5 dark:text-violet-300 dark:border-white/5 print:text-black print:bg-transparent" dir="ltr">
                   الإجمالي الموحد (Total)
                 </th>
-                {view.map((r, i) => (
+                {paginatedView.map((r, i) => (
                   <th
                     key={`${r.branchCode}-${i}`}
                     className="min-w-[140px] px-4 py-3 font-bold text-slate-800 dark:text-zinc-200 text-left whitespace-nowrap print:text-black print:px-2"
@@ -704,7 +759,7 @@ export function CaravanGrid({
                     </td>
 
                     {/* Outlets Columns */}
-                    {view.map((r, i) => (
+                    {paginatedView.map((r, i) => (
                       <td
                         key={`${r.branchCode}-${m.key}-${i}`}
                         className={`min-w-[140px] px-4 py-3 text-left tabular-nums whitespace-nowrap ${m.color} print:text-black print:px-2`}
@@ -721,20 +776,61 @@ export function CaravanGrid({
         </div>
       )}
 
-      {/* Footer Info & Landscape Print Helper */}
-      <div className="flex flex-col gap-2 border-t border-slate-200 dark:border-white/5 p-3 text-xs text-slate-500 dark:text-zinc-400 sm:flex-row sm:items-center sm:justify-between print:hidden">
-        <span className="flex items-center gap-1.5">
-          <Sparkles className="h-3.5 w-3.5 text-orange-600 dark:text-violet-300" />
-          <span>
-            {viewMode === 'transposed'
-              ? 'العرض المعكوس يتيح مقارنة أفقية متزامنة بين جميع المنافذ عبر كافة المعايير المالية والتسويات.'
-              : 'العمود الأول مثبت أثناء التمرير لتسهيل قراءة كافة المعايير بدون اقتطاع.'}
+      {/* Client-Side Pagination & Footer Info */}
+      <div className="flex flex-col gap-2.5 border-t border-slate-200 dark:border-white/5 p-3 text-xs text-slate-500 dark:text-zinc-400 sm:flex-row sm:items-center sm:justify-between print:hidden">
+        <div className="flex flex-wrap items-center gap-3">
+          <span className="flex items-center gap-1.5">
+            <Sparkles className="h-3.5 w-3.5 text-orange-600 dark:text-violet-300" />
+            <span>
+              عرض {view.length === 0 ? 0 : (page - 1) * pageSize + 1} – {Math.min(page * pageSize, view.length)} من أصل {fmtInt(view.length)} سجل
+            </span>
           </span>
-        </span>
-        <span className="text-[11px] text-slate-400 font-mono">
-          A4 Landscape B&W Optimized
-        </span>
+          <select
+            value={pageSize}
+            onChange={(e) => {
+              setPageSize(Number(e.target.value));
+              setPage(1);
+            }}
+            className="h-7 rounded-md border border-slate-300 bg-white px-2 text-xs font-semibold text-slate-700 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200"
+          >
+            <option value={25}>25 سجل</option>
+            <option value={50}>50 سجل</option>
+            <option value={100}>100 سجل</option>
+            <option value={200}>200 سجل</option>
+          </select>
+        </div>
+
+        <div className="flex items-center gap-2">
+          {totalPages > 1 && (
+            <div className="flex items-center gap-1.5" dir="ltr">
+              <button
+                type="button"
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={page === 1}
+                className="inline-flex h-7 items-center gap-1 rounded-md border border-slate-200 bg-white px-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-40 dark:border-zinc-800 dark:bg-zinc-800 dark:text-zinc-300"
+              >
+                <ChevronLeft className="h-3.5 w-3.5" />
+                <span>السابق</span>
+              </button>
+              <span className="px-1.5 font-mono font-bold text-slate-700 dark:text-zinc-200">
+                {page} / {totalPages}
+              </span>
+              <button
+                type="button"
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                disabled={page === totalPages}
+                className="inline-flex h-7 items-center gap-1 rounded-md border border-slate-200 bg-white px-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-40 dark:border-zinc-800 dark:bg-zinc-800 dark:text-zinc-300"
+              >
+                <span>التالي</span>
+                <ChevronRight className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          )}
+          <span className="hidden lg:inline text-[11px] text-slate-400 font-mono">
+            A4 Landscape B&W Optimized
+          </span>
+        </div>
       </div>
     </div>
   );
-}
+});
