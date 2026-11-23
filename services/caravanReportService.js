@@ -95,6 +95,23 @@ export class CaravanReportService {
       request.input("startDate", sql.Date, sDate);
       request.input("endDate", sql.Date, eDate);
 
+      const goldenBranchUnion = secType === 2 ? `
+                    UNION ALL
+                    SELECT
+                        p.[Branch_Code],
+                        p.[type] AS [Branch_Type],
+                        p.[Group_code],
+                        p.[item_Code],
+                        p.[Groupitem_name],
+                        p.[item_name]
+                    FROM [dbo].[Pos_item_post] p WITH (NOLOCK)
+                    WHERE p.[Doc_Date] >= @startDate
+                      AND p.[Doc_Date] < DATEADD(DAY, 1, @endDate)
+                      AND p.[Branch_Code] = 102
+                      AND p.[type] NOT IN (2, 3)
+                      AND (p.[Group_code] = 3 OR p.[Groupitem_name] LIKE '%gold%')
+                      AND (p.[Void_item] = 0 OR p.[Void_item] IS NULL)` : '';
+
       const query = `
                 WITH FilteredItems AS (
                     SELECT
@@ -107,9 +124,10 @@ export class CaravanReportService {
                     FROM [dbo].[Pos_item_post] p WITH (NOLOCK)
                     WHERE p.[Doc_Date] >= @startDate
                       AND p.[Doc_Date] < DATEADD(DAY, 1, @endDate)
-                      AND (p.[type] IN (2, 3) OR (p.[Branch_Code] = 102 AND (p.[Group_code] = 3 OR p.[Groupitem_name] LIKE '%gold%')))
+                      AND p.[type] IN (2, 3)
                       AND p.[Branch_Code] NOT IN (12, 13, 1019, 1020, 1026, 1028)
                       AND (p.[Void_item] = 0 OR p.[Void_item] IS NULL)
+                    ${goldenBranchUnion}
                 )
                 SELECT DISTINCT
                     g.[Game_Code] AS [Code],
@@ -245,10 +263,39 @@ export class CaravanReportService {
       itemFilterClause = ` AND g.[Game_Code] IN (${placeholders.join(", ")})`;
     }
 
-    let selectPeriod = "CONVERT(VARCHAR(10), p.[Doc_Date], 120)";
+    let selectPeriodExpr = "CONVERT(VARCHAR(10), p.[Doc_Date], 120)";
+    let groupByPeriodExpr = "CONVERT(VARCHAR(10), p.[Doc_Date], 120), ";
+    let orderByPeriodExpr = "[Period] ASC, ";
     if (granularity === "month") {
-      selectPeriod = "CONVERT(VARCHAR(7), p.[Doc_Date], 120)";
+      selectPeriodExpr = "CONVERT(VARCHAR(7), p.[Doc_Date], 120)";
+      groupByPeriodExpr = "CONVERT(VARCHAR(7), p.[Doc_Date], 120), ";
+    } else if (granularity === "summary") {
+      selectPeriodExpr = "NULL";
+      groupByPeriodExpr = "";
+      orderByPeriodExpr = "";
     }
+
+    const goldenItemsUnion = secType === 2 ? `
+                UNION ALL
+                SELECT
+                    p.[Doc_Date],
+                    p.[Branch_Code],
+                    p.[type] AS [Branch_Type],
+                    p.[Group_code],
+                    p.[item_Code],
+                    p.[Groupitem_name],
+                    p.[item_name],
+                    p.[Item_Qunt],
+                    p.[Item_Price],
+                    p.[item_Sels_Tax_P],
+                    p.[C/L]
+                FROM [dbo].[Pos_item_post] p WITH (NOLOCK)
+                WHERE p.[Doc_Date] >= @startDate
+                  AND p.[Doc_Date] < DATEADD(DAY, 1, @endDate)
+                  AND p.[Branch_Code] = 102
+                  AND p.[type] NOT IN (2, 3)
+                  AND (p.[Group_code] = 3 OR p.[Groupitem_name] LIKE '%gold%')
+                  AND (p.[Void_item] = 0 OR p.[Void_item] IS NULL)` : '';
 
     const itemsQuery = `
             WITH FilteredItems AS (
@@ -267,12 +314,13 @@ export class CaravanReportService {
                 FROM [dbo].[Pos_item_post] p WITH (NOLOCK)
                 WHERE p.[Doc_Date] >= @startDate
                   AND p.[Doc_Date] < DATEADD(DAY, 1, @endDate)
-                  AND (p.[type] IN (2, 3) OR (p.[Branch_Code] = 102 AND (p.[Group_code] = 3 OR p.[Groupitem_name] LIKE '%gold%')))
+                  AND p.[type] IN (2, 3)
                   AND p.[Branch_Code] NOT IN (12, 13, 1019, 1020, 1026, 1028)
                   AND (p.[Void_item] = 0 OR p.[Void_item] IS NULL)
+                ${goldenItemsUnion}
             )
             SELECT 
-                ${selectPeriod} AS [Period],
+                ${selectPeriodExpr} AS [Period],
                 g.[Game_Code] AS [Branch_Code],
                 g.[Game_Name] AS [Name],
                 SUM(CAST(p.[Item_Qunt] AS INT)) AS [Cover],
@@ -360,9 +408,9 @@ export class CaravanReportService {
             ) g
             WHERE g.[Target_Sector] = @sectorType
               ${itemFilterClause}
-            GROUP BY ${selectPeriod}, g.[Game_Code], g.[Game_Name]
+            GROUP BY ${groupByPeriodExpr}g.[Game_Code], g.[Game_Name]
             HAVING SUM(CAST(p.[Item_Qunt] AS DECIMAL(18, 4)) * CAST(p.[Item_Price] AS DECIMAL(18, 4)) * (1.0 + ISNULL(CAST(p.[item_Sels_Tax_P] AS DECIMAL(18, 4)), 0) / 100.0)) > 0
-            ORDER BY [Period] ASC, [Total] DESC
+            ORDER BY ${orderByPeriodExpr}[Total] DESC
             OPTION (HASH JOIN);
         `;
 

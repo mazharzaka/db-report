@@ -161,6 +161,7 @@ interface DailyRevenueMatrixProps {
   sectorLabel?: string;
   sectorTheme?: SectorTheme;
   facilityType?: 'all' | 'caravans' | 'shops';
+  onFacilityTypeChange?: (f: 'all' | 'caravans' | 'shops') => void;
   rideStatusFilter?: RideStatusFilter;
   onRideStatusFilterChange?: (filter: RideStatusFilter) => void;
   startDate?: string;
@@ -283,6 +284,7 @@ export const DailyRevenueMatrix = React.memo(function DailyRevenueMatrix({
   sectorLabel,
   sectorTheme,
   facilityType = 'all',
+  onFacilityTypeChange,
   rideStatusFilter,
   onRideStatusFilterChange,
   startDate,
@@ -295,8 +297,8 @@ export const DailyRevenueMatrix = React.memo(function DailyRevenueMatrix({
   // Calculation Mode State - Default to 'total' (الإجمالي الشامل)
   const [calcMode, setCalcMode] = useState<CalcMode>('total');
 
-  // Paid Rides (Sector 2) Active / Inactive / All Filter State
-  const [internalRideStatusFilter, setInternalRideStatusFilter] = useState<RideStatusFilter>('active');
+  // Paid Rides (Sector 2) All / Active / Inactive Filter State (Default: 'all')
+  const [internalRideStatusFilter, setInternalRideStatusFilter] = useState<RideStatusFilter>('all');
   const effectiveRideStatusFilter = rideStatusFilter ?? internalRideStatusFilter;
   const handleRideStatusFilterChange = (f: RideStatusFilter) => {
     setInternalRideStatusFilter(f);
@@ -1060,14 +1062,24 @@ return (
         </div>
       </div>
 
-      {/* Paid Rides (Sector 2) Active / Inactive / All Segmented Control */}
+      {/* Paid Rides (Sector 2) All / Active / Inactive Segmented Control */}
       {sectorType === 2 && (
         <div className="flex flex-wrap items-center gap-2.5 pt-1">
           <span className="text-xs font-bold text-slate-700 dark:text-zinc-300 flex items-center gap-1.5">
-            <span className={`h-2.5 w-2.5 rounded-full ${effectiveRideStatusFilter === 'active' ? 'bg-emerald-500' : effectiveRideStatusFilter === 'inactive' ? 'bg-amber-500' : 'bg-blue-500'}`} />
+            <span className={`h-2.5 w-2.5 rounded-full ${effectiveRideStatusFilter === 'all' ? 'bg-blue-500' : effectiveRideStatusFilter === 'active' ? 'bg-emerald-500' : 'bg-amber-500'}`} />
             <span>نطاق الألعاب:</span>
           </span>
           <div className="inline-flex bg-slate-200/60 dark:bg-zinc-800/80 p-1 rounded-xl shadow-inner">
+            <button
+              type="button"
+              onClick={() => handleRideStatusFilterChange('all')}
+              className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${effectiveRideStatusFilter === 'all'
+                  ? `${theme.btnActive} shadow-sm`
+                  : 'text-slate-500 hover:text-slate-700 dark:text-zinc-400 dark:hover:text-zinc-200'
+                }`}
+            >
+              الكل (All — 16 لعبة)
+            </button>
             <button
               type="button"
               onClick={() => handleRideStatusFilterChange('active')}
@@ -1088,15 +1100,47 @@ return (
             >
               غير النشطة (Inactive)
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Caravans & Shops (Sector 4) All / Caravans / Shops Segmented Control (Same Position & Style as Sector 2) */}
+      {sectorType === 4 && onFacilityTypeChange && (
+        <div className="flex flex-wrap items-center gap-2.5 pt-1">
+          <span className="text-xs font-bold text-slate-700 dark:text-zinc-300 flex items-center gap-1.5">
+            <span className={`h-2.5 w-2.5 rounded-full ${facilityType === 'all' ? 'bg-blue-500' : facilityType === 'caravans' ? 'bg-emerald-500' : 'bg-amber-500'}`} />
+            <span>نطاق المنافذ:</span>
+          </span>
+          <div className="inline-flex bg-slate-200/60 dark:bg-zinc-800/80 p-1 rounded-xl shadow-inner">
             <button
               type="button"
-              onClick={() => handleRideStatusFilterChange('all')}
-              className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${effectiveRideStatusFilter === 'all'
+              onClick={() => onFacilityTypeChange('all')}
+              className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${facilityType === 'all'
                   ? `${theme.btnActive} shadow-sm`
                   : 'text-slate-500 hover:text-slate-700 dark:text-zinc-400 dark:hover:text-zinc-200'
                 }`}
             >
-              الكل (All — 16 لعبة)
+              الكل
+            </button>
+            <button
+              type="button"
+              onClick={() => onFacilityTypeChange('caravans')}
+              className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${facilityType === 'caravans'
+                  ? `${theme.btnActive} shadow-sm`
+                  : 'text-slate-500 hover:text-slate-700 dark:text-zinc-400 dark:hover:text-zinc-200'
+                }`}
+            >
+              الكرفانات
+            </button>
+            <button
+              type="button"
+              onClick={() => onFacilityTypeChange('shops')}
+              className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${facilityType === 'shops'
+                  ? `${theme.btnActive} shadow-sm`
+                  : 'text-slate-500 hover:text-slate-700 dark:text-zinc-400 dark:hover:text-zinc-200'
+                }`}
+            >
+              المحلات
             </button>
           </div>
         </div>

@@ -185,10 +185,11 @@ export async function fetchReport(
   return json;
 }
 
-export function buildTrend(records: CaravanRecord[]): TrendPoint[] {
+export function buildTrend(records: CaravanRecord[], groupByMonth = false): TrendPoint[] {
   const map = new Map<string, TrendPoint>();
   for (const r of records) {
-    const key = r.period ?? '';
+    const rawKey = r.period ?? '';
+    const key = groupByMonth && rawKey.length >= 7 ? rawKey.slice(0, 7) : rawKey;
     const p = map.get(key) ?? {
       label: key.length === 10 ? key.slice(5) : key,
       total: 0,
@@ -518,16 +519,21 @@ const load = useCallback(async () => {
     const trendGran: Granularity = days > 92 ? 'month' : 'day';
     const branches = effectiveSelectedKey ? effectiveSelectedKey.split(',') : [];
 
+    const isItemSector = sector.type === 2 || sector.type === 3;
+    const canDeriveLocally = isItemSector && granularity === 'day';
+
     const [main, totals, trendRes] = await Promise.all([
       fetchReport(start, end, granularity, branches, ctrl.signal, sector.type),
-      granularity === 'summary'
+      granularity === 'summary' || canDeriveLocally
         ? Promise.resolve(null)
         : fetchReport(start, end, 'summary', branches, ctrl.signal, sector.type),
-      fetchReport(start, end, trendGran, branches, ctrl.signal, sector.type),
+      canDeriveLocally
+        ? Promise.resolve(null)
+        : fetchReport(start, end, trendGran, branches, ctrl.signal, sector.type),
     ]);
 
     setRecords(main.records);
-    if (sector.type === 2 || sector.type === 3) {
+    if (isItemSector) {
       if (selected.length === 0 && Array.isArray(main.records) && main.records.length > 0) {
         const gameMap = new Map<string, string>();
         main.records.forEach((r) => {
@@ -545,7 +551,11 @@ const load = useCallback(async () => {
     }
     const effectiveTotals = totals ?? main;
     setSummary(effectiveTotals.summary);
-    setTrend(buildTrend(trendRes.records));
+    setTrend(
+      trendRes
+        ? buildTrend(trendRes.records)
+        : buildTrend(main.records, trendGran === 'month')
+    );
     setBranchStats(buildBranchStats(effectiveTotals.records));
     setUpdatedAt(new Date());
   } catch (err) {

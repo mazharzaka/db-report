@@ -52,7 +52,7 @@ export function SectorDashboard({ sector }: SectorDashboardProps) {
   const SectorIcon = SECTOR_ICONS[sector.iconName];
   const [rideStatusFilter, setRideStatusFilter] = React.useState<
     "active" | "inactive" | "all"
-  >("active");
+  >("all");
   const [drawerOpen, setDrawerOpen] = React.useState(false);
 
   // Dynamic calculations for the 3 Core KPI Cards based on currently displayed rows
@@ -545,6 +545,7 @@ export function SectorDashboard({ sector }: SectorDashboardProps) {
                 rows={dash.records}
                 loading={dash.loading}
                 facilityType={dash.facilityType}
+                onFacilityTypeChange={dash.setFacilityType}
                 rideStatusFilter={rideStatusFilter}
                 onRideStatusFilterChange={setRideStatusFilter}
                 startDate={dash.start}
