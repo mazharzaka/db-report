@@ -50,6 +50,7 @@ interface SectorDashboardProps {
 export function SectorDashboard({ sector }: SectorDashboardProps) {
   const dash = useSectorDashboard(sector);
   const SectorIcon = SECTOR_ICONS[sector.iconName];
+  const [drawerOpen, setDrawerOpen] = React.useState(false);
 
   // Dynamic calculations for the 3 Core KPI Cards based on currently displayed rows
   const financialTotals = React.useMemo(() => {
@@ -573,10 +574,15 @@ export function SectorDashboard({ sector }: SectorDashboardProps) {
                           </div>
 
                           {/* --------------------------------------------------------------------- */}
-                          {/* ROW 4: COLLAPSIBLE ANALYTICAL DRAWER (تحليلات إضافية وتركيبية)         */}
+                          {/* ROW 4: COLLAPSIBLE ANALYTICAL DRAWER (Lazy-Mounted on Open)           */}
                           {/* --------------------------------------------------------------------- */}
-                          <details className="group rounded-xl border border-slate-200/80 bg-white p-6 shadow-sm ring-1 ring-slate-900/5 backdrop-blur-md transition-all duration-200 dark:border-zinc-800/80 dark:bg-zinc-900/60 dark:ring-white/10 print:hidden">
-                            <summary className="flex cursor-pointer items-center justify-between text-base font-bold text-slate-800 dark:text-zinc-200 select-none list-none">
+                          <div className="rounded-xl border border-slate-200/80 bg-white p-6 shadow-sm ring-1 ring-slate-900/5 backdrop-blur-md transition-all duration-200 dark:border-zinc-800/80 dark:bg-zinc-900/60 dark:ring-white/10 print:hidden">
+                            <button
+                              type="button"
+                              onClick={() => setDrawerOpen((o) => !o)}
+                              aria-expanded={drawerOpen}
+                              className="flex w-full cursor-pointer items-center justify-between text-right text-base font-bold text-slate-800 dark:text-zinc-200 select-none"
+                            >
                               <div className="flex items-center gap-3">
                                 <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-orange-50 text-orange-600 dark:bg-zinc-800 dark:text-zinc-300">
                                   <Sparkles className="h-4 w-4" />
@@ -590,12 +596,13 @@ export function SectorDashboard({ sector }: SectorDashboardProps) {
                                   </p>
                                 </div>
                               </div>
-                              <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 group-open:text-orange-600 dark:text-zinc-400 dark:group-open:text-orange-400">
-                                <span className="hidden sm:inline">عرض / إخفاء</span>
-                                <ChevronDown className="h-5 w-5 transition-transform duration-300 group-open:rotate-180" />
+                              <div className={`flex items-center gap-2 text-xs font-semibold ${drawerOpen ? 'text-orange-600 dark:text-orange-400' : 'text-slate-500 dark:text-zinc-400'}`}>
+                                <span className="hidden sm:inline">{drawerOpen ? 'إخفاء' : 'عرض'}</span>
+                                <ChevronDown className={`h-5 w-5 transition-transform duration-300 ${drawerOpen ? 'rotate-180' : ''}`} />
                               </div>
-                            </summary>
+                            </button>
 
+                            {drawerOpen && (
                             <div className="mt-6 space-y-6 border-t border-slate-100 pt-6 dark:border-zinc-800/80">
                               {/* 1. Top Macro KPIs (إجمالي الإيرادات، الكميات، الزوار، والمرتجعات) */}
                               <div className="break-inside-avoid">
@@ -694,7 +701,8 @@ export function SectorDashboard({ sector }: SectorDashboardProps) {
                                 />
                               </div>
                             </div>
-                          </details>
+                            )}
+                          </div>
                         </div>
                       )}
                     </div>

@@ -459,20 +459,17 @@ export function useSectorDashboard(sector: SectorConfig = DEFAULT_SECTOR) {
     setSpendPerGuest(0);
   }, []);
 
-  // Reset selection, facilityType, and branch options whenever sector changes (Requirement 3)
+  // Reset selection, facilityType, and branch options ONLY when sector changes (not on every date change)
   useEffect(() => {
     setSelected([]);
     setFacilityType('all');
     setBranchOptions([]);
     resetStaleData();
 
-    let active = true;
-    const branchesUrl =
-      sector.type === 2 || sector.type === 3
-        ? `/api/caravans/branches?sectorType=${sector.type}&startDate=${start}&endDate=${end}`
-        : `/api/caravans/branches?sectorType=${sector.type}`;
+    if (sector.type === 2 || sector.type === 3) return;
 
-    fetch(branchesUrl)
+    let active = true;
+    fetch(`/api/caravans/branches?sectorType=${sector.type}`)
       .then((r) => r.json())
       .then((j: { status: string; branches?: BranchOption[] }) => {
         if (active && j.status === 'success' && Array.isArray(j.branches)) {
@@ -484,7 +481,7 @@ export function useSectorDashboard(sector: SectorConfig = DEFAULT_SECTOR) {
     return () => {
       active = false;
     };
-}, [sector.type, start, end, resetStaleData]);
+  }, [sector.type, resetStaleData]);
 
 const applyPreset = useCallback(
   (id: Exclude<PresetId, 'custom'>) => {

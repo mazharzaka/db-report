@@ -123,6 +123,82 @@ interface MatrixColumn {
 export type CalcMode = 'total' | 'net' | 'vat';
 export type MatrixViewMode = 'net' | 'vat' | 'total'; // Backward compatibility
 
+// Shared Intl.NumberFormat instance (avoids creating 7,000+ formatters per render on 365-day matrices)
+const MONEY_FORMATTER = new Intl.NumberFormat('en-US', {
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+});
+
+interface MatrixRowData {
+  date: string;
+  values: Record<string, number>;
+  rowTotal: number;
+  rowCashVisa: number;
+  rowCoupons: number;
+}
+
+interface MatrixTableRowProps {
+  row: MatrixRowData;
+  columns: MatrixColumn[];
+  calcMode: CalcMode;
+  hoverRowClass: string;
+}
+
+const MatrixTableRow = React.memo(function MatrixTableRow({
+  row,
+  columns,
+  calcMode,
+  hoverRowClass,
+}: MatrixTableRowProps) {
+  return (
+    <tr className={`group transition-colors duration-150 ${hoverRowClass}`}>
+      {/* Date Column (Sticky Right) */}
+      <td className="sticky right-0 z-10 px-4 py-3.5 text-center font-bold text-sm lg:text-base text-slate-900 border-l border-slate-200 bg-slate-50/95 group-hover:bg-blue-100/90 dark:border-zinc-800 dark:bg-zinc-900/95 dark:text-zinc-100 dark:group-hover:bg-blue-950/80 transition-colors">
+        {row.date}
+      </td>
+
+      {/* Outlet / Game Values */}
+      {columns.map((col) => {
+        const val = row.values[col.branchCode] || 0;
+        return (
+          <td
+            key={col.branchCode}
+            className={`px-4 py-3.5 text-left font-bold text-base lg:text-lg tabular-nums border-l border-slate-200/60 dark:border-zinc-800/40 group-hover:bg-blue-50/50 dark:group-hover:bg-blue-900/20 transition-colors ${val > 0
+              ? 'text-slate-900 dark:text-white'
+              : 'text-slate-300 dark:text-zinc-600 font-normal'
+              }`}
+          >
+            {val > 0 ? (
+              MONEY_FORMATTER.format(val)
+            ) : (
+              <span className="select-none font-normal opacity-40">—</span>
+            )}
+          </td>
+        );
+      })}
+
+      {/* Daily Row Total */}
+      <td className="px-4 py-3.5 text-left font-black text-base lg:text-lg tabular-nums text-slate-950 bg-slate-100/80 group-hover:bg-blue-100/80 dark:bg-zinc-800/60 dark:text-white dark:group-hover:bg-blue-950/60 transition-colors">
+        <Money value={row.rowTotal} />
+      </td>
+
+      {calcMode !== 'vat' && (
+        <>
+          {/* Daily Cash */}
+          <td className="px-4 py-3.5 text-left font-bold text-base lg:text-lg tabular-nums text-slate-900 bg-slate-50/80 group-hover:bg-blue-50/80 dark:bg-zinc-800/40 dark:text-zinc-100 dark:group-hover:bg-blue-950/40 transition-colors">
+            <Money value={row.rowCashVisa} />
+          </td>
+
+          {/* Daily Coupons & CL */}
+          <td className="px-4 py-3.5 text-left font-bold text-base lg:text-lg tabular-nums text-slate-900 bg-slate-50/80 group-hover:bg-blue-50/80 dark:bg-zinc-800/40 dark:text-zinc-100 dark:group-hover:bg-blue-950/40 transition-colors">
+            <Money value={row.rowCoupons} />
+          </td>
+        </>
+      )}
+    </tr>
+  );
+});
+
 function formatDateAr(dateStr?: string): string {
   if (!dateStr) return '';
   const trimmed = dateStr.trim();
@@ -142,7 +218,7 @@ function formatDateAr(dateStr?: string): string {
 /* Component Implementation                                                   */
 /* -------------------------------------------------------------------------- */
 
-export function DailyRevenueMatrix({
+export const DailyRevenueMatrix = React.memo(function DailyRevenueMatrix({
   rows = [],
   title,
   loading = false,
@@ -161,8 +237,8 @@ export function DailyRevenueMatrix({
   // Calculation Mode State - Default to 'total' (الإجمالي الشامل)
   const [calcMode, setCalcMode] = useState<CalcMode>('total');
 
-  // Client-Side Pagination States
-  const [rowsPerPage, setRowsPerPage] = useState<number>(10);
+  // Client-Side Pagination States (Default 31 rows/page to prevent 365-row DOM overload)
+  const [rowsPerPage, setRowsPerPage] = useState<number>(31);
   const [currentPage, setCurrentPage] = useState<number>(1);
 
   // Stage 1: Raw Pivot & Grouping (Runs ONLY when raw rows change)
@@ -378,6 +454,14 @@ export function DailyRevenueMatrix({
 
   // Client-Side Pagination Calculations
   const totalPages = Math.max(1, Math.ceil(matrixRows.length / rowsPerPage));
+
+  // Guard against rendering 365 rows x 25+ cols into the DOM when switching to a large range
+  useEffect(() => {
+    if (matrixRows.length > 60 && rowsPerPage >= 9999) {
+      setRowsPerPage(31);
+      setCurrentPage(1);
+    }
+  }, [matrixRows.length, rowsPerPage]);
 
   useEffect(() => {
     if (currentPage > totalPages) {
@@ -912,57 +996,13 @@ export function DailyRevenueMatrix({
               </tr>
             ) : (
               paginatedRows.map((row) => (
-                <tr
+                <MatrixTableRow
                   key={row.date}
-                  className={`group transition-colors duration-150 ${theme.matrix.hoverRow}`}
-                >
-                  {/* Date Column (Sticky Right) */}
-                  <td className="sticky right-0 z-10 px-4 py-3.5 text-center font-bold text-sm lg:text-base text-slate-900 border-l border-slate-200 bg-slate-50/95 group-hover:bg-blue-100/90 dark:border-zinc-800 dark:bg-zinc-900/95 dark:text-zinc-100 dark:group-hover:bg-blue-950/80 transition-colors">
-                    {row.date}
-                  </td>
-
-                  {/* Caravan Values */}
-                  {columns.map((col) => {
-                    const val = row.values[col.branchCode] || 0;
-                    return (
-                      <td
-                        key={col.branchCode}
-                        className={`px-4 py-3.5 text-left font-bold text-base lg:text-lg tabular-nums border-l border-slate-200/60 dark:border-zinc-800/40 group-hover:bg-blue-50/50 dark:group-hover:bg-blue-900/20 transition-colors ${val > 0
-                          ? 'text-slate-900 dark:text-white'
-                          : 'text-slate-300 dark:text-zinc-600 font-normal'
-                          }`}
-                      >
-                        {val > 0 ? (
-                          val.toLocaleString('en-US', {
-                            minimumFractionDigits: 2,
-                            maximumFractionDigits: 2,
-                          })
-                        ) : (
-                          <span className="select-none font-normal opacity-40">—</span>
-                        )}
-                      </td>
-                    );
-                  })}
-
-                  {/* Daily Row Total */}
-                  <td className="px-4 py-3.5 text-left font-black text-base lg:text-lg tabular-nums text-slate-950 bg-slate-100/80 group-hover:bg-blue-100/80 dark:bg-zinc-800/60 dark:text-white dark:group-hover:bg-blue-950/60 transition-colors">
-                    <Money value={row.rowTotal} />
-                  </td>
-
-                  {calcMode !== 'vat' && (
-                    <>
-                      {/* Daily Cash */}
-                      <td className="px-4 py-3.5 text-left font-bold text-base lg:text-lg tabular-nums text-slate-900 bg-slate-50/80 group-hover:bg-blue-50/80 dark:bg-zinc-800/40 dark:text-zinc-100 dark:group-hover:bg-blue-950/40 transition-colors">
-                        <Money value={row.rowCashVisa} />
-                      </td>
-
-                      {/* Daily Coupons & CL */}
-                      <td className="px-4 py-3.5 text-left font-bold text-base lg:text-lg tabular-nums text-slate-900 bg-slate-50/80 group-hover:bg-blue-50/80 dark:bg-zinc-800/40 dark:text-zinc-100 dark:group-hover:bg-blue-950/40 transition-colors">
-                        <Money value={row.rowCoupons} />
-                      </td>
-                    </>
-                  )}
-                </tr>
+                  row={row}
+                  columns={columns}
+                  calcMode={calcMode}
+                  hoverRowClass={theme.matrix.hoverRow}
+                />
               ))
             )}
           </tbody>
@@ -981,32 +1021,20 @@ export function DailyRevenueMatrix({
                             key={col.branchCode}
                             className={`px-4 py-4 text-left font-black text-base lg:text-lg border-l border-slate-300/80 dark:border-zinc-800/50 ${theme.matrix.totalRowText}`}
                           >
-                            {total.toLocaleString('en-US', {
-                              minimumFractionDigits: 2,
-                              maximumFractionDigits: 2,
-                            })}
+                            {MONEY_FORMATTER.format(total)}
                           </td>
                         );
                       })}
                       <td className={`px-4 py-4 text-left text-lg lg:text-xl font-black ${theme.matrix.footerGrandTotal}`}>
-                        {grandTotal.toLocaleString('en-US', {
-                          minimumFractionDigits: 2,
-                          maximumFractionDigits: 2,
-                        })}
+                        {MONEY_FORMATTER.format(grandTotal)}
                       </td>
                       {calcMode !== 'vat' && (
                         <>
                           <td className={`px-4 py-4 text-left text-base lg:text-lg font-black ${theme.matrix.footerSubTotal}`}>
-                            {grandCashVisa.toLocaleString('en-US', {
-                              minimumFractionDigits: 2,
-                              maximumFractionDigits: 2,
-                            })}
+                            {MONEY_FORMATTER.format(grandCashVisa)}
                           </td>
                           <td className={`px-4 py-4 text-left text-base lg:text-lg font-black ${theme.matrix.footerSubTotal}`}>
-                            {grandCoupons.toLocaleString('en-US', {
-                              minimumFractionDigits: 2,
-                              maximumFractionDigits: 2,
-                            })}
+                            {MONEY_FORMATTER.format(grandCoupons)}
                           </td>
                         </>
                       )}
@@ -1031,11 +1059,13 @@ export function DailyRevenueMatrix({
                       }}
                       className="h-8 rounded-md border border-slate-300 bg-white px-2.5 text-xs font-bold text-slate-800 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
                     >
-                      <option value={5}>5 صفوف</option>
                       <option value={10}>10 صفوف</option>
                       <option value={15}>15 صفاً</option>
-                      <option value={30}>30 صفاً</option>
-                      <option value={9999}>الكل ({matrixRows.length})</option>
+                      <option value={31}>31 صفاً (شهر)</option>
+                      <option value={50}>50 صفاً</option>
+                      {matrixRows.length <= 60 && (
+                        <option value={9999}>الكل ({matrixRows.length})</option>
+                      )}
                     </select>
                   </div>
 
@@ -1113,6 +1143,6 @@ export function DailyRevenueMatrix({
               </div>
             </div>
           );
-}
+});
 
-          export default DailyRevenueMatrix;
+export default DailyRevenueMatrix;
