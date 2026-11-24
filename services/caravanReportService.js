@@ -157,6 +157,10 @@ export class CaravanReportService {
                             -- Discovery & Selsela to Sector 2 (Amusement Rides):
                             WHEN p.[Group_code] = 1 OR p.[Groupitem_name] LIKE '%ديسكفر%' OR p.[item_name] LIKE '%ديسكفر%' THEN 2
                             WHEN p.[Groupitem_name] LIKE '%سلسل%' OR p.[item_name] LIKE '%سلسل%' THEN 2
+                            -- Explicitly route all Video Games groups to Sector 3 to prevent leaking into Sector 2 from cashiers with Branch_Type = 2:
+                            WHEN p.[Group_code] IN (5, 9, 10, 11, 12, 17, 18, 19, 20, 22) THEN 3
+                            -- Standard Paid Rides (Type 2 games):
+                            WHEN p.[Group_code] IN (2, 4, 6, 7, 8, 14, 16) THEN 2
                             -- Default to Branch Type:
                             ELSE p.[Branch_Type]
                         END AS [Target_Sector],
@@ -266,10 +270,11 @@ export class CaravanReportService {
     let selectPeriodExpr = "CONVERT(VARCHAR(10), p.[Doc_Date], 120)";
     let groupByPeriodExpr = "CONVERT(VARCHAR(10), p.[Doc_Date], 120), ";
     let orderByPeriodExpr = "[Period] ASC, ";
-    if (granularity === "month") {
+    const normGranularity = (granularity || "summary").toLowerCase();
+    if (normGranularity === "month") {
       selectPeriodExpr = "CONVERT(VARCHAR(7), p.[Doc_Date], 120)";
       groupByPeriodExpr = "CONVERT(VARCHAR(7), p.[Doc_Date], 120), ";
-    } else if (granularity === "summary") {
+    } else if (normGranularity === "summary" || normGranularity === "total") {
       selectPeriodExpr = "NULL";
       groupByPeriodExpr = "";
       orderByPeriodExpr = "";
@@ -324,7 +329,7 @@ export class CaravanReportService {
                 g.[Game_Code] AS [Branch_Code],
                 g.[Game_Name] AS [Name],
                 SUM(CAST(p.[Item_Qunt] AS INT)) AS [Cover],
-                SUM(CAST(p.[Item_Qunt] AS DECIMAL(18, 4)) * CAST(p.[Item_Price] AS DECIMAL(18, 4)) * (1.0 + ISNULL(CAST(p.[item_Sels_Tax_P] AS DECIMAL(18, 4)), 0) / 100.0)) AS [Total],
+                CAST(SUM(p.[Item_Qunt] * p.[Item_Price] * (1.0 + ISNULL(p.[item_Sels_Tax_P], 0) / 100.0)) AS DECIMAL(18, 4)) AS [Total],
                 SUM(CAST(ISNULL(p.[C/L], 0) AS DECIMAL(18, 4))) AS [CL]
             FROM FilteredItems p
             CROSS APPLY (
@@ -351,6 +356,10 @@ export class CaravanReportService {
                         -- Discovery & Selsela to Sector 2 (Amusement Rides):
                         WHEN p.[Group_code] = 1 OR p.[Groupitem_name] LIKE '%ديسكفر%' OR p.[item_name] LIKE '%ديسكفر%' THEN 2
                         WHEN p.[Groupitem_name] LIKE '%سلسل%' OR p.[item_name] LIKE '%سلسل%' THEN 2
+                        -- Explicitly route all Video Games groups to Sector 3 to prevent leaking into Sector 2 from cashiers with Branch_Type = 2:
+                        WHEN p.[Group_code] IN (5, 9, 10, 11, 12, 17, 18, 19, 20, 22) THEN 3
+                        -- Standard Paid Rides (Type 2 games):
+                        WHEN p.[Group_code] IN (2, 4, 6, 7, 8, 14, 16) THEN 2
                         -- Default to Branch Type:
                         ELSE p.[Branch_Type]
                     END AS [Target_Sector],
@@ -409,7 +418,7 @@ export class CaravanReportService {
             WHERE g.[Target_Sector] = @sectorType
               ${itemFilterClause}
             GROUP BY ${groupByPeriodExpr}g.[Game_Code], g.[Game_Name]
-            HAVING SUM(CAST(p.[Item_Qunt] AS DECIMAL(18, 4)) * CAST(p.[Item_Price] AS DECIMAL(18, 4)) * (1.0 + ISNULL(CAST(p.[item_Sels_Tax_P] AS DECIMAL(18, 4)), 0) / 100.0)) > 0
+            HAVING CAST(SUM(p.[Item_Qunt] * p.[Item_Price] * (1.0 + ISNULL(p.[item_Sels_Tax_P], 0) / 100.0)) AS DECIMAL(18, 4)) <> 0
             ORDER BY ${orderByPeriodExpr}[Total] DESC
             OPTION (HASH JOIN);
         `;
@@ -668,7 +677,7 @@ export class CaravanReportService {
                   AND p.[Doc_Date] < DATEADD(DAY, 1, @endDate)
                   AND (p.[Void] = 0 OR p.[Void] IS NULL)
                 GROUP BY tb.[Code], tb.[Aname] ${groupBySalesPeriod}
-                HAVING SUM(CAST(ISNULL(p.[Cash], 0) + ISNULL(p.[Visa], 0) + ISNULL(p.[Visa2], 0) + ISNULL(p.[Visa3], 0) + ISNULL(p.[C/L], 0) AS DECIMAL(18, 4))) > 0
+                HAVING SUM(CAST(ISNULL(p.[Cash], 0) + ISNULL(p.[Visa], 0) + ISNULL(p.[Visa2], 0) + ISNULL(p.[Visa3], 0) + ISNULL(p.[C/L], 0) AS DECIMAL(18, 4))) <> 0
             )
             SELECT 
                 s.[Branch_Code],

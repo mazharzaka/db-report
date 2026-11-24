@@ -186,8 +186,10 @@ interface MatrixRowData {
   date: string;
   values: Record<string, number>;
   rowTotal: number;
-  rowCashVisa: number;
+  rowCash: number;
+  rowVisa: number;
   rowCoupons: number;
+  rowCashVisa: number;
 }
 
 interface MatrixTableRowProps {
@@ -197,6 +199,7 @@ interface MatrixTableRowProps {
   hoverRowClass: string;
   hoverCellClass: string;
   totalRevColClass: string;
+  isTwoRowHeader?: boolean;
 }
 
 const MatrixTableRow = React.memo(function MatrixTableRow({
@@ -206,6 +209,7 @@ const MatrixTableRow = React.memo(function MatrixTableRow({
   hoverRowClass,
   hoverCellClass,
   totalRevColClass,
+  isTwoRowHeader = false,
 }: MatrixTableRowProps) {
   return (
     <tr className={`group transition-colors duration-150 ${hoverRowClass}`}>
@@ -216,16 +220,71 @@ const MatrixTableRow = React.memo(function MatrixTableRow({
 
       {/* Outlet / Game Values */}
       {columns.map((col) => {
+        if (isTwoRowHeader && col.branchCode === 'golden') {
+          const sGolden = row.values['golden_sgolden'] || 0;
+          const platinum = row.values['golden_platinum'] || 0;
+          const diamond = row.values['golden_diamond'] || 0;
+          const vip = row.values['golden_vip'] || 0;
+          const total = row.values['golden'] || (sGolden + platinum + diamond + vip);
+          return (
+            <React.Fragment key={col.branchCode}>
+              <td className={`px-2.5 py-3.5 text-center font-mono text-sm tabular-nums border-l border-slate-200/60 dark:border-zinc-800/40 ${hoverCellClass} text-slate-400 dark:text-zinc-600`}>
+                {sGolden > 0 ? MONEY_FORMATTER.format(sGolden) : <span className="opacity-40 font-normal">0.00</span>}
+              </td>
+              <td className={`px-2.5 py-3.5 text-center font-mono text-sm tabular-nums border-l border-slate-200/60 dark:border-zinc-800/40 ${hoverCellClass} text-slate-400 dark:text-zinc-600`}>
+                {platinum > 0 ? MONEY_FORMATTER.format(platinum) : <span className="opacity-40 font-normal">0.00</span>}
+              </td>
+              <td className={`px-2.5 py-3.5 text-center font-mono text-sm tabular-nums border-l border-slate-200/60 dark:border-zinc-800/40 ${hoverCellClass} text-slate-400 dark:text-zinc-600`}>
+                {diamond > 0 ? MONEY_FORMATTER.format(diamond) : <span className="opacity-40 font-normal">0.00</span>}
+              </td>
+              <td className={`px-2.5 py-3.5 text-center font-mono text-sm tabular-nums border-l border-slate-200/60 dark:border-zinc-800/40 ${hoverCellClass} text-slate-400 dark:text-zinc-600`}>
+                {vip > 0 ? MONEY_FORMATTER.format(vip) : <span className="opacity-40 font-normal">0.00</span>}
+              </td>
+              <td className={`px-3 py-3.5 text-left font-bold text-base lg:text-lg tabular-nums border-l border-slate-200/60 dark:border-zinc-800/40 ${hoverCellClass} ${total > 0 ? 'text-slate-900 dark:text-white font-black' : 'text-slate-300 dark:text-zinc-600 font-normal'}`}>
+                {total > 0 ? MONEY_FORMATTER.format(total) : <span className="opacity-40 font-normal">—</span>}
+              </td>
+            </React.Fragment>
+          );
+        }
+
+        if (isTwoRowHeader && col.branchCode === '4') {
+          const cash = row.values['4_cash'] || 0;
+          const platinum = row.values['4_platinum'] || 0;
+          const diamond = row.values['4_diamond'] || 0;
+          const visa = row.values['4_visa'] || 0;
+          const total = row.values['4'] || (cash + platinum + diamond + visa);
+          return (
+            <React.Fragment key={col.branchCode}>
+              <td className={`px-2.5 py-3.5 text-center font-mono text-sm tabular-nums border-l border-slate-200/60 dark:border-zinc-800/40 ${hoverCellClass} text-slate-400 dark:text-zinc-600`}>
+                {cash > 0 ? MONEY_FORMATTER.format(cash) : <span className="opacity-40 font-normal">0.00</span>}
+              </td>
+              <td className={`px-2.5 py-3.5 text-center font-mono text-sm tabular-nums border-l border-slate-200/60 dark:border-zinc-800/40 ${hoverCellClass} text-slate-400 dark:text-zinc-600`}>
+                {platinum > 0 ? MONEY_FORMATTER.format(platinum) : <span className="opacity-40 font-normal">0.00</span>}
+              </td>
+              <td className={`px-2.5 py-3.5 text-center font-mono text-sm tabular-nums border-l border-slate-200/60 dark:border-zinc-800/40 ${hoverCellClass} text-slate-400 dark:text-zinc-600`}>
+                {diamond > 0 ? MONEY_FORMATTER.format(diamond) : <span className="opacity-40 font-normal">0.00</span>}
+              </td>
+              <td className={`px-2.5 py-3.5 text-center font-mono text-sm tabular-nums border-l border-slate-200/60 dark:border-zinc-800/40 ${hoverCellClass} text-slate-400 dark:text-zinc-600`}>
+                {visa > 0 ? MONEY_FORMATTER.format(visa) : <span className="opacity-40 font-normal">0.00</span>}
+              </td>
+              <td className={`px-3 py-3.5 text-left font-bold text-base lg:text-lg tabular-nums border-l border-slate-200/60 dark:border-zinc-800/40 ${hoverCellClass} ${total > 0 ? 'text-slate-900 dark:text-white font-black' : 'text-slate-300 dark:text-zinc-600 font-normal'}`}>
+                {total > 0 ? MONEY_FORMATTER.format(total) : <span className="opacity-40 font-normal">—</span>}
+              </td>
+            </React.Fragment>
+          );
+        }
+
         const val = row.values[col.branchCode] || 0;
+        const hasValue = Math.abs(val) > 0.0001;
         return (
           <td
             key={col.branchCode}
-            className={`px-4 py-3.5 text-left font-bold text-base lg:text-lg tabular-nums border-l border-slate-200/60 dark:border-zinc-800/40 ${hoverCellClass} transition-colors ${val > 0
-              ? 'text-slate-900 dark:text-white'
+            className={`px-4 py-3.5 text-left font-bold text-base lg:text-lg tabular-nums border-l border-slate-200/60 dark:border-zinc-800/40 ${hoverCellClass} transition-colors ${hasValue
+              ? val < 0 ? 'text-rose-600 dark:text-rose-400' : 'text-slate-900 dark:text-white'
               : 'text-slate-300 dark:text-zinc-600 font-normal'
               }`}
           >
-            {val > 0 ? (
+            {hasValue ? (
               MONEY_FORMATTER.format(val)
             ) : (
               <span className="select-none font-normal opacity-40">—</span>
@@ -243,7 +302,12 @@ const MatrixTableRow = React.memo(function MatrixTableRow({
         <>
           {/* Daily Cash */}
           <td className={`px-4 py-3.5 text-left font-bold text-base lg:text-lg tabular-nums text-slate-900 bg-slate-50/80 ${hoverCellClass} dark:bg-zinc-800/40 dark:text-zinc-100 transition-colors`}>
-            <Money value={row.rowCashVisa} />
+            <Money value={row.rowCash} />
+          </td>
+
+          {/* Daily Visa */}
+          <td className={`px-4 py-3.5 text-left font-bold text-base lg:text-lg tabular-nums text-slate-900 bg-slate-50/80 ${hoverCellClass} dark:bg-zinc-800/40 dark:text-zinc-100 transition-colors`}>
+            <Money value={row.rowVisa} />
           </td>
 
           {/* Daily Coupons & CL */}
@@ -319,7 +383,7 @@ export const DailyRevenueMatrix = React.memo(function DailyRevenueMatrix({
     >();
     const datePaymentMap = new Map<
       string,
-      { cashVisa: number; cl: number; total: number }
+      { cash: number; visa: number; cl: number; total: number; cashVisa: number }
     >();
 
     rows.forEach((r) => {
@@ -341,7 +405,7 @@ export const DailyRevenueMatrix = React.memo(function DailyRevenueMatrix({
       const visa = Number(r.visa) || 0;
       const cl = Number(r.creditLine ?? (r as any).cl) || 0;
       const rawTotal = Number(r.total) || 0;
-      const itemBaseTotal = (cash + visa + cl) > 0 ? (cash + visa + cl) : rawTotal;
+      const itemBaseTotal = Math.abs(cash + visa + cl) > 0.0001 ? (cash + visa + cl) : rawTotal;
 
       branchTotals.set(branchKey, (branchTotals.get(branchKey) || 0) + itemBaseTotal);
 
@@ -358,9 +422,11 @@ export const DailyRevenueMatrix = React.memo(function DailyRevenueMatrix({
           const dCl = Number((r as any).dailyCl) || 0;
           const dTot = Number((r as any).dailyTotal) || (dCash + dVisa + dCl);
           datePaymentMap.set(dateKey, {
-            cashVisa: dCash + dVisa,
+            cash: dCash,
+            visa: dVisa,
             cl: dCl,
             total: dTot,
+            cashVisa: dCash + dVisa,
           });
         }
       }
@@ -428,8 +494,9 @@ export const DailyRevenueMatrix = React.memo(function DailyRevenueMatrix({
         return a.branchCode.localeCompare(b.branchCode);
       });
 
-    // Sector 2: Filter rides based on Active / Inactive / All
+    // Sector 2: Strictly whitelist the 16 Paid Rides ending at Laser zone ('14'), filtering by Active / Inactive / All
     if (sectorType === 2) {
+      cols = cols.filter((c) => PAID_RIDES_SECTOR_ORDER.includes(c.branchCode));
       if (effectiveRideStatusFilter === 'active') {
         cols = cols.filter((c) => {
           const isInactiveListed = PAID_RIDES_INACTIVE_CODES.has(c.branchCode);
@@ -454,7 +521,7 @@ export const DailyRevenueMatrix = React.memo(function DailyRevenueMatrix({
 }, [rows, sectorType, effectiveRideStatusFilter]);
 
 // Stage 2: Dynamic Metric Projection & Aggregate Totals (Instant O(Dates * Columns))
-const { columns, matrixRows, columnTotals, grandTotal, grandCashVisa, grandCoupons } = useMemo(() => {
+const { columns, matrixRows, columnTotals, grandTotal, grandCash, grandVisa, grandCoupons, grandCashVisa } = useMemo(() => {
   const { cols, dateMap, datePaymentMap, rawDates } = aggregatedData;
 
   const dates = [...rawDates].sort((a, b) => {
@@ -468,7 +535,8 @@ const { columns, matrixRows, columnTotals, grandTotal, grandCashVisa, grandCoupo
   });
 
   let rawOverallTotal = 0;
-  let rawOverallCashVisa = 0;
+  let rawOverallCash = 0;
+  let rawOverallVisa = 0;
   let rawOverallCoupons = 0;
 
   const applyCalcMode = (val: number, mode: CalcMode) => {
@@ -481,7 +549,8 @@ const { columns, matrixRows, columnTotals, grandTotal, grandCashVisa, grandCoupo
     const branchValues = dateMap.get(date);
     const values: Record<string, number> = {};
     let rawDailyTotal = 0;
-    let rawDailyCashVisa = 0;
+    let rawDailyCash = 0;
+    let rawDailyVisa = 0;
     let rawDailyCoupons = 0;
 
     cols.forEach((col) => {
@@ -492,12 +561,13 @@ const { columns, matrixRows, columnTotals, grandTotal, grandCashVisa, grandCoupo
         rawTotal: 0,
       };
 
-      const itemCashVisa = item.cash + item.visa;
+      const itemCash = item.cash;
+      const itemVisa = item.visa;
       const itemCl = item.cl;
       // Always calculate using All sources: baseTotal = cash + visa + cl
       const itemBaseTotal =
-        itemCashVisa + itemCl > 0
-          ? itemCashVisa + itemCl
+        Math.abs(itemCash + itemVisa + itemCl) > 0.0001
+          ? itemCash + itemVisa + itemCl
           : item.rawTotal;
 
       const val = applyCalcMode(itemBaseTotal, calcMode);
@@ -505,7 +575,8 @@ const { columns, matrixRows, columnTotals, grandTotal, grandCashVisa, grandCoupo
       values[col.branchCode] = val;
       rawDailyTotal += itemBaseTotal;
       if (!datePaymentMap.has(date)) {
-        rawDailyCashVisa += itemCashVisa;
+        rawDailyCash += itemCash;
+        rawDailyVisa += itemVisa;
         rawDailyCoupons += itemCl;
       }
 
@@ -515,25 +586,31 @@ const { columns, matrixRows, columnTotals, grandTotal, grandCashVisa, grandCoupo
     // Use POS_Post daily payment totals directly when available (Types 2 & 3 zero double-counting)
     if (datePaymentMap.has(date)) {
       const dPay = datePaymentMap.get(date)!;
-      rawDailyCashVisa = dPay.cashVisa;
+      rawDailyCash = dPay.cash;
+      rawDailyVisa = dPay.visa;
       rawDailyCoupons = dPay.cl;
     }
 
     // Apply calcMode to daily aggregate columns
     const rowTotal = applyCalcMode(rawDailyTotal, calcMode);
-    const rowCashVisa = applyCalcMode(rawDailyCashVisa, calcMode);
+    const rowCash = applyCalcMode(rawDailyCash, calcMode);
+    const rowVisa = applyCalcMode(rawDailyVisa, calcMode);
     const rowCoupons = applyCalcMode(rawDailyCoupons, calcMode);
+    const rowCashVisa = rowCash + rowVisa;
 
     rawOverallTotal += rawDailyTotal;
-    rawOverallCashVisa += rawDailyCashVisa;
+    rawOverallCash += rawDailyCash;
+    rawOverallVisa += rawDailyVisa;
     rawOverallCoupons += rawDailyCoupons;
 
     return {
       date,
       values,
       rowTotal,
-      rowCashVisa,
+      rowCash,
+      rowVisa,
       rowCoupons,
+      rowCashVisa,
     };
   });
 
@@ -544,16 +621,20 @@ const { columns, matrixRows, columnTotals, grandTotal, grandCashVisa, grandCoupo
   });
 
   const grandTotal = applyCalcMode(rawOverallTotal, calcMode);
-  const grandCashVisa = applyCalcMode(rawOverallCashVisa, calcMode);
+  const grandCash = applyCalcMode(rawOverallCash, calcMode);
+  const grandVisa = applyCalcMode(rawOverallVisa, calcMode);
   const grandCoupons = applyCalcMode(rawOverallCoupons, calcMode);
+  const grandCashVisa = grandCash + grandVisa;
 
   return {
     columns: cols,
     matrixRows: mRows,
     columnTotals: colTotalsAcc,
     grandTotal,
-    grandCashVisa,
+    grandCash,
+    grandVisa,
     grandCoupons,
+    grandCashVisa,
   };
 }, [aggregatedData, sortOrder, calcMode]);
 
@@ -624,6 +705,18 @@ const dynamicTitle = useMemo(() => {
 /* -------------------------------------------------------------------------- */
 /* Excel Export using ExcelJS with Precise Cell Formatting & Styling Range    */
 /* -------------------------------------------------------------------------- */
+const isPaidRides = sectorType === 2;
+const isTwoRowHeader = isPaidRides && effectiveRideStatusFilter === 'all';
+
+const totalTableCols = useMemo(() => {
+  const outletsCount = columns.reduce(
+    (acc, c) =>
+      acc + (isTwoRowHeader && (c.branchCode === 'golden' || c.branchCode === '4') ? 5 : 1),
+    0
+  );
+  return 1 + outletsCount + (calcMode === 'vat' ? 1 : 4);
+}, [columns, isTwoRowHeader, calcMode]);
+
 const handleExportToExcel = async () => {
   try {
     setExporting(true);
@@ -718,35 +811,171 @@ const handleExportToExcel = async () => {
     // Clean Arabic Worksheet Name (Max 31 chars, no invalid Excel chars)
     const rawSheetName = `${modeWord} ${entityName}`.replace(/[\\/?*:[\]]/g, '').trim();
     const sheetName = rawSheetName.slice(0, 31) || 'المبيعات';
+
+    // 1. Flip Excel Export Direction to Left-to-Right (LTR) with frozen header panes
     const worksheet = workbook.addWorksheet(sheetName, {
-      views: [{ rightToLeft: true }],
+      views: [{ rightToLeft: false, state: 'frozen', ySplit: isTwoRowHeader ? 4 : 3 }],
     });
     worksheet.properties.tabColor = { argb: tabColor };
 
-    // 1. Setup Column Headers: Date, Caravans/Shops (English ONLY), TOTAL REV, CASH, COPON /C L
-    const wsColumns: { header: string; key: string; width: number; isShop?: boolean }[] = [
-      { header: 'التاريخ', key: 'date', width: 16 },
-      ...columns.map((col) => ({
-        header: sectorType === 3
-          ? (VGAMES_DISPLAY_NAMES[col.branchCode] || col.name)
-          : sectorType === 2
-              ? (PAID_RIDES_DISPLAY_NAMES[col.branchCode] || col.name)
-              : (CARAVAN_DISPLAY_NAMES[col.branchCode] || col.name),
-        key: `col_${col.branchCode}`,
-        width: 20,
-        isShop: sectorType === 4 && SHOP_BRANCH_CODES_SET.has(col.branchCode),
-      })),
-      { header: 'TOTAL REV', key: 'row_total', width: 22 },
-      ...(calcMode !== 'vat'
-        ? [
-          { header: 'CASH', key: 'cash_visa', width: 18 },
-          { header: 'COPON /C L', key: 'coupons', width: 20 },
-        ]
-        : []),
-    ];
+    // Standard border and styling objects
+    const thinBorder = {
+      top: { style: 'thin' as const, color: { argb: 'FF000000' } },
+      bottom: { style: 'thin' as const, color: { argb: 'FF000000' } },
+      left: { style: 'thin' as const, color: { argb: 'FF000000' } },
+      right: { style: 'thin' as const, color: { argb: 'FF000000' } },
+    };
+    const doubleBottomBorder = {
+      top: { style: 'thin' as const, color: { argb: 'FF000000' } },
+      bottom: { style: 'double' as const, color: { argb: 'FF000000' } },
+      left: { style: 'thin' as const, color: { argb: 'FF000000' } },
+      right: { style: 'thin' as const, color: { argb: 'FF000000' } },
+    };
+    const headerFillPattern = {
+      type: 'pattern' as const,
+      pattern: 'solid' as const,
+      fgColor: { argb: headerFill },
+    };
+    const centerMiddleAlign = {
+      vertical: 'middle' as const,
+      horizontal: 'center' as const,
+      wrapText: true,
+    };
+    const headerFontNormal = {
+      name: 'Times New Roman',
+      size: 13,
+      bold: true,
+      color: { argb: 'FF0F172A' },
+    };
+    const headerFontSub = {
+      name: 'Times New Roman',
+      size: 11,
+      bold: true,
+      color: { argb: 'FF0F172A' },
+    };
+    const redHeaderFont = {
+      name: 'Times New Roman',
+      size: 13,
+      bold: true,
+      color: { argb: 'FFFF0000' },
+    };
 
-    worksheet.columns = wsColumns.map((c) => ({ key: c.key, width: c.width }));
-    const totalColumnsCount = wsColumns.length;
+    function styleRange(
+      ws: any,
+      startRow: number,
+      startCol: number,
+      endRow: number,
+      endCol: number,
+      style: {
+        font?: any;
+        fill?: any;
+        alignment?: any;
+        border?: any;
+        numFmt?: string;
+      }
+    ) {
+      for (let r = startRow; r <= endRow; r++) {
+        const rowObj = ws.getRow(r);
+        for (let c = startCol; c <= endCol; c++) {
+          const cell = rowObj.getCell(c);
+          if (style.font) cell.font = style.font;
+          if (style.fill) cell.fill = style.fill;
+          if (style.alignment) cell.alignment = style.alignment;
+          if (style.border) cell.border = style.border;
+          if (style.numFmt) cell.numFmt = style.numFmt;
+        }
+      }
+    }
+
+    // 2. Setup Export Columns flowing from Left to Right (Date -> Rides -> Summary)
+    interface ExportColDef {
+      key: string;
+      header: string;
+      parentHeader?: string;
+      width: number;
+      isShop?: boolean;
+      getValue: (row: MatrixRowData) => number;
+      getTotal: () => number;
+    }
+
+    const exportColumns: ExportColDef[] = [];
+
+    columns.forEach((col) => {
+      if (isTwoRowHeader && col.branchCode === 'golden') {
+        exportColumns.push(
+          { key: 'golden_sgolden', header: 'S.Golden', parentHeader: 'Golden', width: 14, getValue: (r) => r.values['golden_sgolden'] || 0, getTotal: () => columnTotals['golden_sgolden'] || 0 },
+          { key: 'golden_platinum', header: 'Platinum', parentHeader: 'Golden', width: 14, getValue: (r) => r.values['golden_platinum'] || 0, getTotal: () => columnTotals['golden_platinum'] || 0 },
+          { key: 'golden_diamond', header: 'Diamond', parentHeader: 'Golden', width: 14, getValue: (r) => r.values['golden_diamond'] || 0, getTotal: () => columnTotals['golden_diamond'] || 0 },
+          { key: 'golden_vip', header: 'VIP', parentHeader: 'Golden', width: 14, getValue: (r) => r.values['golden_vip'] || 0, getTotal: () => columnTotals['golden_vip'] || 0 },
+          { key: 'golden_total', header: 'Total', parentHeader: 'Golden', width: 16, getValue: (r) => r.values['golden'] || 0, getTotal: () => columnTotals['golden'] || 0 }
+        );
+      } else if (isTwoRowHeader && col.branchCode === '4') {
+        exportColumns.push(
+          { key: '4_cash', header: 'Cash', parentHeader: '7 D', width: 14, getValue: (r) => r.values['4_cash'] || 0, getTotal: () => columnTotals['4_cash'] || 0 },
+          { key: '4_platinum', header: 'Platinum', parentHeader: '7 D', width: 14, getValue: (r) => r.values['4_platinum'] || 0, getTotal: () => columnTotals['4_platinum'] || 0 },
+          { key: '4_diamond', header: 'Diamond', parentHeader: '7 D', width: 14, getValue: (r) => r.values['4_diamond'] || 0, getTotal: () => columnTotals['4_diamond'] || 0 },
+          { key: '4_visa', header: 'Visa', parentHeader: '7 D', width: 14, getValue: (r) => r.values['4_visa'] || 0, getTotal: () => columnTotals['4_visa'] || 0 },
+          { key: '4_total', header: 'Total', parentHeader: '7 D', width: 16, getValue: (r) => r.values['4'] || 0, getTotal: () => columnTotals['4'] || 0 }
+        );
+      } else {
+        const headerName =
+          sectorType === 3
+            ? (VGAMES_DISPLAY_NAMES[col.branchCode] || col.name)
+            : sectorType === 2
+                ? (PAID_RIDES_DISPLAY_NAMES[col.branchCode] || col.name)
+                : (CARAVAN_DISPLAY_NAMES[col.branchCode] || col.name);
+
+        exportColumns.push({
+          key: `col_${col.branchCode}`,
+          header: headerName,
+          width: 18,
+          isShop: sectorType === 4 && SHOP_BRANCH_CODES_SET.has(col.branchCode),
+          getValue: (r) => r.values[col.branchCode] || 0,
+          getTotal: () => columnTotals[col.branchCode] || 0,
+        });
+      }
+    });
+
+    // Summary columns on the right (matching English Copy of RETAL.xls layout)
+    exportColumns.push({
+      key: 'row_total',
+      header: 'TOTAL REV',
+      width: 20,
+      getValue: (r) => r.rowTotal,
+      getTotal: () => grandTotal,
+    });
+
+    if (calcMode !== 'vat') {
+      exportColumns.push(
+        {
+          key: 'cash',
+          header: 'CASH',
+          width: 16,
+          getValue: (r) => r.rowCash,
+          getTotal: () => grandCash,
+        },
+        {
+          key: 'visa',
+          header: 'VISA',
+          width: 16,
+          getValue: (r) => r.rowVisa,
+          getTotal: () => grandVisa,
+        },
+        {
+          key: 'coupons',
+          header: 'COPON / C.L',
+          width: 18,
+          getValue: (r) => r.rowCoupons,
+          getTotal: () => grandCoupons,
+        }
+      );
+    }
+
+    worksheet.columns = [
+      { key: 'date', width: 16 },
+      ...exportColumns.map((c) => ({ key: c.key, width: c.width })),
+    ];
+    const totalColumnsCount = 1 + exportColumns.length;
 
     // Row 1 (height 28) and Row 2 (height 24) header area for Logo and Centered Title
     const row1 = worksheet.addRow([]);
@@ -754,7 +983,7 @@ const handleExportToExcel = async () => {
     const row2 = worksheet.addRow([]);
     row2.height = 24;
 
-    // Place Dream Park Logo cleanly in top-right corner (Columns A-B, Rows 1-2, zero overlap)
+    // Place Dream Park Logo cleanly in top-left corner (Columns A-B, Rows 1-2 in LTR)
     try {
       const logoRes = await fetch('/dreampark-logo.png');
       if (logoRes.ok) {
@@ -772,9 +1001,9 @@ const handleExportToExcel = async () => {
       console.warn('Could not load logo for Excel export:', logoErr);
     }
 
-    // Merge Title strictly across first visible columns next to logo: Col C (col 3) to Math.min(lastColIndex, 10)
+    // Merge Title strictly across visible columns next to logo: Col C (col 3) to Math.min(lastColIndex, 12)
     if (totalColumnsCount >= 3) {
-      const titleEndCol = Math.min(totalColumnsCount, 10);
+      const titleEndCol = Math.min(totalColumnsCount, 12);
       worksheet.mergeCells(1, 3, 2, titleEndCol);
       const titleCell = worksheet.getCell(1, 3);
       titleCell.value = excelTitle;
@@ -788,133 +1017,175 @@ const handleExportToExcel = async () => {
       titleCell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
     }
 
-    // Row 3: Table Header Row (Times New Roman, size 13, bold, fill theme.excel.headerFill, height 53.25)
-    // Red #FF0000 font for the 5 Shops, #0F172A for Caravans & summary headers, crisp #000000 borders
-    const headerValues: Record<string, string> = {};
-    wsColumns.forEach((c) => {
-      headerValues[c.key] = c.header;
-    });
-    const headerRow = worksheet.addRow(headerValues);
-    headerRow.height = 53.25;
+    // 3. Render Table Headers (2-row grouped for Sector 2 All, or clean 1-row header)
+    if (isTwoRowHeader) {
+      const row3 = worksheet.getRow(3);
+      row3.height = 28;
+      const row4 = worksheet.getRow(4);
+      row4.height = 26;
 
-    for (let colIdx = 1; colIdx <= totalColumnsCount; colIdx++) {
-      const cell = headerRow.getCell(colIdx);
-      const colDef = wsColumns[colIdx - 1];
-      const isShop = colDef?.isShop;
+      // Column 1: Date vertically merged across Row 3 and Row 4
+      worksheet.mergeCells(3, 1, 4, 1);
+      worksheet.getCell(3, 1).value = 'Date';
+      styleRange(worksheet, 3, 1, 4, 1, {
+        font: headerFontNormal,
+        fill: headerFillPattern,
+        alignment: centerMiddleAlign,
+        border: thinBorder,
+      });
 
-      cell.font = {
-        name: 'Times New Roman',
-        size: 13,
-        bold: true,
-        color: { argb: isShop ? 'FFFF0000' : 'FF0F172A' },
-      };
-      cell.fill = {
-        type: 'pattern',
-        pattern: 'solid',
-        fgColor: { argb: headerFill },
-      };
-      cell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
-      cell.border = {
-        top: { style: 'thin', color: { argb: 'FF000000' } },
-        bottom: { style: 'thin', color: { argb: 'FF000000' } },
-        left: { style: 'thin', color: { argb: 'FF000000' } },
-        right: { style: 'thin', color: { argb: 'FF000000' } },
-      };
+      let currentXCol = 2;
+      let idx = 0;
+      while (idx < exportColumns.length) {
+        const colDef = exportColumns[idx];
+        if (colDef.parentHeader) {
+          const parentName = colDef.parentHeader;
+          let count = 0;
+          while (
+            idx + count < exportColumns.length &&
+            exportColumns[idx + count].parentHeader === parentName
+          ) {
+            count++;
+          }
+          const startCol = currentXCol;
+          const endCol = currentXCol + count - 1;
+
+          // Merge parent in row 3
+          worksheet.mergeCells(3, startCol, 3, endCol);
+          worksheet.getCell(3, startCol).value = parentName;
+          styleRange(worksheet, 3, startCol, 3, endCol, {
+            font: headerFontNormal,
+            fill: headerFillPattern,
+            alignment: centerMiddleAlign,
+            border: thinBorder,
+          });
+
+          // Sub headers in row 4
+          for (let s = 0; s < count; s++) {
+            const targetCol = startCol + s;
+            const subDef = exportColumns[idx + s];
+            worksheet.getCell(4, targetCol).value = subDef.header;
+            styleRange(worksheet, 4, targetCol, 4, targetCol, {
+              font: headerFontSub,
+              fill: headerFillPattern,
+              alignment: centerMiddleAlign,
+              border: thinBorder,
+            });
+          }
+
+          currentXCol += count;
+          idx += count;
+        } else {
+          // Single ride column vertically merged across row 3 and row 4
+          worksheet.mergeCells(3, currentXCol, 4, currentXCol);
+          worksheet.getCell(3, currentXCol).value = colDef.header;
+          styleRange(worksheet, 3, currentXCol, 4, currentXCol, {
+            font: colDef.isShop ? redHeaderFont : headerFontNormal,
+            fill: headerFillPattern,
+            alignment: centerMiddleAlign,
+            border: thinBorder,
+          });
+
+          currentXCol++;
+          idx++;
+        }
+      }
+    } else {
+      // 1-Row Clean Header (when Filter is Active/Inactive or other sectors)
+      const headerRow = worksheet.getRow(3);
+      headerRow.height = 53.25;
+
+      worksheet.getCell(3, 1).value = 'Date';
+      styleRange(worksheet, 3, 1, 3, 1, {
+        font: headerFontNormal,
+        fill: headerFillPattern,
+        alignment: centerMiddleAlign,
+        border: thinBorder,
+      });
+
+      for (let i = 0; i < exportColumns.length; i++) {
+        const colDef = exportColumns[i];
+        const targetCol = 2 + i;
+        worksheet.getCell(3, targetCol).value = colDef.header;
+        styleRange(worksheet, 3, targetCol, 3, targetCol, {
+          font: colDef.isShop ? redHeaderFont : headerFontNormal,
+          fill: headerFillPattern,
+          alignment: centerMiddleAlign,
+          border: thinBorder,
+        });
+      }
     }
 
-    // Rows 4+: Populate ALL Data Rows (Height: 26.1, Times New Roman, Size: 12, Bold, #0F172A, numFmt: '#,##0.00')
+    // 4. Populate Data Rows (Height: 26.1, Times New Roman, Size: 12, Bold, #0F172A, numFmt: '#,##0.00')
     matrixRows.forEach((item) => {
-      const rowData: Record<string, any> = {
-        date: item.date,
-        row_total: item.rowTotal,
-      };
-
-      if (calcMode !== 'vat') {
-        rowData.cash_visa = item.rowCashVisa;
-        rowData.coupons = item.rowCoupons;
+      const rowData: (string | number)[] = [item.date];
+      for (const colDef of exportColumns) {
+        rowData.push(colDef.getValue(item));
       }
-
-      columns.forEach((col) => {
-        rowData[`col_${col.branchCode}`] = item.values[col.branchCode] || 0;
-      });
 
       const row = worksheet.addRow(rowData);
       row.height = 26.1;
 
-      for (let colIdx = 1; colIdx <= totalColumnsCount; colIdx++) {
-        const cell = row.getCell(colIdx);
-        cell.border = {
-          top: { style: 'thin', color: { argb: 'FF000000' } },
-          bottom: { style: 'thin', color: { argb: 'FF000000' } },
-          left: { style: 'thin', color: { argb: 'FF000000' } },
-          right: { style: 'thin', color: { argb: 'FF000000' } },
-        };
+      // Date Cell
+      const dateCell = row.getCell(1);
+      dateCell.alignment = { vertical: 'middle', horizontal: 'center' };
+      dateCell.font = { name: 'Times New Roman', size: 12, bold: true, color: { argb: 'FF0F172A' } };
+      dateCell.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FFF8FAFC' },
+      };
+      dateCell.border = thinBorder;
 
-        if (colIdx === 1) {
-          // Date Cell
-          cell.alignment = { vertical: 'middle', horizontal: 'center' };
-          cell.font = { name: 'Times New Roman', size: 12, bold: true, color: { argb: 'FF0F172A' } };
+      // Numeric Cells
+      for (let colIdx = 2; colIdx <= totalColumnsCount; colIdx++) {
+        const cell = row.getCell(colIdx);
+        cell.numFmt = '#,##0.00';
+        cell.alignment = { vertical: 'middle', horizontal: 'right' };
+        cell.font = { name: 'Times New Roman', size: 12, bold: true, color: { argb: 'FF0F172A' } };
+        cell.border = thinBorder;
+
+        const colDef = exportColumns[colIdx - 2];
+        if (colDef?.key === 'row_total') {
           cell.fill = {
             type: 'pattern',
             pattern: 'solid',
-            fgColor: { argb: 'FFF8FAFC' },
+            fgColor: { argb: 'FFF1F5F9' },
           };
-        } else {
-          // Number data cells
-          cell.numFmt = '#,##0.00';
-          cell.alignment = { vertical: 'middle', horizontal: 'right' };
-          cell.font = { name: 'Times New Roman', size: 12, bold: true, color: { argb: 'FF0F172A' } };
-
-          if (colIdx === columns.length + 2) {
-            cell.fill = {
-              type: 'pattern',
-              pattern: 'solid',
-              fgColor: { argb: 'FFF1F5F9' },
-            };
-          }
         }
       }
     });
 
-    // Grand Total Row (Height: 33.95, Times New Roman, Size: 14, Bold, #1E3A8A, fill #DBEAFE, bottom double border)
-    const footerData: Record<string, any> = {
-      date: 'الإجمالي',
-      row_total: grandTotal,
-    };
-
-    if (calcMode !== 'vat') {
-      footerData.cash_visa = grandCashVisa;
-      footerData.coupons = grandCoupons;
+    // 5. Grand Total Row (Height: 33.95, Times New Roman, Size: 14, Bold, #1E3A8A, fill #DBEAFE, bottom double border)
+    const footerData: (string | number)[] = ['TOTAL'];
+    for (const colDef of exportColumns) {
+      footerData.push(colDef.getTotal());
     }
-
-    columns.forEach((col) => {
-      footerData[`col_${col.branchCode}`] = columnTotals[col.branchCode] || 0;
-    });
 
     const totalRow = worksheet.addRow(footerData);
     totalRow.height = 33.95;
 
-    for (let colIdx = 1; colIdx <= totalColumnsCount; colIdx++) {
+    const footerDateCell = totalRow.getCell(1);
+    footerDateCell.alignment = { vertical: 'middle', horizontal: 'center' };
+    footerDateCell.font = { name: 'Times New Roman', size: 14, bold: true, color: { argb: footerFont } };
+    footerDateCell.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: footerFill },
+    };
+    footerDateCell.border = doubleBottomBorder;
+
+    for (let colIdx = 2; colIdx <= totalColumnsCount; colIdx++) {
       const cell = totalRow.getCell(colIdx);
+      cell.numFmt = '#,##0.00';
+      cell.alignment = { vertical: 'middle', horizontal: 'right' };
       cell.font = { name: 'Times New Roman', size: 14, bold: true, color: { argb: footerFont } };
       cell.fill = {
         type: 'pattern',
         pattern: 'solid',
         fgColor: { argb: footerFill },
       };
-      cell.border = {
-        top: { style: 'thin', color: { argb: 'FF000000' } },
-        bottom: { style: 'double', color: { argb: 'FF000000' } },
-        left: { style: 'thin', color: { argb: 'FF000000' } },
-        right: { style: 'thin', color: { argb: 'FF000000' } },
-      };
-
-      if (colIdx === 1) {
-        cell.alignment = { vertical: 'middle', horizontal: 'center' };
-      } else {
-        cell.numFmt = '#,##0.00';
-        cell.alignment = { vertical: 'middle', horizontal: 'right' };
-      }
+      cell.border = doubleBottomBorder;
     }
 
     // Blank Row after Grand Total
@@ -1152,16 +1423,19 @@ return (
     {/* --------------------------------------------------------------------- */}
     <div className="relative overflow-x-auto rounded-lg border border-slate-300 dark:border-zinc-800 max-h-[700px] shadow-2xs">
       <table className="w-full text-right text-sm border-collapse" dir="rtl">
-        {/* Header Row */}
+        {/* Header Row(s) */}
         <thead>
           <tr className={`border-b ${sectorType === 3
               ? 'bg-violet-950 text-white border-violet-800/60'
               : `border-slate-300 text-slate-800 dark:border-zinc-700 dark:text-zinc-200 ${theme.matrix.headerBg}`
             } sticky top-0 z-20 shadow-xs`}>
-            <th className={`sticky right-0 z-30 px-4 py-4 font-black text-center border-l min-w-[140px] ${sectorType === 3
+            <th
+              rowSpan={isTwoRowHeader ? 2 : 1}
+              className={`sticky right-0 z-30 px-4 py-4 font-black text-center border-l min-w-[140px] ${sectorType === 3
                 ? 'bg-violet-950 text-white border-violet-800/60'
                 : `border-slate-300 ${theme.matrix.headerBg}`
-              }`}>
+              }`}
+            >
               <div className="flex items-center justify-center gap-2">
                 <Calendar className={`h-4 w-4 ${sectorType === 3 ? 'text-violet-200' : 'text-slate-600 dark:text-zinc-300'}`} />
                 <span className={`font-bold text-sm ${sectorType === 3 ? 'text-white' : 'text-slate-900 dark:text-white'}`}>التاريخ</span>
@@ -1170,9 +1444,23 @@ return (
             {columns.map((col) => {
               const isShop = sectorType === 4 && SHOP_BRANCH_CODES_SET.has(col.branchCode);
               const isGame = sectorType === 2 || sectorType === 3;
+              if (isTwoRowHeader && (col.branchCode === 'golden' || col.branchCode === '4')) {
+                const titleText = col.branchCode === 'golden' ? 'Golden' : '7 D';
+                return (
+                  <th
+                    key={col.branchCode}
+                    colSpan={5}
+                    className={`px-3 py-2 text-center border-l font-black text-sm tracking-wide border-slate-300 dark:border-zinc-700 ${theme.matrix.headerBg} text-slate-900 dark:text-white`}
+                  >
+                    {titleText}
+                  </th>
+                );
+              }
+
               return (
                 <th
                   key={col.branchCode}
+                  rowSpan={isTwoRowHeader ? 2 : 1}
                   className={`px-4 py-3 text-center border-l min-w-[145px] whitespace-nowrap transition-colors ${sectorType === 3
                       ? 'bg-violet-950 text-white border-violet-800/60'
                       : isShop
@@ -1206,36 +1494,85 @@ return (
                 </th>
               );
             })}
-            <th className={`px-4 py-4 font-black text-left min-w-[160px] text-sm ${sectorType === 3
+            <th
+              rowSpan={isTwoRowHeader ? 2 : 1}
+              className={`px-4 py-4 font-black text-left min-w-[160px] text-sm ${sectorType === 3
                 ? 'bg-violet-950 text-white border-l border-violet-800/60'
                 : `text-slate-900 dark:text-white ${theme.matrix.headerBg}`
-              }`}>
+              }`}
+            >
               الإجمالي اليومي
             </th>
             {calcMode !== 'vat' && (
               <>
-                <th className={`px-4 py-4 font-black text-left min-w-[150px] text-sm ${sectorType === 3
+                <th
+                  rowSpan={isTwoRowHeader ? 2 : 1}
+                  className={`px-4 py-4 font-black text-left min-w-[130px] text-sm ${sectorType === 3
                     ? 'bg-violet-950 text-white border-l border-violet-800/60'
                     : `text-slate-900 dark:text-white ${theme.matrix.headerBg}`
-                  }`}>
+                  }`}
+                >
                   كاش
                 </th>
-                <th className={`px-4 py-4 font-black text-left min-w-[150px] text-sm ${sectorType === 3
+                <th
+                  rowSpan={isTwoRowHeader ? 2 : 1}
+                  className={`px-4 py-4 font-black text-left min-w-[130px] text-sm ${sectorType === 3
+                    ? 'bg-violet-950 text-white border-l border-violet-800/60'
+                    : `text-slate-900 dark:text-white ${theme.matrix.headerBg}`
+                  }`}
+                >
+                  فيزا
+                </th>
+                <th
+                  rowSpan={isTwoRowHeader ? 2 : 1}
+                  className={`px-4 py-4 font-black text-left min-w-[150px] text-sm ${sectorType === 3
                     ? 'bg-violet-950 text-white border-violet-800/60'
                     : `text-slate-900 dark:text-white ${theme.matrix.headerBg}`
-                  }`}>
+                  }`}
+                >
                   كوبونات و CL
                 </th>
               </>
             )}
           </tr>
+
+          {/* Sub-header Row for Two-Level Grouped Headers */}
+          {isTwoRowHeader && (
+            <tr className={`border-b border-slate-300 dark:border-zinc-700 ${theme.matrix.headerBg} sticky top-[48px] z-20 shadow-xs text-xs font-bold`}>
+              {columns.map((col) => {
+                if (col.branchCode === 'golden') {
+                  return (
+                    <React.Fragment key="golden-sub-headers">
+                      <th className="px-2 py-2 text-center border-l border-slate-300 dark:border-zinc-700 min-w-[75px] text-xs">S.Golden</th>
+                      <th className="px-2 py-2 text-center border-l border-slate-300 dark:border-zinc-700 min-w-[75px] text-xs">Platinum</th>
+                      <th className="px-2 py-2 text-center border-l border-slate-300 dark:border-zinc-700 min-w-[75px] text-xs">Diamond</th>
+                      <th className="px-2 py-2 text-center border-l border-slate-300 dark:border-zinc-700 min-w-[75px] text-xs">VIP</th>
+                      <th className="px-2.5 py-2 text-center border-l border-slate-300 dark:border-zinc-700 min-w-[85px] text-xs font-black text-slate-900 dark:text-white">Total</th>
+                    </React.Fragment>
+                  );
+                }
+                if (col.branchCode === '4') {
+                  return (
+                    <React.Fragment key="4-sub-headers">
+                      <th className="px-2 py-2 text-center border-l border-slate-300 dark:border-zinc-700 min-w-[75px] text-xs">Cash</th>
+                      <th className="px-2 py-2 text-center border-l border-slate-300 dark:border-zinc-700 min-w-[75px] text-xs">Platinum</th>
+                      <th className="px-2 py-2 text-center border-l border-slate-300 dark:border-zinc-700 min-w-[75px] text-xs">Diamond</th>
+                      <th className="px-2 py-2 text-center border-l border-slate-300 dark:border-zinc-700 min-w-[75px] text-xs">Visa</th>
+                      <th className="px-2.5 py-2 text-center border-l border-slate-300 dark:border-zinc-700 min-w-[85px] text-xs font-black text-slate-900 dark:text-white">Total</th>
+                    </React.Fragment>
+                  );
+                }
+                return null;
+              })}
+            </tr>
+          )}
         </thead>
 
         {/* Table Body with Crosshair Row Hover & Readable Fonts */}
         <tbody className="divide-y divide-slate-200 dark:divide-zinc-800/80 font-mono tabular-nums tracking-tight">
           {loading ? (
             <tr>
-              <td colSpan={columns.length + (calcMode === 'vat' ? 2 : 4)} className="py-16 text-center text-slate-400">
+              <td colSpan={totalTableCols} className="py-16 text-center text-slate-400">
                 <div className="flex flex-col items-center gap-2">
                   <Loader2 className={`h-7 w-7 animate-spin ${theme.accentText}`} />
                   <span className="text-sm font-sans font-semibold text-slate-700 dark:text-zinc-300">
@@ -1247,7 +1584,7 @@ return (
           ) : paginatedRows.length === 0 ? (
             <tr>
               <td
-                colSpan={columns.length + (calcMode === 'vat' ? 2 : 4)}
+                colSpan={totalTableCols}
                 className="py-12 text-center text-slate-500 text-sm font-sans font-medium"
               >
                 لا توجد سجلات كافية لبناء المصفوفة
@@ -1263,6 +1600,7 @@ return (
                 hoverRowClass={theme.matrix.hoverRow}
                 hoverCellClass={theme.matrix.hoverCell}
                 totalRevColClass={theme.matrix.totalRevCol}
+                isTwoRowHeader={isTwoRowHeader}
               />
             ))
           )}
@@ -1276,6 +1614,34 @@ return (
                 الإجمالي
               </td>
               {columns.map((col) => {
+                if (isTwoRowHeader && col.branchCode === 'golden') {
+                  const total = columnTotals['golden'] || 0;
+                  return (
+                    <React.Fragment key={col.branchCode}>
+                      <td className={`px-2 py-4 text-center font-mono text-xs border-l border-white/20 !text-white/70 ${theme.solidBg}`}>0.00</td>
+                      <td className={`px-2 py-4 text-center font-mono text-xs border-l border-white/20 !text-white/70 ${theme.solidBg}`}>0.00</td>
+                      <td className={`px-2 py-4 text-center font-mono text-xs border-l border-white/20 !text-white/70 ${theme.solidBg}`}>0.00</td>
+                      <td className={`px-2 py-4 text-center font-mono text-xs border-l border-white/20 !text-white/70 ${theme.solidBg}`}>0.00</td>
+                      <td className={`px-3 py-4 text-left font-black text-base lg:text-lg border-l border-white/20 !text-white ${theme.solidBg}`}>
+                        {MONEY_FORMATTER.format(total)}
+                      </td>
+                    </React.Fragment>
+                  );
+                }
+                if (isTwoRowHeader && col.branchCode === '4') {
+                  const total = columnTotals['4'] || 0;
+                  return (
+                    <React.Fragment key={col.branchCode}>
+                      <td className={`px-2 py-4 text-center font-mono text-xs border-l border-white/20 !text-white/70 ${theme.solidBg}`}>0.00</td>
+                      <td className={`px-2 py-4 text-center font-mono text-xs border-l border-white/20 !text-white/70 ${theme.solidBg}`}>0.00</td>
+                      <td className={`px-2 py-4 text-center font-mono text-xs border-l border-white/20 !text-white/70 ${theme.solidBg}`}>0.00</td>
+                      <td className={`px-2 py-4 text-center font-mono text-xs border-l border-white/20 !text-white/70 ${theme.solidBg}`}>0.00</td>
+                      <td className={`px-3 py-4 text-left font-black text-base lg:text-lg border-l border-white/20 !text-white ${theme.solidBg}`}>
+                        {MONEY_FORMATTER.format(total)}
+                      </td>
+                    </React.Fragment>
+                  );
+                }
                 const total = columnTotals[col.branchCode] || 0;
                 return (
                   <td
@@ -1292,7 +1658,10 @@ return (
               {calcMode !== 'vat' && (
                 <>
                   <td className={`px-4 py-4 text-left text-base lg:text-lg font-black border-l border-white/20 !text-white ${theme.solidBg}`}>
-                    {MONEY_FORMATTER.format(grandCashVisa)}
+                    {MONEY_FORMATTER.format(grandCash)}
+                  </td>
+                  <td className={`px-4 py-4 text-left text-base lg:text-lg font-black border-l border-white/20 !text-white ${theme.solidBg}`}>
+                    {MONEY_FORMATTER.format(grandVisa)}
                   </td>
                   <td className={`px-4 py-4 text-left text-base lg:text-lg font-black !text-white ${theme.solidBg}`}>
                     {MONEY_FORMATTER.format(grandCoupons)}
