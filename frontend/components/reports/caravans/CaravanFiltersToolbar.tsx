@@ -588,6 +588,7 @@ export function CaravanFiltersToolbar({
             options={GRANULARITIES}
             value={granularity}
             onChange={onGranularityChange}
+            activeClassName={sectorType === 1 ? 'bg-[#881337] text-white shadow-xs font-bold' : undefined}
           />
         </div>
 

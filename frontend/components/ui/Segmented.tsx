@@ -12,6 +12,7 @@ export interface SegmentedProps<T extends string = string> {
   value: T;
   onChange: (v: T) => void;
   className?: string;
+  activeClassName?: string;
 }
 
 export function Segmented<T extends string>({
@@ -19,6 +20,7 @@ export function Segmented<T extends string>({
   value,
   onChange,
   className = '',
+  activeClassName,
 }: SegmentedProps<T>) {
   return (
     <div
@@ -29,11 +31,10 @@ export function Segmented<T extends string>({
           key={o.id}
           type="button"
           onClick={() => onChange(o.id)}
-          className={`rounded-md px-3 py-1 text-xs font-semibold tabular-nums tracking-tight transition ${
-            value === o.id
-              ? 'bg-white text-slate-900 shadow-2xs ring-1 ring-slate-900/5 dark:bg-zinc-800 dark:text-white dark:ring-white/10 font-bold'
+          className={`rounded-md px-3 py-1 text-xs font-semibold tabular-nums tracking-tight transition ${value === o.id
+              ? activeClassName || 'bg-white text-slate-900 shadow-2xs ring-1 ring-slate-900/5 dark:bg-zinc-800 dark:text-white dark:ring-white/10 font-bold'
               : 'text-slate-600 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-white'
-          }`}
+            }`}
         >
           {o.label}
         </button>

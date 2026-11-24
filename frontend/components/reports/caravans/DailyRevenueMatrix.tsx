@@ -12,6 +12,13 @@ import {
   ChevronRight,
   ChevronsLeft,
   ChevronsRight,
+  ChevronDown,
+  ChevronUp,
+  ChevronsUpDown,
+  Store,
+  Utensils,
+  Coffee,
+  ShoppingBag,
 } from 'lucide-react';
 import type { CaravanRecord } from '@/types/reports';
 import { fmtMoney, Money } from './charts';
@@ -152,6 +159,22 @@ export const CARAVAN_SECTOR_ORDER: string[] = [
   '1029', // Funny (Shop)
 ];
 
+export const RESTAURANT_DISPLAY_NAMES: Record<string, string> = {
+  '1': 'المطعم الصيني (Chinese)',
+  '2': 'المطعم المصري (Egypt)',
+  '3': 'المطعم الإيطالي (Italian)',
+  '4': 'المطعم الشرقي (Oriental)',
+  '5': 'مطعم الستيك (Steak)',
+  '6': 'يشمع هيلتون (Yashmk)',
+  '7': 'شيكي (Cheky)',
+  '8': 'هوليوود (Hollywood)',
+  '9': 'دريم تو جو (Dream To Go)',
+  '10': 'فرش (Fresh)',
+  '11': 'مستر برجر (Mr. Burger)',
+  '13': 'مستشفى دريم (Dream Hospital)',
+  '14': 'الكانتين (Canteen)',
+};
+
 interface DailyRevenueMatrixProps {
   rows?: (CaravanRecord | MatrixRowItem)[];
   title?: string;
@@ -166,6 +189,7 @@ interface DailyRevenueMatrixProps {
   onRideStatusFilterChange?: (filter: RideStatusFilter) => void;
   startDate?: string;
   endDate?: string;
+  granularity?: 'summary' | 'month' | 'day' | 'total';
 }
 
 interface MatrixColumn {
@@ -190,6 +214,10 @@ interface MatrixRowData {
   rowVisa: number;
   rowCoupons: number;
   rowCashVisa: number;
+  food?: number;
+  beverage?: number;
+  other?: number;
+  cost?: number;
 }
 
 interface MatrixTableRowProps {
@@ -200,6 +228,7 @@ interface MatrixTableRowProps {
   hoverCellClass: string;
   totalRevColClass: string;
   isTwoRowHeader?: boolean;
+  sectorType?: number;
 }
 
 const MatrixTableRow = React.memo(function MatrixTableRow({
@@ -210,7 +239,58 @@ const MatrixTableRow = React.memo(function MatrixTableRow({
   hoverCellClass,
   totalRevColClass,
   isTwoRowHeader = false,
+  sectorType,
 }: MatrixTableRowProps) {
+  if (sectorType === 1) {
+    return (
+      <tr className={`group transition-colors duration-150 ${hoverRowClass}`}>
+        {/* Date Column (Sticky Right) */}
+        <td className={`sticky right-0 z-10 px-4 py-3.5 text-center font-bold text-sm lg:text-base text-slate-900 border-l border-slate-200 bg-slate-50/95 ${hoverCellClass} dark:border-zinc-800 dark:bg-zinc-900/95 dark:text-zinc-100 transition-colors`}>
+          {row.date}
+        </td>
+
+        {/* Food */}
+        <td className={`px-4 py-3.5 text-left font-bold text-base lg:text-lg tabular-nums border-l border-slate-200/60 dark:border-zinc-800/40 ${hoverCellClass} text-slate-900 dark:text-white`}>
+          {MONEY_FORMATTER.format(row.food || 0)}
+        </td>
+
+        {/* Beverage */}
+        <td className={`px-4 py-3.5 text-left font-bold text-base lg:text-lg tabular-nums border-l border-slate-200/60 dark:border-zinc-800/40 ${hoverCellClass} text-slate-900 dark:text-white`}>
+          {MONEY_FORMATTER.format(row.beverage || 0)}
+        </td>
+
+        {/* Other */}
+        <td className={`px-4 py-3.5 text-left font-bold text-base lg:text-lg tabular-nums border-l border-slate-200/60 dark:border-zinc-800/40 ${hoverCellClass} text-slate-900 dark:text-white`}>
+          {MONEY_FORMATTER.format(row.other || 0)}
+        </td>
+
+        {/* Daily Total */}
+        <td className={`px-4 py-3.5 text-left font-black text-base lg:text-lg tabular-nums ${totalRevColClass} ${hoverCellClass} transition-colors border-l border-slate-200/60 dark:border-zinc-800/40`}>
+          <Money value={row.rowTotal} />
+        </td>
+
+        {calcMode !== 'vat' && (
+          <>
+            {/* Daily Cash */}
+            <td className={`px-4 py-3.5 text-left font-bold text-base lg:text-lg tabular-nums text-slate-900 bg-slate-50/80 ${hoverCellClass} dark:bg-zinc-800/40 dark:text-zinc-100 transition-colors border-l border-slate-200/60 dark:border-zinc-800/40`}>
+              <Money value={row.rowCash} />
+            </td>
+
+            {/* Daily Visa */}
+            <td className={`px-4 py-3.5 text-left font-bold text-base lg:text-lg tabular-nums text-slate-900 bg-slate-50/80 ${hoverCellClass} dark:bg-zinc-800/40 dark:text-zinc-100 transition-colors border-l border-slate-200/60 dark:border-zinc-800/40`}>
+              <Money value={row.rowVisa} />
+            </td>
+
+            {/* Daily Coupons & CL */}
+            <td className={`px-4 py-3.5 text-left font-bold text-base lg:text-lg tabular-nums text-slate-900 bg-slate-50/80 ${hoverCellClass} dark:bg-zinc-800/40 dark:text-zinc-100 transition-colors`}>
+              <Money value={row.rowCoupons} />
+            </td>
+          </>
+        )}
+      </tr>
+    );
+  }
+
   return (
     <tr className={`group transition-colors duration-150 ${hoverRowClass}`}>
       {/* Date Column (Sticky Right) */}
@@ -353,6 +433,7 @@ export const DailyRevenueMatrix = React.memo(function DailyRevenueMatrix({
   onRideStatusFilterChange,
   startDate,
   endDate,
+  granularity,
 }: DailyRevenueMatrixProps) {
   const theme = useMemo(() => sectorTheme || getSectorTheme(sectorType), [sectorTheme, sectorType]);
   const [exporting, setExporting] = useState(false);
@@ -360,6 +441,35 @@ export const DailyRevenueMatrix = React.memo(function DailyRevenueMatrix({
 
   // Calculation Mode State - Default to 'total' (الإجمالي الشامل)
   const [calcMode, setCalcMode] = useState<CalcMode>('total');
+
+  // Effective granularity for Restaurants (Type 1)
+  const isRestaurants = sectorType === 1;
+
+  interface RestaurantBranchRow {
+    branchCode: string;
+    name: string;
+    displayName: string;
+    food: number;
+    beverage: number;
+    other: number;
+    total: number;
+    cash: number;
+    visa: number;
+    cl: number;
+  }
+  const effectiveGranularity = useMemo<'summary' | 'month' | 'day'>(() => {
+    if (granularity === 'total') return 'summary';
+    if (granularity === 'summary' || granularity === 'month' || granularity === 'day') return granularity;
+    const sample = rows[0];
+    if (!sample || !('period' in sample) || !sample.period) return 'summary';
+    if (String(sample.period).length === 7) return 'month';
+    return 'day';
+  }, [granularity, rows]);
+
+  // Expansion states for Restaurants (Month & Day breakdown)
+  const [expandedMonths, setExpandedMonths] = useState<Set<string>>(new Set());
+  const [expandedDays, setExpandedDays] = useState<Set<string>>(new Set());
+  const [allDaysExpanded, setAllDaysExpanded] = useState<boolean>(false);
 
   // Paid Rides (Sector 2) All / Active / Inactive Filter State (Default: 'all')
   const [internalRideStatusFilter, setInternalRideStatusFilter] = useState<RideStatusFilter>('all');
@@ -373,6 +483,339 @@ export const DailyRevenueMatrix = React.memo(function DailyRevenueMatrix({
   const [rowsPerPage, setRowsPerPage] = useState<number>(31);
   const [currentPage, setCurrentPage] = useState<number>(1);
 
+  // ---------------------------------------------------------------------------
+  // Dedicated Branch-by-Branch F&B Processor for Restaurants (sectorType === 1)
+  // ---------------------------------------------------------------------------
+  const restaurantData = useMemo(() => {
+    if (sectorType !== 1) return null;
+
+    const applyMode = (val: number) => {
+      if (calcMode === 'net') return val / 1.14;
+      if (calcMode === 'vat') return val - val / 1.14;
+      return val;
+    };
+
+    let rawTotalFood = 0;
+    let rawTotalBeverage = 0;
+    let rawTotalOther = 0;
+    let rawTotalSales = 0;
+    let rawTotalCash = 0;
+    let rawTotalVisa = 0;
+    let rawTotalCL = 0;
+
+    // 1. Summary Mode: Group strictly by branchCode
+    const branchSummaryMap = new Map<string, {
+      branchCode: string;
+      name: string;
+      food: number;
+      beverage: number;
+      other: number;
+      total: number;
+      cash: number;
+      visa: number;
+      cl: number;
+    }>();
+
+    // 2. Month Mode: Group by period ('YYYY-MM') -> branches
+    const monthMap = new Map<string, {
+      period: string;
+      branches: Map<string, {
+        branchCode: string;
+        name: string;
+        food: number;
+        beverage: number;
+        other: number;
+        total: number;
+        cash: number;
+        visa: number;
+        cl: number;
+      }>;
+    }>();
+
+    // 3. Day Mode: Group by period ('YYYY-MM-DD') -> branches
+    const dayMap = new Map<string, {
+      date: string;
+      branches: Map<string, {
+        branchCode: string;
+        name: string;
+        food: number;
+        beverage: number;
+        other: number;
+        total: number;
+        cash: number;
+        visa: number;
+        cl: number;
+      }>;
+    }>();
+
+    rows.forEach((r) => {
+      const rawPeriod = ('period' in r && r.period ? r.period : ('date' in r && r.date ? r.date : '')).trim();
+      const branchCode = String(r.branchCode || '').trim();
+      const branchName = r.name || `منفذ ${branchCode}`;
+      const food = Number((r as any).food) || 0;
+      const beverage = Number((r as any).beverage) || 0;
+      const other = Number((r as any).other) || 0;
+      const cash = Number(r.cash) || 0;
+      const visa = Number(r.visa) || 0;
+      const cl = Number(r.creditLine ?? (r as any).cl) || 0;
+      const rawTotal = Number(r.total) || 0;
+      const total = Math.abs(cash + visa + cl) > 0.0001 ? (cash + visa + cl) : rawTotal;
+
+      rawTotalFood += food;
+      rawTotalBeverage += beverage;
+      rawTotalOther += other;
+      rawTotalSales += total;
+      rawTotalCash += cash;
+      rawTotalVisa += visa;
+      rawTotalCL += cl;
+
+      // Summary aggregation
+      if (!branchSummaryMap.has(branchCode)) {
+        branchSummaryMap.set(branchCode, {
+          branchCode,
+          name: branchName,
+          food: 0,
+          beverage: 0,
+          other: 0,
+          total: 0,
+          cash: 0,
+          visa: 0,
+          cl: 0,
+        });
+      }
+      const bs = branchSummaryMap.get(branchCode)!;
+      bs.food += food;
+      bs.beverage += beverage;
+      bs.other += other;
+      bs.total += total;
+      bs.cash += cash;
+      bs.visa += visa;
+      bs.cl += cl;
+
+      // Month aggregation
+      const monthKey = rawPeriod.length >= 7 ? rawPeriod.slice(0, 7) : 'غير محدد';
+      if (!monthMap.has(monthKey)) {
+        monthMap.set(monthKey, { period: monthKey, branches: new Map() });
+      }
+      const mEntry = monthMap.get(monthKey)!;
+      if (!mEntry.branches.has(branchCode)) {
+        mEntry.branches.set(branchCode, {
+          branchCode,
+          name: branchName,
+          food: 0,
+          beverage: 0,
+          other: 0,
+          total: 0,
+          cash: 0,
+          visa: 0,
+          cl: 0,
+        });
+      }
+      const mb = mEntry.branches.get(branchCode)!;
+      mb.food += food;
+      mb.beverage += beverage;
+      mb.other += other;
+      mb.total += total;
+      mb.cash += cash;
+      mb.visa += visa;
+      mb.cl += cl;
+
+      // Day aggregation
+      const dayKey = rawPeriod || 'غير محدد';
+      if (!dayMap.has(dayKey)) {
+        dayMap.set(dayKey, { date: dayKey, branches: new Map() });
+      }
+      const dEntry = dayMap.get(dayKey)!;
+      if (!dEntry.branches.has(branchCode)) {
+        dEntry.branches.set(branchCode, {
+          branchCode,
+          name: branchName,
+          food: 0,
+          beverage: 0,
+          other: 0,
+          total: 0,
+          cash: 0,
+          visa: 0,
+          cl: 0,
+        });
+      }
+      const db = dEntry.branches.get(branchCode)!;
+      db.food += food;
+      db.beverage += beverage;
+      db.other += other;
+      db.total += total;
+      db.cash += cash;
+      db.visa += visa;
+      db.cl += cl;
+    });
+
+    // Format Summary Branches list
+    const summaryBranches: RestaurantBranchRow[] = Array.from(branchSummaryMap.values())
+      .map((b) => ({
+        branchCode: b.branchCode,
+        name: b.name,
+        displayName: RESTAURANT_DISPLAY_NAMES[b.branchCode] || b.name,
+        food: applyMode(b.food),
+        beverage: applyMode(b.beverage),
+        other: applyMode(b.other),
+        total: applyMode(b.total),
+        cash: applyMode(b.cash),
+        visa: applyMode(b.visa),
+        cl: applyMode(b.cl),
+      }))
+      .sort((a, b) => b.total - a.total);
+
+    // Format Month Groups
+    const monthGroups = Array.from(monthMap.entries())
+      .map(([monthKey, m]) => {
+        const bList: RestaurantBranchRow[] = Array.from(m.branches.values())
+          .map((b) => ({
+            branchCode: b.branchCode,
+            name: b.name,
+            displayName: RESTAURANT_DISPLAY_NAMES[b.branchCode] || b.name,
+            food: applyMode(b.food),
+            beverage: applyMode(b.beverage),
+            other: applyMode(b.other),
+            total: applyMode(b.total),
+            cash: applyMode(b.cash),
+            visa: applyMode(b.visa),
+            cl: applyMode(b.cl),
+          }))
+          .sort((a, b) => b.total - a.total);
+
+        const mFood = bList.reduce((s, b) => s + b.food, 0);
+        const mBev = bList.reduce((s, b) => s + b.beverage, 0);
+        const mOther = bList.reduce((s, b) => s + b.other, 0);
+        const mTotal = bList.reduce((s, b) => s + b.total, 0);
+        const mCash = bList.reduce((s, b) => s + b.cash, 0);
+        const mVisa = bList.reduce((s, b) => s + b.visa, 0);
+        const mCL = bList.reduce((s, b) => s + b.cl, 0);
+
+        return {
+          monthKey,
+          monthLabel: monthKey,
+          food: mFood,
+          beverage: mBev,
+          other: mOther,
+          total: mTotal,
+          cash: mCash,
+          visa: mVisa,
+          cl: mCL,
+          branches: bList,
+        };
+      })
+      .sort((a, b) => {
+        const cmp = a.monthKey.localeCompare(b.monthKey);
+        return sortOrder === 'asc' ? cmp : -cmp;
+      });
+
+    // Format Day Groups
+    const dayGroups = Array.from(dayMap.entries())
+      .map(([dateKey, d]) => {
+        const bList: RestaurantBranchRow[] = Array.from(d.branches.values())
+          .map((b) => ({
+            branchCode: b.branchCode,
+            name: b.name,
+            displayName: RESTAURANT_DISPLAY_NAMES[b.branchCode] || b.name,
+            food: applyMode(b.food),
+            beverage: applyMode(b.beverage),
+            other: applyMode(b.other),
+            total: applyMode(b.total),
+            cash: applyMode(b.cash),
+            visa: applyMode(b.visa),
+            cl: applyMode(b.cl),
+          }))
+          .sort((a, b) => b.total - a.total);
+
+        const dFood = bList.reduce((s, b) => s + b.food, 0);
+        const dBev = bList.reduce((s, b) => s + b.beverage, 0);
+        const dOther = bList.reduce((s, b) => s + b.other, 0);
+        const dTotal = bList.reduce((s, b) => s + b.total, 0);
+        const dCash = bList.reduce((s, b) => s + b.cash, 0);
+        const dVisa = bList.reduce((s, b) => s + b.visa, 0);
+        const dCL = bList.reduce((s, b) => s + b.cl, 0);
+
+        return {
+          date: dateKey,
+          food: dFood,
+          beverage: dBev,
+          other: dOther,
+          total: dTotal,
+          cash: dCash,
+          visa: dVisa,
+          cl: dCL,
+          branches: bList,
+        };
+      })
+      .sort((a, b) => {
+        const cmp = a.date.localeCompare(b.date);
+        return sortOrder === 'asc' ? cmp : -cmp;
+      });
+
+    return {
+      grandFood: applyMode(rawTotalFood),
+      grandBeverage: applyMode(rawTotalBeverage),
+      grandOther: applyMode(rawTotalOther),
+      grandTotal: applyMode(rawTotalSales),
+      grandCash: applyMode(rawTotalCash),
+      grandVisa: applyMode(rawTotalVisa),
+      grandCL: applyMode(rawTotalCL),
+      summaryBranches,
+      monthGroups,
+      dayGroups,
+    };
+  }, [rows, sectorType, calcMode, sortOrder]);
+
+  // Default month expansion
+  useEffect(() => {
+    if (isRestaurants && effectiveGranularity === 'month' && restaurantData?.monthGroups) {
+      setExpandedMonths(new Set(restaurantData.monthGroups.map((m) => m.monthKey)));
+    }
+  }, [isRestaurants, effectiveGranularity, restaurantData?.monthGroups]);
+
+  const allMonthsExpanded = useMemo(() => {
+    if (!restaurantData?.monthGroups || restaurantData.monthGroups.length === 0) return false;
+    return expandedMonths.size >= restaurantData.monthGroups.length;
+  }, [expandedMonths, restaurantData?.monthGroups]);
+
+  const handleToggleAllMonths = (expand: boolean) => {
+    if (expand) {
+      const keys = (restaurantData?.monthGroups || []).map((m) => m.monthKey);
+      setExpandedMonths(new Set(keys));
+    } else {
+      setExpandedMonths(new Set());
+    }
+  };
+
+  const handleToggleMonth = (monthKey: string) => {
+    setExpandedMonths((prev) => {
+      const next = new Set(prev);
+      if (next.has(monthKey)) next.delete(monthKey);
+      else next.add(monthKey);
+      return next;
+    });
+  };
+
+  const handleToggleAllDays = () => {
+    if (allDaysExpanded) {
+      setExpandedDays(new Set());
+      setAllDaysExpanded(false);
+    } else {
+      const keys = (restaurantData?.dayGroups || []).map((d) => d.date);
+      setExpandedDays(new Set(keys));
+      setAllDaysExpanded(true);
+    }
+  };
+
+  const handleToggleDay = (date: string) => {
+    setExpandedDays((prev) => {
+      const next = new Set(prev);
+      if (next.has(date)) next.delete(date);
+      else next.add(date);
+      return next;
+    });
+  };
+
   // Stage 1: Raw Pivot & Grouping (Runs ONLY when raw rows change)
   const aggregatedData = useMemo(() => {
     const colMap = new Map<string, string>();
@@ -384,6 +827,10 @@ export const DailyRevenueMatrix = React.memo(function DailyRevenueMatrix({
     const datePaymentMap = new Map<
       string,
       { cash: number; visa: number; cl: number; total: number; cashVisa: number }
+    >();
+    const dateFbMap = new Map<
+      string,
+      { food: number; beverage: number; other: number; cost: number }
     >();
 
     rows.forEach((r) => {
@@ -408,6 +855,16 @@ export const DailyRevenueMatrix = React.memo(function DailyRevenueMatrix({
       const itemBaseTotal = Math.abs(cash + visa + cl) > 0.0001 ? (cash + visa + cl) : rawTotal;
 
       branchTotals.set(branchKey, (branchTotals.get(branchKey) || 0) + itemBaseTotal);
+
+      // Track F&B metrics when sectorType === 1
+      if (sectorType === 1) {
+        const curFb = dateFbMap.get(dateKey) || { food: 0, beverage: 0, other: 0, cost: 0 };
+        curFb.food += Number((r as any).food) || 0;
+        curFb.beverage += Number((r as any).beverage) || 0;
+        curFb.other += Number((r as any).other) || 0;
+        curFb.cost += Number((r as any).cost) || 0;
+        dateFbMap.set(dateKey, curFb);
+      }
 
       // Track daily payments from POS_Post if provided (Types 2 & 3 zero double-counting)
       if (
@@ -516,13 +973,14 @@ export const DailyRevenueMatrix = React.memo(function DailyRevenueMatrix({
       cols,
       dateMap,
       datePaymentMap,
+      dateFbMap,
       rawDates: Array.from(dateMap.keys()),
     };
 }, [rows, sectorType, effectiveRideStatusFilter]);
 
 // Stage 2: Dynamic Metric Projection & Aggregate Totals (Instant O(Dates * Columns))
-const { columns, matrixRows, columnTotals, grandTotal, grandCash, grandVisa, grandCoupons, grandCashVisa } = useMemo(() => {
-  const { cols, dateMap, datePaymentMap, rawDates } = aggregatedData;
+const { columns, matrixRows, columnTotals, grandTotal, grandCash, grandVisa, grandCoupons, grandCashVisa, grandFood, grandBeverage, grandOther, grandCost } = useMemo(() => {
+  const { cols, dateMap, datePaymentMap, dateFbMap, rawDates } = aggregatedData;
 
   const dates = [...rawDates].sort((a, b) => {
     const cmp = a.localeCompare(b);
@@ -538,6 +996,10 @@ const { columns, matrixRows, columnTotals, grandTotal, grandCash, grandVisa, gra
   let rawOverallCash = 0;
   let rawOverallVisa = 0;
   let rawOverallCoupons = 0;
+  let rawOverallFood = 0;
+  let rawOverallBeverage = 0;
+  let rawOverallOther = 0;
+  let rawOverallCost = 0;
 
   const applyCalcMode = (val: number, mode: CalcMode) => {
     if (mode === 'net') return val / 1.14;
@@ -603,6 +1065,18 @@ const { columns, matrixRows, columnTotals, grandTotal, grandCash, grandVisa, gra
     rawOverallVisa += rawDailyVisa;
     rawOverallCoupons += rawDailyCoupons;
 
+    // F&B row calculations for sectorType === 1
+    const fb = dateFbMap?.get(date) || { food: 0, beverage: 0, other: 0, cost: 0 };
+    const rowFood = applyCalcMode(fb.food, calcMode);
+    const rowBeverage = applyCalcMode(fb.beverage, calcMode);
+    const rowOther = applyCalcMode(fb.other, calcMode);
+    const rowCost = applyCalcMode(fb.cost, calcMode);
+
+    rawOverallFood += fb.food;
+    rawOverallBeverage += fb.beverage;
+    rawOverallOther += fb.other;
+    rawOverallCost += fb.cost;
+
     return {
       date,
       values,
@@ -611,6 +1085,10 @@ const { columns, matrixRows, columnTotals, grandTotal, grandCash, grandVisa, gra
       rowVisa,
       rowCoupons,
       rowCashVisa,
+      food: rowFood,
+      beverage: rowBeverage,
+      other: rowOther,
+      cost: rowCost,
     };
   });
 
@@ -635,38 +1113,57 @@ const { columns, matrixRows, columnTotals, grandTotal, grandCash, grandVisa, gra
     grandVisa,
     grandCoupons,
     grandCashVisa,
+    grandFood: applyCalcMode(rawOverallFood, calcMode),
+    grandBeverage: applyCalcMode(rawOverallBeverage, calcMode),
+    grandOther: applyCalcMode(rawOverallOther, calcMode),
+    grandCost: applyCalcMode(rawOverallCost, calcMode),
   };
 }, [aggregatedData, sortOrder, calcMode]);
 
-// Client-Side Pagination Calculations
-const totalPages = Math.max(1, Math.ceil(matrixRows.length / rowsPerPage));
+  const totalRestaurantDays = restaurantData?.dayGroups.length || 0;
+  const isRestaurantDayMode = isRestaurants && effectiveGranularity === 'day';
 
-// Guard against rendering 365 rows x 25+ cols into the DOM when switching to a large range
-useEffect(() => {
-  if (matrixRows.length > 60 && rowsPerPage >= 9999) {
-    setRowsPerPage(31);
-    setCurrentPage(1);
-  }
-}, [matrixRows.length, rowsPerPage]);
+  // Client-Side Pagination Calculations
+  const totalPages = Math.max(
+    1,
+    Math.ceil((isRestaurantDayMode ? totalRestaurantDays : matrixRows.length) / rowsPerPage)
+  );
 
-useEffect(() => {
-  if (currentPage > totalPages) {
-    setCurrentPage(1);
-  }
-}, [totalPages, currentPage]);
+  const paginatedDayGroups = useMemo(() => {
+    if (!restaurantData) return [];
+    if (rowsPerPage >= 9999) return restaurantData.dayGroups;
+    const startIdx = (currentPage - 1) * rowsPerPage;
+    return restaurantData.dayGroups.slice(startIdx, startIdx + rowsPerPage);
+  }, [restaurantData, currentPage, rowsPerPage]);
 
-const paginatedRows = useMemo(() => {
-  if (rowsPerPage >= 9999) return matrixRows;
-  const startIdx = (currentPage - 1) * rowsPerPage;
-  return matrixRows.slice(startIdx, startIdx + rowsPerPage);
-}, [matrixRows, currentPage, rowsPerPage]);
+  // Guard against rendering 365 rows x 25+ cols into the DOM when switching to a large range
+  useEffect(() => {
+    if ((isRestaurantDayMode ? totalRestaurantDays : matrixRows.length) > 60 && rowsPerPage >= 9999) {
+      setRowsPerPage(31);
+      setCurrentPage(1);
+    }
+  }, [matrixRows.length, rowsPerPage, isRestaurantDayMode, totalRestaurantDays]);
 
-const startRecord =
-  matrixRows.length === 0
-    ? 0
-    : (currentPage - 1) * (rowsPerPage >= 9999 ? matrixRows.length : rowsPerPage) + 1;
-const endRecord =
-  rowsPerPage >= 9999 ? matrixRows.length : Math.min(currentPage * rowsPerPage, matrixRows.length);
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(1);
+    }
+  }, [totalPages, currentPage]);
+
+  const paginatedRows = useMemo(() => {
+    if (rowsPerPage >= 9999) return matrixRows;
+    const startIdx = (currentPage - 1) * rowsPerPage;
+    return matrixRows.slice(startIdx, startIdx + rowsPerPage);
+  }, [matrixRows, currentPage, rowsPerPage]);
+
+  const activeTotalRecords = isRestaurantDayMode ? totalRestaurantDays : matrixRows.length;
+
+  const startRecord =
+    activeTotalRecords === 0
+      ? 0
+      : (currentPage - 1) * (rowsPerPage >= 9999 ? activeTotalRecords : rowsPerPage) + 1;
+  const endRecord =
+    rowsPerPage >= 9999 ? activeTotalRecords : Math.min(currentPage * rowsPerPage, activeTotalRecords);
 
 // Dynamic Title according to sector, facility sub-filter, and period
 const dynamicTitle = useMemo(() => {
@@ -706,16 +1203,19 @@ const dynamicTitle = useMemo(() => {
 /* Excel Export using ExcelJS with Precise Cell Formatting & Styling Range    */
 /* -------------------------------------------------------------------------- */
 const isPaidRides = sectorType === 2;
-const isTwoRowHeader = isPaidRides && effectiveRideStatusFilter === 'all';
+const isTwoRowHeader = (isPaidRides && effectiveRideStatusFilter === 'all') || isRestaurants;
 
 const totalTableCols = useMemo(() => {
+  if (isRestaurants) {
+    return calcMode === 'vat' ? 5 : 8;
+  }
   const outletsCount = columns.reduce(
     (acc, c) =>
       acc + (isTwoRowHeader && (c.branchCode === 'golden' || c.branchCode === '4') ? 5 : 1),
     0
   );
   return 1 + outletsCount + (calcMode === 'vat' ? 1 : 4);
-}, [columns, isTwoRowHeader, calcMode]);
+}, [columns, isTwoRowHeader, calcMode, isRestaurants]);
 
 const handleExportToExcel = async () => {
   try {
@@ -887,317 +1387,565 @@ const handleExportToExcel = async () => {
       }
     }
 
-    // 2. Setup Export Columns flowing from Left to Right (Date -> Rides -> Summary)
-    interface ExportColDef {
-      key: string;
-      header: string;
-      parentHeader?: string;
-      width: number;
-      isShop?: boolean;
-      getValue: (row: MatrixRowData) => number;
-      getTotal: () => number;
-    }
+    // 2. Setup Export Columns & Worksheet Data
+    if (isRestaurants) {
+      const isVat = calcMode === 'vat';
+      const restCols = [
+        { key: 'period', width: 16 },
+        { key: 'branch', width: 26 },
+        { key: 'food', width: 16 },
+        { key: 'beverage', width: 16 },
+        { key: 'other', width: 14 },
+        { key: 'total', width: 18 },
+        ...(isVat
+          ? []
+          : [
+              { key: 'cash', width: 16 },
+              { key: 'visa', width: 16 },
+              { key: 'cl', width: 16 },
+            ]),
+      ];
+      worksheet.columns = restCols;
+      const totalRestColsCount = restCols.length;
 
-    const exportColumns: ExportColDef[] = [];
+      // Row 1 & Row 2 for Logo & Title
+      const row1 = worksheet.addRow([]);
+      row1.height = 28;
+      const row2 = worksheet.addRow([]);
+      row2.height = 24;
 
-    columns.forEach((col) => {
-      if (isTwoRowHeader && col.branchCode === 'golden') {
-        exportColumns.push(
-          { key: 'golden_sgolden', header: 'S.Golden', parentHeader: 'Golden', width: 14, getValue: (r) => r.values['golden_sgolden'] || 0, getTotal: () => columnTotals['golden_sgolden'] || 0 },
-          { key: 'golden_platinum', header: 'Platinum', parentHeader: 'Golden', width: 14, getValue: (r) => r.values['golden_platinum'] || 0, getTotal: () => columnTotals['golden_platinum'] || 0 },
-          { key: 'golden_diamond', header: 'Diamond', parentHeader: 'Golden', width: 14, getValue: (r) => r.values['golden_diamond'] || 0, getTotal: () => columnTotals['golden_diamond'] || 0 },
-          { key: 'golden_vip', header: 'VIP', parentHeader: 'Golden', width: 14, getValue: (r) => r.values['golden_vip'] || 0, getTotal: () => columnTotals['golden_vip'] || 0 },
-          { key: 'golden_total', header: 'Total', parentHeader: 'Golden', width: 16, getValue: (r) => r.values['golden'] || 0, getTotal: () => columnTotals['golden'] || 0 }
-        );
-      } else if (isTwoRowHeader && col.branchCode === '4') {
-        exportColumns.push(
-          { key: '4_cash', header: 'Cash', parentHeader: '7 D', width: 14, getValue: (r) => r.values['4_cash'] || 0, getTotal: () => columnTotals['4_cash'] || 0 },
-          { key: '4_platinum', header: 'Platinum', parentHeader: '7 D', width: 14, getValue: (r) => r.values['4_platinum'] || 0, getTotal: () => columnTotals['4_platinum'] || 0 },
-          { key: '4_diamond', header: 'Diamond', parentHeader: '7 D', width: 14, getValue: (r) => r.values['4_diamond'] || 0, getTotal: () => columnTotals['4_diamond'] || 0 },
-          { key: '4_visa', header: 'Visa', parentHeader: '7 D', width: 14, getValue: (r) => r.values['4_visa'] || 0, getTotal: () => columnTotals['4_visa'] || 0 },
-          { key: '4_total', header: 'Total', parentHeader: '7 D', width: 16, getValue: (r) => r.values['4'] || 0, getTotal: () => columnTotals['4'] || 0 }
-        );
-      } else {
-        const headerName =
-          sectorType === 3
-            ? (VGAMES_DISPLAY_NAMES[col.branchCode] || col.name)
-            : sectorType === 2
-                ? (PAID_RIDES_DISPLAY_NAMES[col.branchCode] || col.name)
-                : (CARAVAN_DISPLAY_NAMES[col.branchCode] || col.name);
-
-        exportColumns.push({
-          key: `col_${col.branchCode}`,
-          header: headerName,
-          width: 18,
-          isShop: sectorType === 4 && SHOP_BRANCH_CODES_SET.has(col.branchCode),
-          getValue: (r) => r.values[col.branchCode] || 0,
-          getTotal: () => columnTotals[col.branchCode] || 0,
-        });
-      }
-    });
-
-    // Summary columns on the right (matching English Copy of RETAL.xls layout)
-    exportColumns.push({
-      key: 'row_total',
-      header: 'TOTAL REV',
-      width: 20,
-      getValue: (r) => r.rowTotal,
-      getTotal: () => grandTotal,
-    });
-
-    if (calcMode !== 'vat') {
-      exportColumns.push(
-        {
-          key: 'cash',
-          header: 'CASH',
-          width: 16,
-          getValue: (r) => r.rowCash,
-          getTotal: () => grandCash,
-        },
-        {
-          key: 'visa',
-          header: 'VISA',
-          width: 16,
-          getValue: (r) => r.rowVisa,
-          getTotal: () => grandVisa,
-        },
-        {
-          key: 'coupons',
-          header: 'COPON / C.L',
-          width: 18,
-          getValue: (r) => r.rowCoupons,
-          getTotal: () => grandCoupons,
+      // Place Dream Park Logo cleanly in top-left corner
+      try {
+        const logoRes = await fetch('/dreampark-logo.png');
+        if (logoRes.ok) {
+          const logoBuffer = await logoRes.arrayBuffer();
+          const imageId = workbook.addImage({
+            buffer: logoBuffer,
+            extension: 'png',
+          });
+          worksheet.addImage(imageId, {
+            tl: { col: 0, row: 0 },
+            ext: { width: 110, height: 48 },
+          });
         }
-      );
-    }
-
-    worksheet.columns = [
-      { key: 'date', width: 16 },
-      ...exportColumns.map((c) => ({ key: c.key, width: c.width })),
-    ];
-    const totalColumnsCount = 1 + exportColumns.length;
-
-    // Row 1 (height 28) and Row 2 (height 24) header area for Logo and Centered Title
-    const row1 = worksheet.addRow([]);
-    row1.height = 28;
-    const row2 = worksheet.addRow([]);
-    row2.height = 24;
-
-    // Place Dream Park Logo cleanly in top-left corner (Columns A-B, Rows 1-2 in LTR)
-    try {
-      const logoRes = await fetch('/dreampark-logo.png');
-      if (logoRes.ok) {
-        const logoBuffer = await logoRes.arrayBuffer();
-        const imageId = workbook.addImage({
-          buffer: logoBuffer,
-          extension: 'png',
-        });
-        worksheet.addImage(imageId, {
-          tl: { col: 0, row: 0 },
-          ext: { width: 110, height: 48 },
-        });
+      } catch (logoErr) {
+        console.warn('Could not load logo for Excel export:', logoErr);
       }
-    } catch (logoErr) {
-      console.warn('Could not load logo for Excel export:', logoErr);
-    }
 
-    // Merge Title strictly across visible columns next to logo: Col C (col 3) to Math.min(lastColIndex, 12)
-    if (totalColumnsCount >= 3) {
-      const titleEndCol = Math.min(totalColumnsCount, 12);
-      worksheet.mergeCells(1, 3, 2, titleEndCol);
+      // Title Cell across visible columns
+      worksheet.mergeCells(1, 3, 2, totalRestColsCount);
       const titleCell = worksheet.getCell(1, 3);
       titleCell.value = excelTitle;
-      titleCell.font = { name: 'Times New Roman', size: 15, bold: true, color: { argb: titleColor } };
+      titleCell.font = { name: 'Times New Roman', size: 15, bold: true, color: { argb: 'FF4C0519' } };
       titleCell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
-    } else {
-      worksheet.mergeCells(1, 1, 2, totalColumnsCount);
-      const titleCell = worksheet.getCell(1, 1);
-      titleCell.value = excelTitle;
-      titleCell.font = { name: 'Times New Roman', size: 15, bold: true, color: { argb: titleColor } };
-      titleCell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
-    }
 
-    // 3. Render Table Headers (2-row grouped for Sector 2 All, or clean 1-row header)
-    if (isTwoRowHeader) {
+      // Row 3 & 4: Two-Level Grouped Header with Muted Deep Rose (#881337)
       const row3 = worksheet.getRow(3);
       row3.height = 28;
       const row4 = worksheet.getRow(4);
       row4.height = 26;
 
-      // Column 1: Date vertically merged across Row 3 and Row 4
+      const restHeaderFill = {
+        type: 'pattern' as const,
+        pattern: 'solid' as const,
+        fgColor: { argb: 'FF881337' },
+      };
+      const restHeaderFontNormal = {
+        name: 'Times New Roman',
+        size: 13,
+        bold: true,
+        color: { argb: 'FFFFFFFF' },
+      };
+      const restHeaderFontSub = {
+        name: 'Times New Roman',
+        size: 11,
+        bold: true,
+        color: { argb: 'FFFFFFFF' },
+      };
+
+      // Col 1: Date/Period/Code vertically merged across Row 3 and Row 4
       worksheet.mergeCells(3, 1, 4, 1);
-      worksheet.getCell(3, 1).value = 'Date';
+      const col1Label =
+        effectiveGranularity === 'summary' ? 'Code' : effectiveGranularity === 'month' ? 'Month' : 'Date';
+      worksheet.getCell(3, 1).value = col1Label;
       styleRange(worksheet, 3, 1, 4, 1, {
-        font: headerFontNormal,
-        fill: headerFillPattern,
+        font: restHeaderFontNormal,
+        fill: restHeaderFill,
         alignment: centerMiddleAlign,
         border: thinBorder,
       });
 
-      let currentXCol = 2;
-      let idx = 0;
-      while (idx < exportColumns.length) {
-        const colDef = exportColumns[idx];
-        if (colDef.parentHeader) {
-          const parentName = colDef.parentHeader;
-          let count = 0;
-          while (
-            idx + count < exportColumns.length &&
-            exportColumns[idx + count].parentHeader === parentName
-          ) {
-            count++;
-          }
-          const startCol = currentXCol;
-          const endCol = currentXCol + count - 1;
+      // Col 2: Restaurant Branch vertically merged
+      worksheet.mergeCells(3, 2, 4, 2);
+      worksheet.getCell(3, 2).value = 'Restaurant Branch';
+      styleRange(worksheet, 3, 2, 4, 2, {
+        font: restHeaderFontNormal,
+        fill: restHeaderFill,
+        alignment: centerMiddleAlign,
+        border: thinBorder,
+      });
 
-          // Merge parent in row 3
-          worksheet.mergeCells(3, startCol, 3, endCol);
-          worksheet.getCell(3, startCol).value = parentName;
-          styleRange(worksheet, 3, startCol, 3, endCol, {
-            font: headerFontNormal,
-            fill: headerFillPattern,
+      // Cols 3-6: Sales Breakdown
+      worksheet.mergeCells(3, 3, 3, 6);
+      worksheet.getCell(3, 3).value = 'Sales Breakdown';
+      styleRange(worksheet, 3, 3, 3, 6, {
+        font: restHeaderFontNormal,
+        fill: restHeaderFill,
+        alignment: centerMiddleAlign,
+        border: thinBorder,
+      });
+
+      const subHeaders = ['Food', 'Beverage', 'Other', 'TOTAL'];
+      subHeaders.forEach((sub, sIdx) => {
+        const cIdx = 3 + sIdx;
+        worksheet.getCell(4, cIdx).value = sub;
+        styleRange(worksheet, 4, cIdx, 4, cIdx, {
+          font: restHeaderFontSub,
+          fill: restHeaderFill,
+          alignment: centerMiddleAlign,
+          border: thinBorder,
+        });
+      });
+
+      // Cols 7-9: Payment Breakdown (if not vat)
+      if (!isVat) {
+        worksheet.mergeCells(3, 7, 3, 9);
+        worksheet.getCell(3, 7).value = 'Payment Breakdown';
+        styleRange(worksheet, 3, 7, 3, 9, {
+          font: restHeaderFontNormal,
+          fill: restHeaderFill,
+          alignment: centerMiddleAlign,
+          border: thinBorder,
+        });
+
+        const paySubs = ['Cash', 'Visa', 'C.L'];
+        paySubs.forEach((sub, sIdx) => {
+          const cIdx = 7 + sIdx;
+          worksheet.getCell(4, cIdx).value = sub;
+          styleRange(worksheet, 4, cIdx, 4, cIdx, {
+            font: restHeaderFontSub,
+            fill: restHeaderFill,
             alignment: centerMiddleAlign,
             border: thinBorder,
           });
+        });
+      }
 
-          // Sub headers in row 4
-          for (let s = 0; s < count; s++) {
-            const targetCol = startCol + s;
-            const subDef = exportColumns[idx + s];
-            worksheet.getCell(4, targetCol).value = subDef.header;
-            styleRange(worksheet, 4, targetCol, 4, targetCol, {
-              font: headerFontSub,
+      // Populate Branch-by-Branch Data Rows
+      const restDataRows: (string | number)[][] = [];
+      if (effectiveGranularity === 'summary') {
+        (restaurantData?.summaryBranches || []).forEach((b) => {
+          const rowVals = [b.branchCode, b.displayName, b.food, b.beverage, b.other, b.total];
+          if (!isVat) rowVals.push(b.cash, b.visa, b.cl);
+          restDataRows.push(rowVals);
+        });
+      } else if (effectiveGranularity === 'month') {
+        (restaurantData?.monthGroups || []).forEach((m) => {
+          m.branches.forEach((b) => {
+            const rowVals = [m.monthLabel, b.displayName, b.food, b.beverage, b.other, b.total];
+            if (!isVat) rowVals.push(b.cash, b.visa, b.cl);
+            restDataRows.push(rowVals);
+          });
+        });
+      } else {
+        (restaurantData?.dayGroups || []).forEach((d) => {
+          d.branches.forEach((b) => {
+            const rowVals = [d.date, b.displayName, b.food, b.beverage, b.other, b.total];
+            if (!isVat) rowVals.push(b.cash, b.visa, b.cl);
+            restDataRows.push(rowVals);
+          });
+        });
+      }
+
+      restDataRows.forEach((rVals) => {
+        const row = worksheet.addRow(rVals);
+        row.height = 24;
+
+        const c1 = row.getCell(1);
+        c1.alignment = { vertical: 'middle', horizontal: 'center' };
+        c1.font = { name: 'Times New Roman', size: 11, bold: true, color: { argb: 'FF0F172A' } };
+        c1.border = thinBorder;
+
+        const c2 = row.getCell(2);
+        c2.alignment = { vertical: 'middle', horizontal: 'left' };
+        c2.font = { name: 'Times New Roman', size: 11, bold: true, color: { argb: 'FF0F172A' } };
+        c2.border = thinBorder;
+
+        for (let c = 3; c <= totalRestColsCount; c++) {
+          const cell = row.getCell(c);
+          cell.numFmt = '#,##0.00';
+          cell.alignment = { vertical: 'middle', horizontal: 'right' };
+          cell.font = { name: 'Times New Roman', size: 11, bold: c === 6, color: { argb: 'FF0F172A' } };
+          cell.border = thinBorder;
+          if (c === 6) {
+            cell.fill = {
+              type: 'pattern',
+              pattern: 'solid',
+              fgColor: { argb: 'FFF1F5F9' },
+            };
+          }
+        }
+      });
+
+      // Grand Total Row with Dark Burgundy (#4c0519) fill and White Bold Font
+      const footerRowVals: (string | number)[] = [
+        'TOTAL',
+        'ALL BRANCHES',
+        grandFood,
+        grandBeverage,
+        grandOther,
+        grandTotal,
+      ];
+      if (!isVat) footerRowVals.push(grandCash, grandVisa, grandCoupons);
+      const totalRow = worksheet.addRow(footerRowVals);
+      totalRow.height = 32;
+
+      const restFooterFill = {
+        type: 'pattern' as const,
+        pattern: 'solid' as const,
+        fgColor: { argb: 'FF4C0519' },
+      };
+      const restFooterFont = {
+        name: 'Times New Roman',
+        size: 13,
+        bold: true,
+        color: { argb: 'FFFFFFFF' },
+      };
+
+      for (let c = 1; c <= totalRestColsCount; c++) {
+        const cell = totalRow.getCell(c);
+        cell.font = restFooterFont;
+        cell.fill = restFooterFill;
+        cell.border = doubleBottomBorder;
+        if (c >= 3) {
+          cell.numFmt = '#,##0.00';
+          cell.alignment = { vertical: 'middle', horizontal: 'right' };
+        } else {
+          cell.alignment = { vertical: 'middle', horizontal: 'center' };
+        }
+      }
+
+      // Blank Row & Signature
+      const blankRow = worksheet.addRow([]);
+      blankRow.height = 18;
+      const signatureRow = worksheet.addRow(['INCOME AUDITOR']);
+      signatureRow.height = 24;
+      const sigCell = signatureRow.getCell(1);
+      sigCell.font = { name: 'Times New Roman', size: 11, bold: true, color: { argb: 'FF0F172A' } };
+      sigCell.alignment = { vertical: 'middle', horizontal: 'center' };
+    } else {
+      // 2. Setup Export Columns flowing from Left to Right (Date -> Rides -> Summary)
+      interface ExportColDef {
+        key: string;
+        header: string;
+        parentHeader?: string;
+        width: number;
+        isShop?: boolean;
+        getValue: (row: MatrixRowData) => number;
+        getTotal: () => number;
+      }
+
+      const exportColumns: ExportColDef[] = [];
+
+      columns.forEach((col) => {
+        if (isTwoRowHeader && col.branchCode === 'golden') {
+          exportColumns.push(
+            { key: 'golden_sgolden', header: 'S.Golden', parentHeader: 'Golden', width: 14, getValue: (r) => r.values['golden_sgolden'] || 0, getTotal: () => columnTotals['golden_sgolden'] || 0 },
+            { key: 'golden_platinum', header: 'Platinum', parentHeader: 'Golden', width: 14, getValue: (r) => r.values['golden_platinum'] || 0, getTotal: () => columnTotals['golden_platinum'] || 0 },
+            { key: 'golden_diamond', header: 'Diamond', parentHeader: 'Golden', width: 14, getValue: (r) => r.values['golden_diamond'] || 0, getTotal: () => columnTotals['golden_diamond'] || 0 },
+            { key: 'golden_vip', header: 'VIP', parentHeader: 'Golden', width: 14, getValue: (r) => r.values['golden_vip'] || 0, getTotal: () => columnTotals['golden_vip'] || 0 },
+            { key: 'golden_total', header: 'Total', parentHeader: 'Golden', width: 16, getValue: (r) => r.values['golden'] || 0, getTotal: () => columnTotals['golden'] || 0 }
+          );
+        } else if (isTwoRowHeader && col.branchCode === '4') {
+          exportColumns.push(
+            { key: '4_cash', header: 'Cash', parentHeader: '7 D', width: 14, getValue: (r) => r.values['4_cash'] || 0, getTotal: () => columnTotals['4_cash'] || 0 },
+            { key: '4_platinum', header: 'Platinum', parentHeader: '7 D', width: 14, getValue: (r) => r.values['4_platinum'] || 0, getTotal: () => columnTotals['4_platinum'] || 0 },
+            { key: '4_diamond', header: 'Diamond', parentHeader: '7 D', width: 14, getValue: (r) => r.values['4_diamond'] || 0, getTotal: () => columnTotals['4_diamond'] || 0 },
+            { key: '4_visa', header: 'Visa', parentHeader: '7 D', width: 14, getValue: (r) => r.values['4_visa'] || 0, getTotal: () => columnTotals['4_visa'] || 0 },
+            { key: '4_total', header: 'Total', parentHeader: '7 D', width: 16, getValue: (r) => r.values['4'] || 0, getTotal: () => columnTotals['4'] || 0 }
+          );
+        } else {
+          const headerName =
+            sectorType === 3
+              ? (VGAMES_DISPLAY_NAMES[col.branchCode] || col.name)
+              : sectorType === 2
+                  ? (PAID_RIDES_DISPLAY_NAMES[col.branchCode] || col.name)
+                  : (CARAVAN_DISPLAY_NAMES[col.branchCode] || col.name);
+
+          exportColumns.push({
+            key: `col_${col.branchCode}`,
+            header: headerName,
+            width: 18,
+            isShop: sectorType === 4 && SHOP_BRANCH_CODES_SET.has(col.branchCode),
+            getValue: (r) => r.values[col.branchCode] || 0,
+            getTotal: () => columnTotals[col.branchCode] || 0,
+          });
+        }
+      });
+
+      // Summary columns on the right (matching English Copy of RETAL.xls layout)
+      exportColumns.push({
+        key: 'row_total',
+        header: 'TOTAL REV',
+        width: 20,
+        getValue: (r) => r.rowTotal,
+        getTotal: () => grandTotal,
+      });
+
+      if (calcMode !== 'vat') {
+        exportColumns.push(
+          {
+            key: 'cash',
+            header: 'CASH',
+            width: 16,
+            getValue: (r) => r.rowCash,
+            getTotal: () => grandCash,
+          },
+          {
+            key: 'visa',
+            header: 'VISA',
+            width: 16,
+            getValue: (r) => r.rowVisa,
+            getTotal: () => grandVisa,
+          },
+          {
+            key: 'coupons',
+            header: 'COPON / C.L',
+            width: 18,
+            getValue: (r) => r.rowCoupons,
+            getTotal: () => grandCoupons,
+          }
+        );
+      }
+
+      worksheet.columns = [
+        { key: 'date', width: 16 },
+        ...exportColumns.map((c) => ({ key: c.key, width: c.width })),
+      ];
+      const totalColumnsCount = 1 + exportColumns.length;
+
+      // Row 1 (height 28) and Row 2 (height 24) header area for Logo and Centered Title
+      const row1 = worksheet.addRow([]);
+      row1.height = 28;
+      const row2 = worksheet.addRow([]);
+      row2.height = 24;
+
+      // Place Dream Park Logo cleanly in top-left corner (Columns A-B, Rows 1-2 in LTR)
+      try {
+        const logoRes = await fetch('/dreampark-logo.png');
+        if (logoRes.ok) {
+          const logoBuffer = await logoRes.arrayBuffer();
+          const imageId = workbook.addImage({
+            buffer: logoBuffer,
+            extension: 'png',
+          });
+          worksheet.addImage(imageId, {
+            tl: { col: 0, row: 0 },
+            ext: { width: 110, height: 48 },
+          });
+        }
+      } catch (logoErr) {
+        console.warn('Could not load logo for Excel export:', logoErr);
+      }
+
+      // Merge Title strictly across visible columns next to logo: Col C (col 3) to Math.min(lastColIndex, 12)
+      if (totalColumnsCount >= 3) {
+        const titleEndCol = Math.min(totalColumnsCount, 12);
+        worksheet.mergeCells(1, 3, 2, titleEndCol);
+        const titleCell = worksheet.getCell(1, 3);
+        titleCell.value = excelTitle;
+        titleCell.font = { name: 'Times New Roman', size: 15, bold: true, color: { argb: titleColor } };
+        titleCell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+      } else {
+        worksheet.mergeCells(1, 1, 2, totalColumnsCount);
+        const titleCell = worksheet.getCell(1, 1);
+        titleCell.value = excelTitle;
+        titleCell.font = { name: 'Times New Roman', size: 15, bold: true, color: { argb: titleColor } };
+        titleCell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+      }
+
+      // 3. Render Table Headers (2-row grouped for Sector 2 All, or clean 1-row header)
+      if (isTwoRowHeader) {
+        const row3 = worksheet.getRow(3);
+        row3.height = 28;
+        const row4 = worksheet.getRow(4);
+        row4.height = 26;
+
+        // Column 1: Date vertically merged across Row 3 and Row 4
+        worksheet.mergeCells(3, 1, 4, 1);
+        worksheet.getCell(3, 1).value = 'Date';
+        styleRange(worksheet, 3, 1, 4, 1, {
+          font: headerFontNormal,
+          fill: headerFillPattern,
+          alignment: centerMiddleAlign,
+          border: thinBorder,
+        });
+
+        let currentXCol = 2;
+        let idx = 0;
+        while (idx < exportColumns.length) {
+          const colDef = exportColumns[idx];
+          if (colDef.parentHeader) {
+            const parentName = colDef.parentHeader;
+            let count = 0;
+            while (
+              idx + count < exportColumns.length &&
+              exportColumns[idx + count].parentHeader === parentName
+            ) {
+              count++;
+            }
+            const startCol = currentXCol;
+            const endCol = currentXCol + count - 1;
+
+            // Merge parent in row 3
+            worksheet.mergeCells(3, startCol, 3, endCol);
+            worksheet.getCell(3, startCol).value = parentName;
+            styleRange(worksheet, 3, startCol, 3, endCol, {
+              font: headerFontNormal,
               fill: headerFillPattern,
               alignment: centerMiddleAlign,
               border: thinBorder,
             });
-          }
 
-          currentXCol += count;
-          idx += count;
-        } else {
-          // Single ride column vertically merged across row 3 and row 4
-          worksheet.mergeCells(3, currentXCol, 4, currentXCol);
-          worksheet.getCell(3, currentXCol).value = colDef.header;
-          styleRange(worksheet, 3, currentXCol, 4, currentXCol, {
+            // Sub headers in row 4
+            for (let s = 0; s < count; s++) {
+              const targetCol = startCol + s;
+              const subDef = exportColumns[idx + s];
+              worksheet.getCell(4, targetCol).value = subDef.header;
+              styleRange(worksheet, 4, targetCol, 4, targetCol, {
+                font: headerFontSub,
+                fill: headerFillPattern,
+                alignment: centerMiddleAlign,
+                border: thinBorder,
+              });
+            }
+
+            currentXCol += count;
+            idx += count;
+          } else {
+            // Single ride column vertically merged across row 3 and row 4
+            worksheet.mergeCells(3, currentXCol, 4, currentXCol);
+            worksheet.getCell(3, currentXCol).value = colDef.header;
+            styleRange(worksheet, 3, currentXCol, 4, currentXCol, {
+              font: colDef.isShop ? redHeaderFont : headerFontNormal,
+              fill: headerFillPattern,
+              alignment: centerMiddleAlign,
+              border: thinBorder,
+            });
+
+            currentXCol++;
+            idx++;
+          }
+        }
+      } else {
+        // 1-Row Clean Header (when Filter is Active/Inactive or other sectors)
+        const headerRow = worksheet.getRow(3);
+        headerRow.height = 53.25;
+
+        worksheet.getCell(3, 1).value = 'Date';
+        styleRange(worksheet, 3, 1, 3, 1, {
+          font: headerFontNormal,
+          fill: headerFillPattern,
+          alignment: centerMiddleAlign,
+          border: thinBorder,
+        });
+
+        for (let i = 0; i < exportColumns.length; i++) {
+          const colDef = exportColumns[i];
+          const targetCol = 2 + i;
+          worksheet.getCell(3, targetCol).value = colDef.header;
+          styleRange(worksheet, 3, targetCol, 3, targetCol, {
             font: colDef.isShop ? redHeaderFont : headerFontNormal,
             fill: headerFillPattern,
             alignment: centerMiddleAlign,
             border: thinBorder,
           });
-
-          currentXCol++;
-          idx++;
         }
       }
-    } else {
-      // 1-Row Clean Header (when Filter is Active/Inactive or other sectors)
-      const headerRow = worksheet.getRow(3);
-      headerRow.height = 53.25;
 
-      worksheet.getCell(3, 1).value = 'Date';
-      styleRange(worksheet, 3, 1, 3, 1, {
-        font: headerFontNormal,
-        fill: headerFillPattern,
-        alignment: centerMiddleAlign,
-        border: thinBorder,
+      // 4. Populate Data Rows (Height: 26.1, Times New Roman, Size: 12, Bold, #0F172A, numFmt: '#,##0.00')
+      matrixRows.forEach((item) => {
+        const rowData: (string | number)[] = [item.date];
+        for (const colDef of exportColumns) {
+          rowData.push(colDef.getValue(item));
+        }
+
+        const row = worksheet.addRow(rowData);
+        row.height = 26.1;
+
+        // Date Cell
+        const dateCell = row.getCell(1);
+        dateCell.alignment = { vertical: 'middle', horizontal: 'center' };
+        dateCell.font = { name: 'Times New Roman', size: 12, bold: true, color: { argb: 'FF0F172A' } };
+        dateCell.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: 'FFF8FAFC' },
+        };
+        dateCell.border = thinBorder;
+
+        // Numeric Cells
+        for (let colIdx = 2; colIdx <= totalColumnsCount; colIdx++) {
+          const cell = row.getCell(colIdx);
+          cell.numFmt = '#,##0.00';
+          cell.alignment = { vertical: 'middle', horizontal: 'right' };
+          cell.font = { name: 'Times New Roman', size: 12, bold: true, color: { argb: 'FF0F172A' } };
+          cell.border = thinBorder;
+
+          const colDef = exportColumns[colIdx - 2];
+          if (colDef?.key === 'row_total') {
+            cell.fill = {
+              type: 'pattern',
+              pattern: 'solid',
+              fgColor: { argb: 'FFF1F5F9' },
+            };
+          }
+        }
       });
 
-      for (let i = 0; i < exportColumns.length; i++) {
-        const colDef = exportColumns[i];
-        const targetCol = 2 + i;
-        worksheet.getCell(3, targetCol).value = colDef.header;
-        styleRange(worksheet, 3, targetCol, 3, targetCol, {
-          font: colDef.isShop ? redHeaderFont : headerFontNormal,
-          fill: headerFillPattern,
-          alignment: centerMiddleAlign,
-          border: thinBorder,
-        });
-      }
-    }
-
-    // 4. Populate Data Rows (Height: 26.1, Times New Roman, Size: 12, Bold, #0F172A, numFmt: '#,##0.00')
-    matrixRows.forEach((item) => {
-      const rowData: (string | number)[] = [item.date];
+      // 5. Grand Total Row (Height: 33.95, Times New Roman, Size: 14, Bold, #1E3A8A, fill #DBEAFE, bottom double border)
+      const footerData: (string | number)[] = ['TOTAL'];
       for (const colDef of exportColumns) {
-        rowData.push(colDef.getValue(item));
+        footerData.push(colDef.getTotal());
       }
 
-      const row = worksheet.addRow(rowData);
-      row.height = 26.1;
+      const totalRow = worksheet.addRow(footerData);
+      totalRow.height = 33.95;
 
-      // Date Cell
-      const dateCell = row.getCell(1);
-      dateCell.alignment = { vertical: 'middle', horizontal: 'center' };
-      dateCell.font = { name: 'Times New Roman', size: 12, bold: true, color: { argb: 'FF0F172A' } };
-      dateCell.fill = {
-        type: 'pattern',
-        pattern: 'solid',
-        fgColor: { argb: 'FFF8FAFC' },
-      };
-      dateCell.border = thinBorder;
-
-      // Numeric Cells
-      for (let colIdx = 2; colIdx <= totalColumnsCount; colIdx++) {
-        const cell = row.getCell(colIdx);
-        cell.numFmt = '#,##0.00';
-        cell.alignment = { vertical: 'middle', horizontal: 'right' };
-        cell.font = { name: 'Times New Roman', size: 12, bold: true, color: { argb: 'FF0F172A' } };
-        cell.border = thinBorder;
-
-        const colDef = exportColumns[colIdx - 2];
-        if (colDef?.key === 'row_total') {
-          cell.fill = {
-            type: 'pattern',
-            pattern: 'solid',
-            fgColor: { argb: 'FFF1F5F9' },
-          };
-        }
-      }
-    });
-
-    // 5. Grand Total Row (Height: 33.95, Times New Roman, Size: 14, Bold, #1E3A8A, fill #DBEAFE, bottom double border)
-    const footerData: (string | number)[] = ['TOTAL'];
-    for (const colDef of exportColumns) {
-      footerData.push(colDef.getTotal());
-    }
-
-    const totalRow = worksheet.addRow(footerData);
-    totalRow.height = 33.95;
-
-    const footerDateCell = totalRow.getCell(1);
-    footerDateCell.alignment = { vertical: 'middle', horizontal: 'center' };
-    footerDateCell.font = { name: 'Times New Roman', size: 14, bold: true, color: { argb: footerFont } };
-    footerDateCell.fill = {
-      type: 'pattern',
-      pattern: 'solid',
-      fgColor: { argb: footerFill },
-    };
-    footerDateCell.border = doubleBottomBorder;
-
-    for (let colIdx = 2; colIdx <= totalColumnsCount; colIdx++) {
-      const cell = totalRow.getCell(colIdx);
-      cell.numFmt = '#,##0.00';
-      cell.alignment = { vertical: 'middle', horizontal: 'right' };
-      cell.font = { name: 'Times New Roman', size: 14, bold: true, color: { argb: footerFont } };
-      cell.fill = {
+      const footerDateCell = totalRow.getCell(1);
+      footerDateCell.alignment = { vertical: 'middle', horizontal: 'center' };
+      footerDateCell.font = { name: 'Times New Roman', size: 14, bold: true, color: { argb: footerFont } };
+      footerDateCell.fill = {
         type: 'pattern',
         pattern: 'solid',
         fgColor: { argb: footerFill },
       };
-      cell.border = doubleBottomBorder;
+      footerDateCell.border = doubleBottomBorder;
+
+      for (let colIdx = 2; colIdx <= totalColumnsCount; colIdx++) {
+        const cell = totalRow.getCell(colIdx);
+        cell.numFmt = '#,##0.00';
+        cell.alignment = { vertical: 'middle', horizontal: 'right' };
+        cell.font = { name: 'Times New Roman', size: 14, bold: true, color: { argb: footerFont } };
+        cell.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: footerFill },
+        };
+        cell.border = doubleBottomBorder;
+      }
+
+      // Blank Row after Grand Total
+      const blankRow = worksheet.addRow([]);
+      blankRow.height = 18;
+
+      // Signature Row: INCOME AUDITOR in Col A (Times New Roman, size 11, bold)
+      const signatureRow = worksheet.addRow(['INCOME AUDITOR']);
+      signatureRow.height = 24;
+      const sigCell = signatureRow.getCell(1);
+      sigCell.font = { name: 'Times New Roman', size: 11, bold: true, color: { argb: 'FF0F172A' } };
+      sigCell.alignment = { vertical: 'middle', horizontal: 'center' };
     }
-
-    // Blank Row after Grand Total
-    const blankRow = worksheet.addRow([]);
-    blankRow.height = 18;
-
-    // Signature Row: INCOME AUDITOR in Col A (Times New Roman, size 11, bold)
-    const signatureRow = worksheet.addRow(['INCOME AUDITOR']);
-    signatureRow.height = 24;
-    const sigCell = signatureRow.getCell(1);
-    sigCell.font = { name: 'Times New Roman', size: 11, bold: true, color: { argb: 'FF0F172A' } };
-    sigCell.alignment = { vertical: 'middle', horizontal: 'center' };
 
     const buffer = await workbook.xlsx.writeBuffer();
     const blob = new Blob([buffer], {
@@ -1268,6 +2016,28 @@ return (
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5">
+          {isRestaurants && effectiveGranularity === 'month' && (
+            <button
+              type="button"
+              onClick={() => handleToggleAllMonths(!allMonthsExpanded)}
+              className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-slate-200/90 bg-white px-3 text-xs font-semibold text-slate-700 shadow-2xs transition hover:bg-slate-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800"
+            >
+              <ChevronsUpDown className="h-3.5 w-3.5" />
+              <span>{allMonthsExpanded ? 'طي كل الشهور' : 'توسيع كل الشهور'}</span>
+            </button>
+          )}
+
+          {isRestaurants && effectiveGranularity === 'day' && (
+            <button
+              type="button"
+              onClick={handleToggleAllDays}
+              className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-slate-200/90 bg-white px-3 text-xs font-semibold text-slate-700 shadow-2xs transition hover:bg-slate-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800"
+            >
+              <Store className="h-3.5 w-3.5" />
+              <span>{allDaysExpanded ? 'إخفاء تفصيل الفروع' : 'عرض تفصيل الفروع'}</span>
+            </button>
+          )}
+
           <button
             type="button"
             onClick={() => setSortOrder((prev) => (prev === 'asc' ? 'desc' : 'asc'))}
@@ -1418,6 +2188,83 @@ return (
       )}
     </div>
 
+    {/* F&B Mix Summary Strip (Rendered EXCLUSIVELY for Restaurants Type = 1) */}
+    {isRestaurants && (
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3.5">
+        {/* Food Card */}
+        <div className="flex items-center gap-3.5 p-4 rounded-xl bg-white border border-slate-200/90 shadow-2xs border-t-2 border-t-[#881337] dark:bg-zinc-900 dark:border-zinc-800">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-rose-50 text-[#881337] dark:bg-rose-950/40 dark:text-rose-300">
+            <Utensils className="h-5 w-5" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center justify-between gap-1">
+              <span className="text-xs font-bold text-slate-600 dark:text-zinc-400">مأكولات (Food)</span>
+              <span className="rounded-full bg-rose-50 border border-rose-200/70 px-2 py-0.5 text-[11px] font-black text-[#881337] dark:bg-rose-950/60 dark:text-rose-300">
+                {grandTotal > 0 ? ((grandFood / grandTotal) * 100).toFixed(1) : '0.0'}%
+              </span>
+            </div>
+            <div className="mt-1 text-base sm:text-lg font-black text-slate-900 dark:text-white tabular-nums font-mono" dir="ltr">
+              {MONEY_FORMATTER.format(grandFood)}
+            </div>
+          </div>
+        </div>
+
+        {/* Beverage Card */}
+        <div className="flex items-center gap-3.5 p-4 rounded-xl bg-white border border-slate-200/90 shadow-2xs border-t-2 border-t-[#881337] dark:bg-zinc-900 dark:border-zinc-800">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-rose-50 text-[#881337] dark:bg-rose-950/40 dark:text-rose-300">
+            <Coffee className="h-5 w-5" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center justify-between gap-1">
+              <span className="text-xs font-bold text-slate-600 dark:text-zinc-400">مشروبات (Beverage)</span>
+              <span className="rounded-full bg-rose-50 border border-rose-200/70 px-2 py-0.5 text-[11px] font-black text-[#881337] dark:bg-rose-950/60 dark:text-rose-300">
+                {grandTotal > 0 ? ((grandBeverage / grandTotal) * 100).toFixed(1) : '0.0'}%
+              </span>
+            </div>
+            <div className="mt-1 text-base sm:text-lg font-black text-slate-900 dark:text-white tabular-nums font-mono" dir="ltr">
+              {MONEY_FORMATTER.format(grandBeverage)}
+            </div>
+          </div>
+        </div>
+
+        {/* Other Card */}
+        <div className="flex items-center gap-3.5 p-4 rounded-xl bg-white border border-slate-200/90 shadow-2xs border-t-2 border-t-[#881337] dark:bg-zinc-900 dark:border-zinc-800">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-rose-50 text-[#881337] dark:bg-rose-950/40 dark:text-rose-300">
+            <ShoppingBag className="h-5 w-5" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center justify-between gap-1">
+              <span className="text-xs font-bold text-slate-600 dark:text-zinc-400">أخرى (Other)</span>
+              <span className="rounded-full bg-rose-50 border border-rose-200/70 px-2 py-0.5 text-[11px] font-black text-[#881337] dark:bg-rose-950/60 dark:text-rose-300">
+                {grandTotal > 0 ? ((grandOther / grandTotal) * 100).toFixed(1) : '0.0'}%
+              </span>
+            </div>
+            <div className="mt-1 text-base sm:text-lg font-black text-slate-900 dark:text-white tabular-nums font-mono" dir="ltr">
+              {MONEY_FORMATTER.format(grandOther)}
+            </div>
+          </div>
+        </div>
+
+        {/* Total Sales Card */}
+        <div className="flex items-center gap-3.5 p-4 rounded-xl bg-white border border-slate-200/90 shadow-2xs border-t-2 border-t-[#881337] dark:bg-zinc-900 dark:border-zinc-800">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#881337] text-white">
+            <Receipt className="h-5 w-5" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center justify-between gap-1">
+              <span className="text-xs font-bold text-slate-600 dark:text-zinc-400">إجمالي المبيعات</span>
+              <span className="rounded-full bg-rose-50 border border-rose-200/70 px-2 py-0.5 text-[11px] font-black text-[#881337] dark:bg-rose-950/60 dark:text-rose-300">
+                100%
+              </span>
+            </div>
+            <div className="mt-1 text-base sm:text-lg font-black text-[#881337] dark:text-rose-400 tabular-nums font-mono" dir="ltr">
+              {MONEY_FORMATTER.format(grandTotal)}
+            </div>
+          </div>
+        </div>
+      </div>
+    )}
+
     {/* --------------------------------------------------------------------- */}
     {/* High-Readability Table with Crosshair Hover & Sticky Footer            */}
     {/* --------------------------------------------------------------------- */}
@@ -1425,146 +2272,199 @@ return (
       <table className="w-full text-right text-sm border-collapse" dir="rtl">
         {/* Header Row(s) */}
         <thead>
-          <tr className={`border-b ${sectorType === 3
-              ? 'bg-violet-950 text-white border-violet-800/60'
-              : `border-slate-300 text-slate-800 dark:border-zinc-700 dark:text-zinc-200 ${theme.matrix.headerBg}`
-            } sticky top-0 z-20 shadow-xs`}>
-            <th
-              rowSpan={isTwoRowHeader ? 2 : 1}
-              className={`sticky right-0 z-30 px-4 py-4 font-black text-center border-l min-w-[140px] ${sectorType === 3
-                ? 'bg-violet-950 text-white border-violet-800/60'
-                : `border-slate-300 ${theme.matrix.headerBg}`
-              }`}
-            >
-              <div className="flex items-center justify-center gap-2">
-                <Calendar className={`h-4 w-4 ${sectorType === 3 ? 'text-violet-200' : 'text-slate-600 dark:text-zinc-300'}`} />
-                <span className={`font-bold text-sm ${sectorType === 3 ? 'text-white' : 'text-slate-900 dark:text-white'}`}>التاريخ</span>
-              </div>
-            </th>
-            {columns.map((col) => {
-              const isShop = sectorType === 4 && SHOP_BRANCH_CODES_SET.has(col.branchCode);
-              const isGame = sectorType === 2 || sectorType === 3;
-              if (isTwoRowHeader && (col.branchCode === 'golden' || col.branchCode === '4')) {
-                const titleText = col.branchCode === 'golden' ? 'Golden' : '7 D';
-                return (
-                  <th
-                    key={col.branchCode}
-                    colSpan={5}
-                    className={`px-3 py-2 text-center border-l font-black text-sm tracking-wide border-slate-300 dark:border-zinc-700 ${theme.matrix.headerBg} text-slate-900 dark:text-white`}
-                  >
-                    {titleText}
-                  </th>
-                );
-              }
-
-              return (
+          {isRestaurants ? (
+            <>
+              {/* Row 1: Grouped Parent Headers */}
+              <tr className="bg-[#881337] text-white border-b border-[#70102e] sticky top-0 z-20 shadow-xs">
                 <th
-                  key={col.branchCode}
-                  rowSpan={isTwoRowHeader ? 2 : 1}
-                  className={`px-4 py-3 text-center border-l min-w-[145px] whitespace-nowrap transition-colors ${sectorType === 3
-                      ? 'bg-violet-950 text-white border-violet-800/60'
-                      : isShop
-                        ? 'border-orange-500/20 bg-orange-500/10 text-orange-600 dark:text-orange-400 border-b-2 border-b-orange-500'
-                        : `border-slate-300 dark:border-zinc-700 ${theme.matrix.headerBg}`
-                    }`}
-                  title={isGame ? `كود اللعبة: ${col.branchCode}` : `كود المنفذ: ${col.branchCode}`}
+                  rowSpan={2}
+                  className="sticky right-0 z-30 px-4 py-4 font-black text-center border-l border-[#70102e] min-w-[170px] bg-[#881337] text-white"
                 >
-                  <div className="flex flex-col items-center justify-center gap-0.5">
-                    <span
-                      className={`text-sm tracking-wide ${sectorType === 3
-                          ? 'font-bold text-white'
-                          : isShop
-                            ? 'font-bold text-orange-600 dark:text-orange-400'
-                            : 'font-bold text-slate-900 dark:text-white'
-                        }`}
-                    >
-                      {col.name}
-                    </span>
-                    <span
-                      className={`text-xs font-mono font-medium ${sectorType === 3
-                          ? 'text-violet-300/80'
-                          : isShop
-                            ? 'text-orange-500/80 dark:text-orange-400/80'
-                            : 'text-slate-500 dark:text-zinc-400'
-                        }`}
-                    >
-                      {col.branchCode}
+                  <div className="flex items-center justify-center gap-2">
+                    <Store className="h-4 w-4 text-white/80" />
+                    <span className="font-bold text-sm text-white">
+                      {effectiveGranularity === 'summary'
+                        ? 'الفرع / المطعم'
+                        : effectiveGranularity === 'month'
+                          ? 'الشهر / الفرع'
+                          : 'التاريخ / الفرع'}
                     </span>
                   </div>
                 </th>
-              );
-            })}
-            <th
-              rowSpan={isTwoRowHeader ? 2 : 1}
-              className={`px-4 py-4 font-black text-left min-w-[160px] text-sm ${sectorType === 3
-                ? 'bg-violet-950 text-white border-l border-violet-800/60'
-                : `text-slate-900 dark:text-white ${theme.matrix.headerBg}`
-              }`}
-            >
-              الإجمالي اليومي
-            </th>
-            {calcMode !== 'vat' && (
-              <>
                 <th
-                  rowSpan={isTwoRowHeader ? 2 : 1}
-                  className={`px-4 py-4 font-black text-left min-w-[130px] text-sm ${sectorType === 3
-                    ? 'bg-violet-950 text-white border-l border-violet-800/60'
-                    : `text-slate-900 dark:text-white ${theme.matrix.headerBg}`
-                  }`}
+                  colSpan={4}
+                  className="px-3 py-2.5 text-center border-l border-[#70102e] font-black text-sm tracking-wide bg-[#881337] text-white"
                 >
-                  كاش
+                  مبيعات الأغذية والمشروبات (F&amp;B Sales Breakdown)
                 </th>
+                {calcMode !== 'vat' && (
+                  <th
+                    colSpan={3}
+                    className="px-3 py-2.5 text-center font-black text-sm tracking-wide bg-[#881337] text-white"
+                  >
+                    طرق التحصيل والسداد (Payment Breakdown)
+                  </th>
+                )}
+              </tr>
+              {/* Row 2: Sub-headers */}
+              <tr className="bg-[#70102e] text-white border-b border-[#580c24] sticky top-[48px] z-20 shadow-xs text-xs font-bold">
+                <th className="px-4 py-2.5 text-center border-l border-[#580c24] min-w-[130px]">مأكولات (Food)</th>
+                <th className="px-4 py-2.5 text-center border-l border-[#580c24] min-w-[130px]">مشروبات (Beverage)</th>
+                <th className="px-4 py-2.5 text-center border-l border-[#580c24] min-w-[120px]">أخرى (Other)</th>
+                <th className="px-4 py-2.5 text-left border-l border-[#580c24] min-w-[150px] font-black text-sm">TOTAL REV</th>
+                {calcMode !== 'vat' && (
+                  <>
+                    <th className="px-4 py-2.5 text-left border-l border-[#580c24] min-w-[130px]">CASH</th>
+                    <th className="px-4 py-2.5 text-left border-l border-[#580c24] min-w-[130px]">VISA</th>
+                    <th className="px-4 py-2.5 text-left min-w-[140px]">COPON / C.L</th>
+                  </>
+                )}
+              </tr>
+            </>
+          ) : (
+            <>
+              <tr className={`border-b ${sectorType === 3
+                  ? 'bg-violet-950 text-white border-violet-800/60'
+                  : `border-slate-300 text-slate-800 dark:border-zinc-700 dark:text-zinc-200 ${theme.matrix.headerBg}`
+                } sticky top-0 z-20 shadow-xs`}>
                 <th
                   rowSpan={isTwoRowHeader ? 2 : 1}
-                  className={`px-4 py-4 font-black text-left min-w-[130px] text-sm ${sectorType === 3
-                    ? 'bg-violet-950 text-white border-l border-violet-800/60'
-                    : `text-slate-900 dark:text-white ${theme.matrix.headerBg}`
-                  }`}
-                >
-                  فيزا
-                </th>
-                <th
-                  rowSpan={isTwoRowHeader ? 2 : 1}
-                  className={`px-4 py-4 font-black text-left min-w-[150px] text-sm ${sectorType === 3
+                  className={`sticky right-0 z-30 px-4 py-4 font-black text-center border-l min-w-[140px] ${sectorType === 3
                     ? 'bg-violet-950 text-white border-violet-800/60'
+                    : `border-slate-300 ${theme.matrix.headerBg}`
+                  }`}
+                >
+                  <div className="flex items-center justify-center gap-2">
+                    <Calendar className={`h-4 w-4 ${sectorType === 3 ? 'text-violet-200' : 'text-slate-600 dark:text-zinc-300'}`} />
+                    <span className={`font-bold text-sm ${sectorType === 3 ? 'text-white' : 'text-slate-900 dark:text-white'}`}>التاريخ</span>
+                  </div>
+                </th>
+                {columns.map((col) => {
+                  const isShop = sectorType === 4 && SHOP_BRANCH_CODES_SET.has(col.branchCode);
+                  const isGame = sectorType === 2 || sectorType === 3;
+                  if (isTwoRowHeader && (col.branchCode === 'golden' || col.branchCode === '4')) {
+                    const titleText = col.branchCode === 'golden' ? 'Golden' : '7 D';
+                    return (
+                      <th
+                        key={col.branchCode}
+                        colSpan={5}
+                        className={`px-3 py-2 text-center border-l font-black text-sm tracking-wide border-slate-300 dark:border-zinc-700 ${theme.matrix.headerBg} text-slate-900 dark:text-white`}
+                      >
+                        {titleText}
+                      </th>
+                    );
+                  }
+
+                  return (
+                    <th
+                      key={col.branchCode}
+                      rowSpan={isTwoRowHeader ? 2 : 1}
+                      className={`px-4 py-3 text-center border-l min-w-[145px] whitespace-nowrap transition-colors ${sectorType === 3
+                          ? 'bg-violet-950 text-white border-violet-800/60'
+                          : isShop
+                            ? 'border-orange-500/20 bg-orange-500/10 text-orange-600 dark:text-orange-400 border-b-2 border-b-orange-500'
+                            : `border-slate-300 dark:border-zinc-700 ${theme.matrix.headerBg}`
+                        }`}
+                      title={isGame ? `كود اللعبة: ${col.branchCode}` : `كود المنفذ: ${col.branchCode}`}
+                    >
+                      <div className="flex flex-col items-center justify-center gap-0.5">
+                        <span
+                          className={`text-sm tracking-wide ${sectorType === 3
+                              ? 'font-bold text-white'
+                              : isShop
+                                ? 'font-bold text-orange-600 dark:text-orange-400'
+                                : 'font-bold text-slate-900 dark:text-white'
+                            }`}
+                        >
+                          {col.name}
+                        </span>
+                        <span
+                          className={`text-xs font-mono font-medium ${sectorType === 3
+                              ? 'text-violet-300/80'
+                              : isShop
+                                ? 'text-orange-500/80 dark:text-orange-400/80'
+                                : 'text-slate-500 dark:text-zinc-400'
+                            }`}
+                        >
+                          {col.branchCode}
+                        </span>
+                      </div>
+                    </th>
+                  );
+                })}
+                <th
+                  rowSpan={isTwoRowHeader ? 2 : 1}
+                  className={`px-4 py-4 font-black text-left min-w-[160px] text-sm ${sectorType === 3
+                    ? 'bg-violet-950 text-white border-l border-violet-800/60'
                     : `text-slate-900 dark:text-white ${theme.matrix.headerBg}`
                   }`}
                 >
-                  كوبونات و CL
+                  الإجمالي اليومي
                 </th>
-              </>
-            )}
-          </tr>
+                {calcMode !== 'vat' && (
+                  <>
+                    <th
+                      rowSpan={isTwoRowHeader ? 2 : 1}
+                      className={`px-4 py-4 font-black text-left min-w-[130px] text-sm ${sectorType === 3
+                        ? 'bg-violet-950 text-white border-l border-violet-800/60'
+                        : `text-slate-900 dark:text-white ${theme.matrix.headerBg}`
+                      }`}
+                    >
+                      كاش
+                    </th>
+                    <th
+                      rowSpan={isTwoRowHeader ? 2 : 1}
+                      className={`px-4 py-4 font-black text-left min-w-[130px] text-sm ${sectorType === 3
+                        ? 'bg-violet-950 text-white border-l border-violet-800/60'
+                        : `text-slate-900 dark:text-white ${theme.matrix.headerBg}`
+                      }`}
+                    >
+                      فيزا
+                    </th>
+                    <th
+                      rowSpan={isTwoRowHeader ? 2 : 1}
+                      className={`px-4 py-4 font-black text-left min-w-[150px] text-sm ${sectorType === 3
+                        ? 'bg-violet-950 text-white border-violet-800/60'
+                        : `text-slate-900 dark:text-white ${theme.matrix.headerBg}`
+                      }`}
+                    >
+                      كوبونات و CL
+                    </th>
+                  </>
+                )}
+              </tr>
 
-          {/* Sub-header Row for Two-Level Grouped Headers */}
-          {isTwoRowHeader && (
-            <tr className={`border-b border-slate-300 dark:border-zinc-700 ${theme.matrix.headerBg} sticky top-[48px] z-20 shadow-xs text-xs font-bold`}>
-              {columns.map((col) => {
-                if (col.branchCode === 'golden') {
-                  return (
-                    <React.Fragment key="golden-sub-headers">
-                      <th className="px-2 py-2 text-center border-l border-slate-300 dark:border-zinc-700 min-w-[75px] text-xs">S.Golden</th>
-                      <th className="px-2 py-2 text-center border-l border-slate-300 dark:border-zinc-700 min-w-[75px] text-xs">Platinum</th>
-                      <th className="px-2 py-2 text-center border-l border-slate-300 dark:border-zinc-700 min-w-[75px] text-xs">Diamond</th>
-                      <th className="px-2 py-2 text-center border-l border-slate-300 dark:border-zinc-700 min-w-[75px] text-xs">VIP</th>
-                      <th className="px-2.5 py-2 text-center border-l border-slate-300 dark:border-zinc-700 min-w-[85px] text-xs font-black text-slate-900 dark:text-white">Total</th>
-                    </React.Fragment>
-                  );
-                }
-                if (col.branchCode === '4') {
-                  return (
-                    <React.Fragment key="4-sub-headers">
-                      <th className="px-2 py-2 text-center border-l border-slate-300 dark:border-zinc-700 min-w-[75px] text-xs">Cash</th>
-                      <th className="px-2 py-2 text-center border-l border-slate-300 dark:border-zinc-700 min-w-[75px] text-xs">Platinum</th>
-                      <th className="px-2 py-2 text-center border-l border-slate-300 dark:border-zinc-700 min-w-[75px] text-xs">Diamond</th>
-                      <th className="px-2 py-2 text-center border-l border-slate-300 dark:border-zinc-700 min-w-[75px] text-xs">Visa</th>
-                      <th className="px-2.5 py-2 text-center border-l border-slate-300 dark:border-zinc-700 min-w-[85px] text-xs font-black text-slate-900 dark:text-white">Total</th>
-                    </React.Fragment>
-                  );
-                }
-                return null;
-              })}
-            </tr>
+              {/* Sub-header Row for Two-Level Grouped Headers */}
+              {isTwoRowHeader && (
+                <tr className={`border-b border-slate-300 dark:border-zinc-700 ${theme.matrix.headerBg} sticky top-[48px] z-20 shadow-xs text-xs font-bold`}>
+                  {columns.map((col) => {
+                    if (col.branchCode === 'golden') {
+                      return (
+                        <React.Fragment key="golden-sub-headers">
+                          <th className="px-2 py-2 text-center border-l border-slate-300 dark:border-zinc-700 min-w-[75px] text-xs">S.Golden</th>
+                          <th className="px-2 py-2 text-center border-l border-slate-300 dark:border-zinc-700 min-w-[75px] text-xs">Platinum</th>
+                          <th className="px-2 py-2 text-center border-l border-slate-300 dark:border-zinc-700 min-w-[75px] text-xs">Diamond</th>
+                          <th className="px-2 py-2 text-center border-l border-slate-300 dark:border-zinc-700 min-w-[75px] text-xs">VIP</th>
+                          <th className="px-2.5 py-2 text-center border-l border-slate-300 dark:border-zinc-700 min-w-[85px] text-xs font-black text-slate-900 dark:text-white">Total</th>
+                        </React.Fragment>
+                      );
+                    }
+                    if (col.branchCode === '4') {
+                      return (
+                        <React.Fragment key="4-sub-headers">
+                          <th className="px-2 py-2 text-center border-l border-slate-300 dark:border-zinc-700 min-w-[75px] text-xs">Cash</th>
+                          <th className="px-2 py-2 text-center border-l border-slate-300 dark:border-zinc-700 min-w-[75px] text-xs">Platinum</th>
+                          <th className="px-2 py-2 text-center border-l border-slate-300 dark:border-zinc-700 min-w-[75px] text-xs">Diamond</th>
+                          <th className="px-2 py-2 text-center border-l border-slate-300 dark:border-zinc-700 min-w-[75px] text-xs">Visa</th>
+                          <th className="px-2.5 py-2 text-center border-l border-slate-300 dark:border-zinc-700 min-w-[85px] text-xs font-black text-slate-900 dark:text-white">Total</th>
+                        </React.Fragment>
+                      );
+                    }
+                    return null;
+                  })}
+                </tr>
+              )}
+            </>
           )}
         </thead>
 
@@ -1581,6 +2481,273 @@ return (
                 </div>
               </td>
             </tr>
+          ) : isRestaurants ? (
+            effectiveGranularity === 'summary' ? (
+              // 1. Summary Granularity: Branch-by-Branch Table
+              !restaurantData || restaurantData.summaryBranches.length === 0 ? (
+                <tr>
+                  <td
+                    colSpan={totalTableCols}
+                    className="py-12 text-center text-slate-500 text-sm font-sans font-medium"
+                  >
+                    لا توجد بيانات مطاعم للفترة المحددة
+                  </td>
+                </tr>
+              ) : (
+                restaurantData.summaryBranches.map((b, idx) => (
+                  <tr
+                    key={b.branchCode}
+                    className={`border-b border-slate-200/80 transition-colors ${
+                      idx % 2 === 1 ? 'bg-slate-50/70 dark:bg-zinc-800/40' : 'bg-white dark:bg-zinc-900'
+                    } hover:bg-rose-50/40 dark:hover:bg-rose-950/20`}
+                  >
+                    <td className="sticky right-0 z-10 px-4 py-3 font-sans text-sm font-bold text-slate-800 dark:text-zinc-200 border-l border-slate-200 dark:border-zinc-800 bg-inherit whitespace-nowrap">
+                      <div className="flex items-center gap-2">
+                        <span className="flex h-6 w-6 items-center justify-center rounded-md bg-slate-100 dark:bg-zinc-800 text-xs font-mono text-slate-600 dark:text-zinc-400">
+                          {b.branchCode}
+                        </span>
+                        <span>{b.displayName}</span>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 text-left border-l border-slate-200/60 dark:border-zinc-800 text-slate-700 dark:text-zinc-300 font-mono">
+                      {fmtMoney(b.food)}
+                    </td>
+                    <td className="px-4 py-3 text-left border-l border-slate-200/60 dark:border-zinc-800 text-slate-700 dark:text-zinc-300 font-mono">
+                      {fmtMoney(b.beverage)}
+                    </td>
+                    <td className="px-4 py-3 text-left border-l border-slate-200/60 dark:border-zinc-800 text-slate-700 dark:text-zinc-300 font-mono">
+                      {fmtMoney(b.other)}
+                    </td>
+                    <td className="px-4 py-3 text-left border-l border-slate-200/60 dark:border-zinc-800 font-black text-slate-900 dark:text-white bg-slate-100/60 dark:bg-zinc-800/60 font-mono">
+                      {fmtMoney(b.total)}
+                    </td>
+                    {calcMode !== 'vat' && (
+                      <>
+                        <td className="px-4 py-3 text-left border-l border-slate-200/60 dark:border-zinc-800 text-slate-700 dark:text-zinc-300 font-mono">
+                          {fmtMoney(b.cash)}
+                        </td>
+                        <td className="px-4 py-3 text-left border-l border-slate-200/60 dark:border-zinc-800 text-slate-700 dark:text-zinc-300 font-mono">
+                          {fmtMoney(b.visa)}
+                        </td>
+                        <td className="px-4 py-3 text-left text-slate-700 dark:text-zinc-300 font-mono">
+                          {fmtMoney(b.cl)}
+                        </td>
+                      </>
+                    )}
+                  </tr>
+                ))
+              )
+            ) : effectiveGranularity === 'month' ? (
+              // 2. Month Granularity: Grouped by Month with Subtotals & Branches
+              !restaurantData || restaurantData.monthGroups.length === 0 ? (
+                <tr>
+                  <td
+                    colSpan={totalTableCols}
+                    className="py-12 text-center text-slate-500 text-sm font-sans font-medium"
+                  >
+                    لا توجد بيانات مطاعم شهرية للفترة المحددة
+                  </td>
+                </tr>
+              ) : (
+                restaurantData.monthGroups.map((m) => {
+                  const isExpanded = expandedMonths.has(m.monthKey);
+                  return (
+                    <React.Fragment key={m.monthKey}>
+                      <tr
+                        onClick={() => handleToggleMonth(m.monthKey)}
+                        className="cursor-pointer bg-slate-100 dark:bg-zinc-800/80 font-bold border-y border-slate-300 dark:border-zinc-700 hover:bg-rose-50/50 dark:hover:bg-rose-950/30 transition-colors"
+                      >
+                        <td className="sticky right-0 z-10 px-4 py-3 font-sans text-sm font-black text-slate-900 dark:text-white border-l border-slate-300 dark:border-zinc-700 bg-inherit">
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-2">
+                              {isExpanded ? (
+                                <ChevronDown className="h-4 w-4 text-[#881337] dark:text-rose-400" />
+                              ) : (
+                                <ChevronUp className="h-4 w-4 text-slate-400" />
+                              )}
+                              <span>{m.monthLabel}</span>
+                            </div>
+                            <span className="text-[11px] font-normal px-2 py-0.5 rounded-full bg-slate-200 dark:bg-zinc-700 text-slate-600 dark:text-zinc-300">
+                              {m.branches.length} مطعم
+                            </span>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 text-left border-l border-slate-300/60 text-slate-900 dark:text-white font-bold font-mono">
+                          {fmtMoney(m.food)}
+                        </td>
+                        <td className="px-4 py-3 text-left border-l border-slate-300/60 text-slate-900 dark:text-white font-bold font-mono">
+                          {fmtMoney(m.beverage)}
+                        </td>
+                        <td className="px-4 py-3 text-left border-l border-slate-300/60 text-slate-900 dark:text-white font-bold font-mono">
+                          {fmtMoney(m.other)}
+                        </td>
+                        <td className="px-4 py-3 text-left border-l border-slate-300/60 font-black text-slate-900 dark:text-white bg-slate-200/50 dark:bg-zinc-700/50 font-mono">
+                          {fmtMoney(m.total)}
+                        </td>
+                        {calcMode !== 'vat' && (
+                          <>
+                            <td className="px-4 py-3 text-left border-l border-slate-300/60 text-slate-900 dark:text-white font-bold font-mono">
+                              {fmtMoney(m.cash)}
+                            </td>
+                            <td className="px-4 py-3 text-left border-l border-slate-300/60 text-slate-900 dark:text-white font-bold font-mono">
+                              {fmtMoney(m.visa)}
+                            </td>
+                            <td className="px-4 py-3 text-left text-slate-900 dark:text-white font-bold font-mono">
+                              {fmtMoney(m.cl)}
+                            </td>
+                          </>
+                        )}
+                      </tr>
+
+                      {isExpanded &&
+                        m.branches.map((b) => (
+                          <tr
+                            key={`${m.monthKey}_${b.branchCode}`}
+                            className="border-b border-slate-200/60 bg-white dark:bg-zinc-900/60 hover:bg-rose-50/30 dark:hover:bg-rose-950/20 text-xs"
+                          >
+                            <td className="sticky right-0 z-10 pr-8 pl-4 py-2.5 font-sans font-medium text-slate-700 dark:text-zinc-300 border-l border-slate-200 dark:border-zinc-800 bg-inherit whitespace-nowrap">
+                              <div className="flex items-center gap-2">
+                                <span className="text-[11px] font-mono text-slate-400">#{b.branchCode}</span>
+                                <span>{b.displayName}</span>
+                              </div>
+                            </td>
+                            <td className="px-4 py-2.5 text-left border-l border-slate-200/40 text-slate-600 dark:text-zinc-400 font-mono">
+                              {fmtMoney(b.food)}
+                            </td>
+                            <td className="px-4 py-2.5 text-left border-l border-slate-200/40 text-slate-600 dark:text-zinc-400 font-mono">
+                              {fmtMoney(b.beverage)}
+                            </td>
+                            <td className="px-4 py-2.5 text-left border-l border-slate-200/40 text-slate-600 dark:text-zinc-400 font-mono">
+                              {fmtMoney(b.other)}
+                            </td>
+                            <td className="px-4 py-2.5 text-left border-l border-slate-200/40 font-bold text-slate-800 dark:text-zinc-200 bg-slate-50 dark:bg-zinc-800/40 font-mono">
+                              {fmtMoney(b.total)}
+                            </td>
+                            {calcMode !== 'vat' && (
+                              <>
+                                <td className="px-4 py-2.5 text-left border-l border-slate-200/40 text-slate-600 dark:text-zinc-400 font-mono">
+                                  {fmtMoney(b.cash)}
+                                </td>
+                                <td className="px-4 py-2.5 text-left border-l border-slate-200/40 text-slate-600 dark:text-zinc-400 font-mono">
+                                  {fmtMoney(b.visa)}
+                                </td>
+                                <td className="px-4 py-2.5 text-left text-slate-600 dark:text-zinc-400 font-mono">
+                                  {fmtMoney(b.cl)}
+                                </td>
+                              </>
+                            )}
+                          </tr>
+                        ))}
+                    </React.Fragment>
+                  );
+                })
+              )
+            ) : (
+              // 3. Day Granularity: Paginated Days with Collapsible Branch Breakdown
+              paginatedDayGroups.length === 0 ? (
+                <tr>
+                  <td
+                    colSpan={totalTableCols}
+                    className="py-12 text-center text-slate-500 text-sm font-sans font-medium"
+                  >
+                    لا توجد بيانات مطاعم يومية للفترة المحددة
+                  </td>
+                </tr>
+              ) : (
+                paginatedDayGroups.map((d) => {
+                  const isExpanded = expandedDays.has(d.date) || allDaysExpanded;
+                  return (
+                    <React.Fragment key={d.date}>
+                      <tr
+                        onClick={() => handleToggleDay(d.date)}
+                        className="cursor-pointer border-b border-slate-200 bg-white dark:bg-zinc-900 hover:bg-rose-50/40 dark:hover:bg-rose-950/20 transition-colors font-bold"
+                      >
+                        <td className="sticky right-0 z-10 px-4 py-3 font-sans text-sm font-bold text-slate-800 dark:text-zinc-200 border-l border-slate-200 dark:border-zinc-800 bg-inherit whitespace-nowrap">
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-2">
+                              {isExpanded ? (
+                                <ChevronDown className="h-4 w-4 text-[#881337] dark:text-rose-400" />
+                              ) : (
+                                <ChevronUp className="h-4 w-4 text-slate-400" />
+                              )}
+                              <span>{formatDateAr(d.date)}</span>
+                            </div>
+                            <span className="text-[11px] font-normal px-1.5 py-0.5 rounded bg-slate-100 dark:bg-zinc-800 text-slate-500">
+                              {d.branches.length} مطعم
+                            </span>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 text-left border-l border-slate-200/60 text-slate-800 dark:text-zinc-200 font-mono">
+                          {fmtMoney(d.food)}
+                        </td>
+                        <td className="px-4 py-3 text-left border-l border-slate-200/60 text-slate-800 dark:text-zinc-200 font-mono">
+                          {fmtMoney(d.beverage)}
+                        </td>
+                        <td className="px-4 py-3 text-left border-l border-slate-200/60 text-slate-800 dark:text-zinc-200 font-mono">
+                          {fmtMoney(d.other)}
+                        </td>
+                        <td className="px-4 py-3 text-left border-l border-slate-200/60 font-black text-slate-900 dark:text-white bg-slate-100/60 dark:bg-zinc-800/60 font-mono">
+                          {fmtMoney(d.total)}
+                        </td>
+                        {calcMode !== 'vat' && (
+                          <>
+                            <td className="px-4 py-3 text-left border-l border-slate-200/60 text-slate-800 dark:text-zinc-200 font-mono">
+                              {fmtMoney(d.cash)}
+                            </td>
+                            <td className="px-4 py-3 text-left border-l border-slate-200/60 text-slate-800 dark:text-zinc-200 font-mono">
+                              {fmtMoney(d.visa)}
+                            </td>
+                            <td className="px-4 py-3 text-left text-slate-800 dark:text-zinc-200 font-mono">
+                              {fmtMoney(d.cl)}
+                            </td>
+                          </>
+                        )}
+                      </tr>
+
+                      {isExpanded &&
+                        d.branches.map((b) => (
+                          <tr
+                            key={`${d.date}_${b.branchCode}`}
+                            className="border-b border-slate-200/40 bg-slate-50/70 dark:bg-zinc-800/30 hover:bg-rose-50/30 text-xs font-normal"
+                          >
+                            <td className="sticky right-0 z-10 pr-8 pl-4 py-2 font-sans text-slate-600 dark:text-zinc-400 border-l border-slate-200 dark:border-zinc-800 bg-inherit whitespace-nowrap">
+                              <div className="flex items-center gap-2">
+                                <span className="text-[10px] font-mono text-slate-400">#{b.branchCode}</span>
+                                <span>{b.displayName}</span>
+                              </div>
+                            </td>
+                            <td className="px-4 py-2 text-left border-l border-slate-200/40 text-slate-600 dark:text-zinc-400 font-mono">
+                              {fmtMoney(b.food)}
+                            </td>
+                            <td className="px-4 py-2 text-left border-l border-slate-200/40 text-slate-600 dark:text-zinc-400 font-mono">
+                              {fmtMoney(b.beverage)}
+                            </td>
+                            <td className="px-4 py-2 text-left border-l border-slate-200/40 text-slate-600 dark:text-zinc-400 font-mono">
+                              {fmtMoney(b.other)}
+                            </td>
+                            <td className="px-4 py-2 text-left border-l border-slate-200/40 font-bold text-slate-700 dark:text-zinc-300 bg-slate-100/40 font-mono">
+                              {fmtMoney(b.total)}
+                            </td>
+                            {calcMode !== 'vat' && (
+                              <>
+                                <td className="px-4 py-2 text-left border-l border-slate-200/40 text-slate-600 dark:text-zinc-400 font-mono">
+                                  {fmtMoney(b.cash)}
+                                </td>
+                                <td className="px-4 py-2 text-left border-l border-slate-200/40 text-slate-600 dark:text-zinc-400 font-mono">
+                                  {fmtMoney(b.visa)}
+                                </td>
+                                <td className="px-4 py-2 text-left text-slate-600 dark:text-zinc-400 font-mono">
+                                  {fmtMoney(b.cl)}
+                                </td>
+                              </>
+                            )}
+                          </tr>
+                        ))}
+                    </React.Fragment>
+                  );
+                })
+              )
+            )
           ) : paginatedRows.length === 0 ? (
             <tr>
               <td
@@ -1601,74 +2768,108 @@ return (
                 hoverCellClass={theme.matrix.hoverCell}
                 totalRevColClass={theme.matrix.totalRevCol}
                 isTwoRowHeader={isTwoRowHeader}
+                sectorType={sectorType}
               />
             ))
           )}
         </tbody>
 
         {/* Sticky Grand Totals Footer (Calculated over FULL Data) */}
-        {!loading && matrixRows.length > 0 && (
+        {!loading && (isRestaurants || matrixRows.length > 0) && (
           <tfoot className={`sticky bottom-0 z-20 shadow-xl ${theme.solidBg} font-mono tabular-nums tracking-tight !text-white`}>
-            <tr className={`${theme.solidBg} !text-white font-bold`}>
-              <td className={`sticky right-0 z-30 px-4 py-4 text-center font-sans text-sm lg:text-base font-black border-l border-white/20 ${theme.solidBg} !text-white`}>
-                الإجمالي
-              </td>
-              {columns.map((col) => {
-                if (isTwoRowHeader && col.branchCode === 'golden') {
-                  const total = columnTotals['golden'] || 0;
+            {isRestaurants ? (
+              <tr className="bg-[#4c0519] !text-white font-bold border-t-2 border-[#881337]">
+                <td className="sticky right-0 z-30 px-4 py-4 text-center font-sans text-sm lg:text-base font-black border-l border-white/20 bg-[#4c0519] !text-white">
+                  الإجمالي العام
+                </td>
+                <td className="px-4 py-4 text-left font-black text-base lg:text-lg border-l border-white/20 !text-white bg-[#4c0519]">
+                  {MONEY_FORMATTER.format(grandFood)}
+                </td>
+                <td className="px-4 py-4 text-left font-black text-base lg:text-lg border-l border-white/20 !text-white bg-[#4c0519]">
+                  {MONEY_FORMATTER.format(grandBeverage)}
+                </td>
+                <td className="px-4 py-4 text-left font-black text-base lg:text-lg border-l border-white/20 !text-white bg-[#4c0519]">
+                  {MONEY_FORMATTER.format(grandOther)}
+                </td>
+                <td className="px-4 py-4 text-left text-lg lg:text-xl font-black border-l border-white/20 !text-white bg-[#4c0519]">
+                  {MONEY_FORMATTER.format(grandTotal)}
+                </td>
+                {calcMode !== 'vat' && (
+                  <>
+                    <td className="px-4 py-4 text-left text-base lg:text-lg font-black border-l border-white/20 !text-white bg-[#4c0519]">
+                      {MONEY_FORMATTER.format(grandCash)}
+                    </td>
+                    <td className="px-4 py-4 text-left text-base lg:text-lg font-black border-l border-white/20 !text-white bg-[#4c0519]">
+                      {MONEY_FORMATTER.format(grandVisa)}
+                    </td>
+                    <td className="px-4 py-4 text-left text-base lg:text-lg font-black !text-white bg-[#4c0519]">
+                      {MONEY_FORMATTER.format(grandCoupons)}
+                    </td>
+                  </>
+                )}
+              </tr>
+            ) : (
+              <tr className={`${theme.solidBg} !text-white font-bold`}>
+                <td className={`sticky right-0 z-30 px-4 py-4 text-center font-sans text-sm lg:text-base font-black border-l border-white/20 ${theme.solidBg} !text-white`}>
+                  الإجمالي
+                </td>
+                {columns.map((col) => {
+                  if (isTwoRowHeader && col.branchCode === 'golden') {
+                    const total = columnTotals['golden'] || 0;
+                    return (
+                      <React.Fragment key={col.branchCode}>
+                        <td className={`px-2 py-4 text-center font-mono text-xs border-l border-white/20 !text-white/70 ${theme.solidBg}`}>0.00</td>
+                        <td className={`px-2 py-4 text-center font-mono text-xs border-l border-white/20 !text-white/70 ${theme.solidBg}`}>0.00</td>
+                        <td className={`px-2 py-4 text-center font-mono text-xs border-l border-white/20 !text-white/70 ${theme.solidBg}`}>0.00</td>
+                        <td className={`px-2 py-4 text-center font-mono text-xs border-l border-white/20 !text-white/70 ${theme.solidBg}`}>0.00</td>
+                        <td className={`px-3 py-4 text-left font-black text-base lg:text-lg border-l border-white/20 !text-white ${theme.solidBg}`}>
+                          {MONEY_FORMATTER.format(total)}
+                        </td>
+                      </React.Fragment>
+                    );
+                  }
+                  if (isTwoRowHeader && col.branchCode === '4') {
+                    const total = columnTotals['4'] || 0;
+                    return (
+                      <React.Fragment key={col.branchCode}>
+                        <td className={`px-2 py-4 text-center font-mono text-xs border-l border-white/20 !text-white/70 ${theme.solidBg}`}>0.00</td>
+                        <td className={`px-2 py-4 text-center font-mono text-xs border-l border-white/20 !text-white/70 ${theme.solidBg}`}>0.00</td>
+                        <td className={`px-2 py-4 text-center font-mono text-xs border-l border-white/20 !text-white/70 ${theme.solidBg}`}>0.00</td>
+                        <td className={`px-2 py-4 text-center font-mono text-xs border-l border-white/20 !text-white/70 ${theme.solidBg}`}>0.00</td>
+                        <td className={`px-3 py-4 text-left font-black text-base lg:text-lg border-l border-white/20 !text-white ${theme.solidBg}`}>
+                          {MONEY_FORMATTER.format(total)}
+                        </td>
+                      </React.Fragment>
+                    );
+                  }
+                  const total = columnTotals[col.branchCode] || 0;
                   return (
-                    <React.Fragment key={col.branchCode}>
-                      <td className={`px-2 py-4 text-center font-mono text-xs border-l border-white/20 !text-white/70 ${theme.solidBg}`}>0.00</td>
-                      <td className={`px-2 py-4 text-center font-mono text-xs border-l border-white/20 !text-white/70 ${theme.solidBg}`}>0.00</td>
-                      <td className={`px-2 py-4 text-center font-mono text-xs border-l border-white/20 !text-white/70 ${theme.solidBg}`}>0.00</td>
-                      <td className={`px-2 py-4 text-center font-mono text-xs border-l border-white/20 !text-white/70 ${theme.solidBg}`}>0.00</td>
-                      <td className={`px-3 py-4 text-left font-black text-base lg:text-lg border-l border-white/20 !text-white ${theme.solidBg}`}>
-                        {MONEY_FORMATTER.format(total)}
-                      </td>
-                    </React.Fragment>
+                    <td
+                      key={col.branchCode}
+                      className={`px-4 py-4 text-left font-black text-base lg:text-lg border-l border-white/20 !text-white ${theme.solidBg}`}
+                    >
+                      {MONEY_FORMATTER.format(total)}
+                    </td>
                   );
-                }
-                if (isTwoRowHeader && col.branchCode === '4') {
-                  const total = columnTotals['4'] || 0;
-                  return (
-                    <React.Fragment key={col.branchCode}>
-                      <td className={`px-2 py-4 text-center font-mono text-xs border-l border-white/20 !text-white/70 ${theme.solidBg}`}>0.00</td>
-                      <td className={`px-2 py-4 text-center font-mono text-xs border-l border-white/20 !text-white/70 ${theme.solidBg}`}>0.00</td>
-                      <td className={`px-2 py-4 text-center font-mono text-xs border-l border-white/20 !text-white/70 ${theme.solidBg}`}>0.00</td>
-                      <td className={`px-2 py-4 text-center font-mono text-xs border-l border-white/20 !text-white/70 ${theme.solidBg}`}>0.00</td>
-                      <td className={`px-3 py-4 text-left font-black text-base lg:text-lg border-l border-white/20 !text-white ${theme.solidBg}`}>
-                        {MONEY_FORMATTER.format(total)}
-                      </td>
-                    </React.Fragment>
-                  );
-                }
-                const total = columnTotals[col.branchCode] || 0;
-                return (
-                  <td
-                    key={col.branchCode}
-                    className={`px-4 py-4 text-left font-black text-base lg:text-lg border-l border-white/20 !text-white ${theme.solidBg}`}
-                  >
-                    {MONEY_FORMATTER.format(total)}
-                  </td>
-                );
-              })}
-              <td className={`px-4 py-4 text-left text-lg lg:text-xl font-black border-l border-white/20 !text-white ${theme.solidBg}`}>
-                {MONEY_FORMATTER.format(grandTotal)}
-              </td>
-              {calcMode !== 'vat' && (
-                <>
-                  <td className={`px-4 py-4 text-left text-base lg:text-lg font-black border-l border-white/20 !text-white ${theme.solidBg}`}>
-                    {MONEY_FORMATTER.format(grandCash)}
-                  </td>
-                  <td className={`px-4 py-4 text-left text-base lg:text-lg font-black border-l border-white/20 !text-white ${theme.solidBg}`}>
-                    {MONEY_FORMATTER.format(grandVisa)}
-                  </td>
-                  <td className={`px-4 py-4 text-left text-base lg:text-lg font-black !text-white ${theme.solidBg}`}>
-                    {MONEY_FORMATTER.format(grandCoupons)}
-                  </td>
-                </>
-              )}
-            </tr>
+                })}
+                <td className={`px-4 py-4 text-left text-lg lg:text-xl font-black border-l border-white/20 !text-white ${theme.solidBg}`}>
+                  {MONEY_FORMATTER.format(grandTotal)}
+                </td>
+                {calcMode !== 'vat' && (
+                  <>
+                    <td className={`px-4 py-4 text-left text-base lg:text-lg font-black border-l border-white/20 !text-white ${theme.solidBg}`}>
+                      {MONEY_FORMATTER.format(grandCash)}
+                    </td>
+                    <td className={`px-4 py-4 text-left text-base lg:text-lg font-black border-l border-white/20 !text-white ${theme.solidBg}`}>
+                      {MONEY_FORMATTER.format(grandVisa)}
+                    </td>
+                    <td className={`px-4 py-4 text-left text-base lg:text-lg font-black !text-white ${theme.solidBg}`}>
+                      {MONEY_FORMATTER.format(grandCoupons)}
+                    </td>
+                  </>
+                )}
+              </tr>
+            )}
           </tfoot>
         )}
       </table>
@@ -1679,33 +2880,39 @@ return (
     {/* --------------------------------------------------------------------- */}
     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between text-xs text-slate-600 dark:text-zinc-400 border-t border-slate-200 pt-3 dark:border-zinc-800">
       <div className="flex items-center gap-4">
-        <div className="flex items-center gap-2">
-          <span>عدد الصفوف في الصفحة:</span>
-          <select
-            value={rowsPerPage}
-            onChange={(e) => {
-              setRowsPerPage(Number(e.target.value));
-              setCurrentPage(1);
-            }}
-            className="h-8 rounded-md border border-slate-300 bg-white px-2.5 text-xs font-bold text-slate-800 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white focus:outline-none focus:ring-1 focus:ring-slate-400 dark:focus:ring-zinc-600"
-          >
-            <option value={10}>10 صفوف</option>
-            <option value={15}>15 صفاً</option>
-            <option value={31}>31 صفاً (شهر)</option>
-            <option value={50}>50 صفاً</option>
-            {matrixRows.length <= 60 && (
-              <option value={9999}>الكل ({matrixRows.length})</option>
-            )}
-          </select>
-        </div>
+        {(!isRestaurants || effectiveGranularity === 'day') && (
+          <div className="flex items-center gap-2">
+            <span>عدد الصفوف في الصفحة:</span>
+            <select
+              value={rowsPerPage}
+              onChange={(e) => {
+                setRowsPerPage(Number(e.target.value));
+                setCurrentPage(1);
+              }}
+              className="h-8 rounded-md border border-slate-300 bg-white px-2.5 text-xs font-bold text-slate-800 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white focus:outline-none focus:ring-1 focus:ring-slate-400 dark:focus:ring-zinc-600"
+            >
+              <option value={10}>10 صفوف</option>
+              <option value={15}>15 صفاً</option>
+              <option value={31}>31 صفاً (شهر)</option>
+              <option value={50}>50 صفاً</option>
+              {(isRestaurantDayMode ? totalRestaurantDays : matrixRows.length) <= 60 && (
+                <option value={9999}>الكل ({(isRestaurantDayMode ? totalRestaurantDays : matrixRows.length)})</option>
+              )}
+            </select>
+          </div>
+        )}
 
         <span className="font-medium text-slate-700 dark:text-zinc-300">
-          عرض {startRecord} - {endRecord} من إجمالي {matrixRows.length} يوم
+          {isRestaurants && effectiveGranularity === 'summary'
+            ? `عرض جميع الفروع (${restaurantData?.summaryBranches.length || 0} فرع)`
+            : isRestaurants && effectiveGranularity === 'month'
+              ? `عرض جميع الشهور (${restaurantData?.monthGroups.length || 0} شهر)`
+              : `عرض ${startRecord} - ${endRecord} من إجمالي ${activeTotalRecords} يوم`}
         </span>
       </div>
 
       {/* Pagination Buttons */}
-      {totalPages > 1 && rowsPerPage < 9999 && (
+      {(!isRestaurants || effectiveGranularity === 'day') && totalPages > 1 && rowsPerPage < 9999 && (
         <div className="flex items-center gap-1.5" dir="ltr">
           <button
             type="button"

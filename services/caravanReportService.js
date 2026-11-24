@@ -507,6 +507,19 @@ export class CaravanReportService {
           totalSales > 0 ? Math.round((itemTotal / totalSales) * 1000) / 10 : 0,
         avgTicket:
           itemCover > 0 ? Math.round((itemTotal / itemCover) * 100) / 100 : 0,
+        ...(secType === 1
+          ? (() => {
+              const rFood = Math.round((Number(r.Food) || 0) * 100) / 100;
+              const rBev = Math.round((Number(r.Beverage) || 0) * 100) / 100;
+              const rOther = Math.round((itemTotal - rFood - rBev) * 100) / 100;
+              return {
+                food: rFood,
+                beverage: rBev,
+                other: rOther,
+                cost: Math.round((Number(r.Cost) || 0) * 100) / 100,
+              };
+            })()
+          : {}),
       };
     });
 
@@ -544,18 +557,18 @@ export class CaravanReportService {
         topOutlet:
           records.length > 0
             ? {
-                name: records[0].name,
-                total: records[0].total,
-                cover: records[0].cover,
-              }
+              name: records[0].name,
+              total: records[0].total,
+              cover: records[0].cover,
+            }
             : null,
         topCaravan:
           records.length > 0
             ? {
-                name: records[0].name,
-                total: records[0].total,
-                cover: records[0].cover,
-              }
+              name: records[0].name,
+              total: records[0].total,
+              cover: records[0].cover,
+            }
             : null,
       },
       records,
@@ -602,20 +615,20 @@ export class CaravanReportService {
     request.input("endDate", sql.Date, endDate);
     request.input("sectorType", sql.Int, secType);
 
-        // 2. معالجة تصفية المنافذ المختارة
-        const validBranchCodes = Array.isArray(branches)
-            ? branches.map((code) => Number(String(code).trim())).filter((n) => Number.isFinite(n))
-            : [];
+    // 2. معالجة تصفية المنافذ المختارة
+    const validBranchCodes = Array.isArray(branches)
+      ? branches.map((code) => Number(String(code).trim())).filter((n) => Number.isFinite(n))
+      : [];
 
-        let branchClause = '';
-        if (validBranchCodes.length > 0) {
-            const placeholders = validBranchCodes.map((code, index) => {
-                const paramName = `branch_${index}`;
-                request.input(paramName, sql.Int, code);
-                return `@${paramName}`;
-            });
-            branchClause = ` AND b.[Code] IN (${placeholders.join(', ')})`;
-        }
+    let branchClause = '';
+    if (validBranchCodes.length > 0) {
+      const placeholders = validBranchCodes.map((code, index) => {
+        const paramName = `branch_${index}`;
+        request.input(paramName, sql.Int, code);
+        return `@${paramName}`;
+      });
+      branchClause = ` AND b.[Code] IN (${placeholders.join(', ')})`;
+    }
 
     // 3. تحديد ترتيب النتائج
     let orderClause = "s.[Total] DESC";
@@ -624,31 +637,70 @@ export class CaravanReportService {
       orderClause = "s.[Cover] DESC, s.[Total] DESC";
     else if (sortBy === "name_asc") orderClause = "s.[Name] ASC";
 
-        // 4. بناء الحقول وفق مستوى التجميع (Granularity)
-        // Separate POS_Post (sales) and Pos_item_post_void (voids) into independent parallel queries
-        // so SQL Server 2014 can NEVER inline a voids CTE into a 58s nested loop on 'month' granularity.
-        let selectSalesPeriod = '';
-        let groupBySalesPeriod = '';
-        let selectVoidsPeriod = '';
-        let groupByVoidsPeriod = '';
-        let outerSelectPeriod = '';
-        let orderByGranularity = '';
+    // 4. بناء الحقول وفق مستوى التجميع (Granularity)
+    // Separate POS_Post (sales) and Pos_item_post_void (voids) into independent parallel queries
+    // so SQL Server 2014 can NEVER inline a voids CTE into a 58s nested loop on 'month' granularity.
+    let selectSalesPeriod = '';
+    let groupBySalesPeriod = '';
+    let selectVoidsPeriod = '';
+    let groupByVoidsPeriod = '';
+    let selectItemPeriod = '';
+    let groupByItemPeriod = '';
+    let joinItemPeriod = '';
+    let outerSelectPeriod = '';
+    let orderByGranularity = '';
 
-        if (granularity === 'month') {
-            selectSalesPeriod = `YEAR(p.[Doc_Date]) AS [PeriodYear], MONTH(p.[Doc_Date]) AS [PeriodMonth],`;
-            groupBySalesPeriod = `, YEAR(p.[Doc_Date]), MONTH(p.[Doc_Date])`;
-            selectVoidsPeriod = `CONVERT(VARCHAR(7), v.[Doc_Date], 120) AS [Period],`;
-            groupByVoidsPeriod = `, CONVERT(VARCHAR(7), v.[Doc_Date], 120)`;
-            outerSelectPeriod = `CAST(s.[PeriodYear] AS VARCHAR(4)) + '-' + RIGHT('0' + CAST(s.[PeriodMonth] AS VARCHAR(2)), 2) AS [Period],`;
-            orderByGranularity = `s.[PeriodYear] ASC, s.[PeriodMonth] ASC, `;
-        } else if (granularity === 'day') {
-            selectSalesPeriod = `p.[Doc_Date] AS [PeriodDate],`;
-            groupBySalesPeriod = `, p.[Doc_Date]`;
-            selectVoidsPeriod = `CONVERT(VARCHAR(10), v.[Doc_Date], 120) AS [Period],`;
-            groupByVoidsPeriod = `, CONVERT(VARCHAR(10), v.[Doc_Date], 120)`;
-            outerSelectPeriod = `CONVERT(VARCHAR(10), s.[PeriodDate], 120) AS [Period],`;
-            orderByGranularity = `s.[PeriodDate] ASC, `;
-        }
+    if (granularity === 'month') {
+      selectSalesPeriod = `YEAR(p.[Doc_Date]) AS [PeriodYear], MONTH(p.[Doc_Date]) AS [PeriodMonth],`;
+      groupBySalesPeriod = `, YEAR(p.[Doc_Date]), MONTH(p.[Doc_Date])`;
+      selectVoidsPeriod = `CONVERT(VARCHAR(7), v.[Doc_Date], 120) AS [Period],`;
+      groupByVoidsPeriod = `, CONVERT(VARCHAR(7), v.[Doc_Date], 120)`;
+      selectItemPeriod = `YEAR(sp.[Doc_Date]) AS [PeriodYear], MONTH(sp.[Doc_Date]) AS [PeriodMonth],`;
+      groupByItemPeriod = `, YEAR(sp.[Doc_Date]), MONTH(sp.[Doc_Date])`;
+      joinItemPeriod = `AND i.[PeriodYear] = s.[PeriodYear] AND i.[PeriodMonth] = s.[PeriodMonth]`;
+      outerSelectPeriod = `CAST(s.[PeriodYear] AS VARCHAR(4)) + '-' + RIGHT('0' + CAST(s.[PeriodMonth] AS VARCHAR(2)), 2) AS [Period],`;
+      orderByGranularity = `s.[PeriodYear] ASC, s.[PeriodMonth] ASC, `;
+    } else if (granularity === 'day') {
+      selectSalesPeriod = `p.[Doc_Date] AS [PeriodDate],`;
+      groupBySalesPeriod = `, p.[Doc_Date]`;
+      selectVoidsPeriod = `CONVERT(VARCHAR(10), v.[Doc_Date], 120) AS [Period],`;
+      groupByVoidsPeriod = `, CONVERT(VARCHAR(10), v.[Doc_Date], 120)`;
+      selectItemPeriod = `sp.[Doc_Date] AS [PeriodDate],`;
+      groupByItemPeriod = `, sp.[Doc_Date]`;
+      joinItemPeriod = `AND i.[PeriodDate] = s.[PeriodDate]`;
+      outerSelectPeriod = `CONVERT(VARCHAR(10), s.[PeriodDate], 120) AS [Period],`;
+      orderByGranularity = `s.[PeriodDate] ASC, `;
+    }
+
+    const fbCTE = secType === 1 ? `
+            ,
+            ItemAgg AS (
+                SELECT 
+                    sp.[Branch_Code],
+                    ${selectItemPeriod}
+                    CAST(SUM(CASE WHEN g.[CategoryType] = 1 THEN sp.[Item_Qunt] * sp.[Item_Price] + ISNULL(sp.[item_Sels_Tax], 0) + ISNULL(sp.[item_Serves_Tax], 0) ELSE 0 END) AS DECIMAL(18, 4)) AS [Food],
+                    CAST(SUM(CASE WHEN g.[CategoryType] = 2 THEN sp.[Item_Qunt] * sp.[Item_Price] + ISNULL(sp.[item_Sels_Tax], 0) + ISNULL(sp.[item_Serves_Tax], 0) ELSE 0 END) AS DECIMAL(18, 4)) AS [Beverage],
+                    CAST(SUM(CASE WHEN ISNULL(g.[CategoryType], 0) NOT IN (1, 2) THEN sp.[Item_Qunt] * sp.[Item_Price] + ISNULL(sp.[item_Sels_Tax], 0) + ISNULL(sp.[item_Serves_Tax], 0) ELSE 0 END) AS DECIMAL(18, 4)) AS [Other],
+                    CAST(SUM(sp.[Item_Qunt] * ISNULL(it.[itemcost], 0)) AS DECIMAL(18, 4)) AS [Cost]
+                FROM [dbo].[POS_Sub_post] sp WITH (NOLOCK)
+                INNER JOIN TargetBranches tb ON tb.[Code] = sp.[Branch_Code]
+                LEFT JOIN [dbo].[items] it WITH (NOLOCK) ON it.[code] = sp.[item_Code] AND it.[BranchCode] = sp.[Branch_Code]
+                LEFT JOIN [dbo].[Groupitem] g WITH (NOLOCK) ON g.[code] = it.[Group_code] AND g.[Branch_Code] = it.[BranchCode]
+                WHERE sp.[Doc_Date] >= @startDate AND sp.[Doc_Date] < DATEADD(DAY, 1, @endDate)
+                  AND (sp.[Void_item] = 0 OR sp.[Void_item] IS NULL)
+                GROUP BY sp.[Branch_Code] ${groupByItemPeriod}
+            )` : '';
+
+    const fbJoin = secType === 1 ? `
+            LEFT JOIN ItemAgg i ON i.[Branch_Code] = s.[Branch_Code] ${joinItemPeriod}
+        ` : '';
+
+    const fbCols = secType === 1 ? `
+            ISNULL(i.[Food], 0) AS [Food],
+            ISNULL(i.[Beverage], 0) AS [Beverage],
+            ISNULL(i.[Other], 0) AS [Other],
+            ISNULL(i.[Cost], 0) AS [Cost],
+        ` : '';
 
     const query = `
             WITH TargetBranches AS (
@@ -679,10 +731,12 @@ export class CaravanReportService {
                 GROUP BY tb.[Code], tb.[Aname] ${groupBySalesPeriod}
                 HAVING SUM(CAST(ISNULL(p.[Cash], 0) + ISNULL(p.[Visa], 0) + ISNULL(p.[Visa2], 0) + ISNULL(p.[Visa3], 0) + ISNULL(p.[C/L], 0) AS DECIMAL(18, 4))) <> 0
             )
+            ${fbCTE}
             SELECT 
                 s.[Branch_Code],
                 s.[Name],
                 ${outerSelectPeriod}
+                ${fbCols}
                 s.[Cover],
                 s.[Cash],
                 s.[Visa],
@@ -698,24 +752,26 @@ export class CaravanReportService {
                 SUM(s.[Visa]) OVER () AS [GrandTotalVisa],
                 SUM(s.[Cover]) OVER () AS [GrandTotalCover]
             FROM SalesAgg s
-            ORDER BY ${orderByGranularity}${orderClause};
+            ${fbJoin}
+            ORDER BY ${orderByGranularity}${orderClause}
+            OPTION (HASH JOIN);
         `;
 
-        // Independent single-scan Voids Aggregation Query (runs in parallel with SalesAgg)
-        const voidsAggReq = pool.request();
-        voidsAggReq.input('startDate', sql.Date, startDate);
-        voidsAggReq.input('endDate', sql.Date, endDate);
-        voidsAggReq.input('sectorType', sql.Int, secType);
-        if (validBranchCodes.length > 0) {
-            validBranchCodes.forEach((code, index) => {
-                voidsAggReq.input(`vbranch_${index}`, sql.Int, code);
-            });
-        }
-        const voidsAggBranchClause = validBranchCodes.length > 0
-            ? ` AND v.[Branch_Code] IN (${validBranchCodes.map((_, i) => `@vbranch_${i}`).join(', ')})`
-            : '';
+    // Independent single-scan Voids Aggregation Query (runs in parallel with SalesAgg)
+    const voidsAggReq = pool.request();
+    voidsAggReq.input('startDate', sql.Date, startDate);
+    voidsAggReq.input('endDate', sql.Date, endDate);
+    voidsAggReq.input('sectorType', sql.Int, secType);
+    if (validBranchCodes.length > 0) {
+      validBranchCodes.forEach((code, index) => {
+        voidsAggReq.input(`vbranch_${index}`, sql.Int, code);
+      });
+    }
+    const voidsAggBranchClause = validBranchCodes.length > 0
+      ? ` AND v.[Branch_Code] IN (${validBranchCodes.map((_, i) => `@vbranch_${i}`).join(', ')})`
+      : '';
 
-        const voidsAggQuery = `
+    const voidsAggQuery = `
             SELECT 
                 v.[Branch_Code],
                 ${selectVoidsPeriod}
@@ -731,19 +787,19 @@ export class CaravanReportService {
             GROUP BY v.[Branch_Code] ${groupByVoidsPeriod};
         `;
 
-        // Prepare Void Details Query for Expandable Sub-Tables
-        const detailsReq = pool.request();
-        detailsReq.input('startDate', sql.Date, startDate);
-        detailsReq.input('endDate', sql.Date, endDate);
-        detailsReq.input('sectorType', sql.Int, secType);
-        if (validBranchCodes.length > 0) {
-            validBranchCodes.forEach((code, index) => {
-                detailsReq.input(`dbranch_${index}`, sql.Int, code);
-            });
-        }
-        const detailsBranchClause = validBranchCodes.length > 0
-            ? ` AND v.[Branch_Code] IN (${validBranchCodes.map((_, i) => `@dbranch_${i}`).join(', ')})`
-            : '';
+    // Prepare Void Details Query for Expandable Sub-Tables
+    const detailsReq = pool.request();
+    detailsReq.input('startDate', sql.Date, startDate);
+    detailsReq.input('endDate', sql.Date, endDate);
+    detailsReq.input('sectorType', sql.Int, secType);
+    if (validBranchCodes.length > 0) {
+      validBranchCodes.forEach((code, index) => {
+        detailsReq.input(`dbranch_${index}`, sql.Int, code);
+      });
+    }
+    const detailsBranchClause = validBranchCodes.length > 0
+      ? ` AND v.[Branch_Code] IN (${validBranchCodes.map((_, i) => `@dbranch_${i}`).join(', ')})`
+      : '';
 
     const voidDetailsQuery = `
             SELECT 
@@ -766,49 +822,49 @@ export class CaravanReportService {
             ORDER BY v.[Doc_Date] DESC, v.[Inv_Time] DESC;
         `;
 
-        let rawRecords = [];
-        let rawVoidDetails = [];
-        let duration = 0;
-        try {
-            const startTime = Date.now();
-            const [result, voidsAggResult, detailsResult] = await Promise.all([
-                request.query(query),
-                voidsAggReq.query(voidsAggQuery).catch(err => {
-                    console.warn('[CaravanReportService] Voids agg query failed:', err.message);
-                    return { recordset: [] };
-                }),
-                detailsReq.query(voidDetailsQuery).catch(err => {
-                    console.warn('[CaravanReportService] Void details query failed:', err.message);
-                    return { recordset: [] };
-                })
-            ]);
-            duration = Date.now() - startTime;
+    let rawRecords = [];
+    let rawVoidDetails = [];
+    let duration = 0;
+    try {
+      const startTime = Date.now();
+      const [result, voidsAggResult, detailsResult] = await Promise.all([
+        request.query(query),
+        voidsAggReq.query(voidsAggQuery).catch(err => {
+          console.warn('[CaravanReportService] Voids agg query failed:', err.message);
+          return { recordset: [] };
+        }),
+        detailsReq.query(voidDetailsQuery).catch(err => {
+          console.warn('[CaravanReportService] Void details query failed:', err.message);
+          return { recordset: [] };
+        })
+      ]);
+      duration = Date.now() - startTime;
 
-            // Merge single-scan VoidsAgg into SalesAgg in O(N)
-            const voidsAggMap = new Map();
-            for (const va of (voidsAggResult.recordset || [])) {
-                const key = granularity !== 'summary' ? `${va.Branch_Code}-${va.Period}` : String(va.Branch_Code);
-                voidsAggMap.set(key, {
-                    TotalVoids: Number(va.TotalVoids) || 0,
-                    VoidCount: Number(va.VoidCount) || 0,
-                });
-            }
+      // Merge single-scan VoidsAgg into SalesAgg in O(N)
+      const voidsAggMap = new Map();
+      for (const va of (voidsAggResult.recordset || [])) {
+        const key = granularity !== 'summary' ? `${va.Branch_Code}-${va.Period}` : String(va.Branch_Code);
+        voidsAggMap.set(key, {
+          TotalVoids: Number(va.TotalVoids) || 0,
+          VoidCount: Number(va.VoidCount) || 0,
+        });
+      }
 
-            rawRecords = (result.recordset || [])
-                .filter(r => (Number(r.Total) || 0) > 0)
-                .map(r => {
-                    const key = granularity !== 'summary' ? `${r.Branch_Code}-${r.Period}` : String(r.Branch_Code);
-                    const va = voidsAggMap.get(key);
-                    return {
-                        ...r,
-                        TotalVoids: va ? va.TotalVoids : 0,
-                        VoidCount: va ? va.VoidCount : 0,
-                    };
-                });
-            rawVoidDetails = detailsResult.recordset || [];
-        } catch (queryErr) {
-            throw queryErr;
-        }
+      rawRecords = (result.recordset || [])
+        .filter(r => Math.abs(Number(r.Total) || 0) > 0.0001)
+        .map(r => {
+          const key = granularity !== 'summary' ? `${r.Branch_Code}-${r.Period}` : String(r.Branch_Code);
+          const va = voidsAggMap.get(key);
+          return {
+            ...r,
+            TotalVoids: va ? va.TotalVoids : 0,
+            VoidCount: va ? va.VoidCount : 0,
+          };
+        });
+      rawVoidDetails = detailsResult.recordset || [];
+    } catch (queryErr) {
+      throw queryErr;
+    }
 
     // Map void details by branch (and period if present)
     const voidMap = new Map();
@@ -845,6 +901,10 @@ export class CaravanReportService {
     let totalSalesTax = 0;
     let totalVoids = 0;
     let totalVariance = 0;
+    let totalFood = 0;
+    let totalBeverage = 0;
+    let totalOther = 0;
+    let totalCost = 0;
 
     for (const row of rawRecords) {
       totalSales += Number(row.Total) || 0;
@@ -857,6 +917,12 @@ export class CaravanReportService {
       totalSalesTax += Number(row.SalesTax) || 0;
       totalVoids += Number(row.TotalVoids) || 0;
       totalVariance += Number(row.Variance) || 0;
+      if (secType === 1) {
+        totalFood += Number(row.Food) || 0;
+        totalBeverage += Number(row.Beverage) || 0;
+        totalOther += Number(row.Other) || 0;
+        totalCost += Number(row.Cost) || 0;
+      }
     }
 
     totalSales = Math.round(totalSales * 100) / 100;
@@ -907,14 +973,14 @@ export class CaravanReportService {
         name: r.Name,
         period: r.Period || null,
         cover: itemCover,
-        cash: itemCash,
-        visa: itemVisa,
-        creditLine: itemCL,
-        total: itemTotal,
+        cash: secType === 1 ? Math.round(itemCash * 100) / 100 : itemCash,
+        visa: secType === 1 ? Math.round(itemVisa * 100) / 100 : itemVisa,
+        creditLine: secType === 1 ? Math.round(itemCL * 100) / 100 : itemCL,
+        total: secType === 1 ? Math.round(itemTotal * 100) / 100 : itemTotal,
         netRevenue: Math.round(itemNetRev * 100) / 100,
         serviceCharge: Math.round(itemServ * 100) / 100,
         salesTax: Math.round(itemTax * 100) / 100,
-        grandTotal: itemTotal,
+        grandTotal: secType === 1 ? Math.round(itemTotal * 100) / 100 : itemTotal,
         totalCollected,
         totalVoids: Math.round(itemVoids * 100) / 100,
         voidCount: itemVoidCount,
@@ -924,6 +990,20 @@ export class CaravanReportService {
           totalSales > 0 ? Math.round((itemTotal / totalSales) * 1000) / 10 : 0,
         avgTicket:
           itemCover > 0 ? Math.round((itemTotal / itemCover) * 100) / 100 : 0,
+        ...(secType === 1
+          ? (() => {
+              const rTot = Math.round(itemTotal * 100) / 100;
+              const rFood = Math.round((Number(r.Food) || 0) * 100) / 100;
+              const rBev = Math.round((Number(r.Beverage) || 0) * 100) / 100;
+              const rOther = Math.round((rTot - rFood - rBev) * 100) / 100;
+              return {
+                food: rFood,
+                beverage: rBev,
+                other: rOther,
+                cost: Math.round((Number(r.Cost) || 0) * 100) / 100,
+              };
+            })()
+          : {}),
       };
     });
 
@@ -947,6 +1027,26 @@ export class CaravanReportService {
         totalSalesTax,
         totalVoids,
         totalVariance,
+        ...(secType === 1
+          ? {
+            totalFood: Math.round(totalFood * 100) / 100,
+            totalBeverage: Math.round(totalBeverage * 100) / 100,
+            totalOther: Math.round(totalOther * 100) / 100,
+            totalCost: Math.round(totalCost * 100) / 100,
+            foodPct:
+              totalSales > 0
+                ? Math.round((totalFood / totalSales) * 1000) / 10
+                : 0,
+            beveragePct:
+              totalSales > 0
+                ? Math.round((totalBeverage / totalSales) * 1000) / 10
+                : 0,
+            otherPct:
+              totalSales > 0
+                ? Math.round((totalOther / totalSales) * 1000) / 10
+                : 0,
+          }
+          : {}),
         cashPct:
           totalSales > 0 ? Math.round((totalCash / totalSales) * 1000) / 10 : 0,
         visaPct:
@@ -961,18 +1061,18 @@ export class CaravanReportService {
         topOutlet:
           records.length > 0
             ? {
-                name: records[0].name,
-                total: records[0].total,
-                cover: records[0].cover,
-              }
+              name: records[0].name,
+              total: records[0].total,
+              cover: records[0].cover,
+            }
             : null,
         topCaravan:
           records.length > 0
             ? {
-                name: records[0].name,
-                total: records[0].total,
-                cover: records[0].cover,
-              }
+              name: records[0].name,
+              total: records[0].total,
+              cover: records[0].cover,
+            }
             : null,
       },
       records,

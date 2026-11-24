@@ -554,6 +554,7 @@ export function SectorDashboard({ sector }: SectorDashboardProps) {
                 sectorLabel={sector.label}
                 sectorId={sector.id}
                 sectorTheme={sector.theme}
+                granularity={dash.granularity}
               />
             </div>
 
