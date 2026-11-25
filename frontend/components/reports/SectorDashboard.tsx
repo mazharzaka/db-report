@@ -463,7 +463,11 @@ export function SectorDashboard({ sector }: SectorDashboardProps) {
               </div>
 
               {/* Card 2: Net Sales (الصافي) */}
-              <div className="flex flex-col justify-between rounded-xl border border-emerald-200/80 bg-emerald-50/50 p-5 shadow-sm ring-1 ring-emerald-500/10 backdrop-blur-md transition hover:border-emerald-300 dark:border-emerald-900/40 dark:bg-emerald-950/20 dark:ring-emerald-400/10 border-t-2 border-emerald-500 dark:border-emerald-400">
+              <div className={`flex flex-col justify-between rounded-xl p-5 shadow-sm backdrop-blur-md transition border-t-2 ${
+                sector.type === 6
+                  ? 'border border-slate-200/80 bg-slate-50/50 ring-1 ring-slate-500/10 hover:border-slate-300 dark:border-slate-800 dark:bg-slate-900/40 dark:ring-slate-400/10 border-t-slate-700 dark:border-t-slate-500'
+                  : 'border border-emerald-200/80 bg-emerald-50/50 ring-1 ring-emerald-500/10 hover:border-emerald-300 dark:border-emerald-900/40 dark:bg-emerald-950/20 dark:ring-emerald-400/10 border-t-emerald-500 dark:border-t-emerald-400'
+              }`}>
                 <div className="flex items-start justify-between">
                   <div>
                     <span className="text-sm font-bold text-slate-800 dark:text-zinc-100">
@@ -473,7 +477,11 @@ export function SectorDashboard({ sector }: SectorDashboardProps) {
                       Retail (Total / 1.14)
                     </p>
                   </div>
-                  <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 shadow-2xs">
+                  <div className={`flex h-11 w-11 items-center justify-center rounded-xl shadow-2xs ${
+                    sector.type === 6
+                      ? 'bg-slate-200 text-slate-800 dark:bg-slate-800 dark:text-slate-200'
+                      : 'bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400'
+                  }`}>
                     <Receipt className="h-5 w-5" />
                   </div>
                 </div>
@@ -488,19 +496,29 @@ export function SectorDashboard({ sector }: SectorDashboardProps) {
                       symbolClassName="text-sm opacity-60 font-normal mr-1.5 select-none"
                     />
                   </div>
-                  <span className="rounded-full bg-emerald-100/80 px-2.5 py-0.5 text-xs font-semibold text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">
+                  <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                    sector.type === 6
+                      ? 'bg-slate-200 text-slate-800 dark:bg-slate-800 dark:text-slate-200'
+                      : 'bg-emerald-100/80 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300'
+                  }`}>
                     قبل الضريبة
                   </span>
                 </div>
 
-                <div className="mt-3 flex items-center justify-between border-t border-emerald-100/80 pt-2.5 dark:border-emerald-900/30 text-xs text-slate-500 dark:text-zinc-400">
+                <div className={`mt-3 flex items-center justify-between border-t pt-2.5 text-xs text-slate-500 dark:text-zinc-400 ${
+                  sector.type === 6 ? 'border-slate-200 dark:border-slate-800' : 'border-emerald-100/80 dark:border-emerald-900/30'
+                }`}>
                   <span>صافي الدخل التشغيلي للمبيعات</span>
                   <span className="font-mono tabular-nums">87.7%</span>
                 </div>
               </div>
 
               {/* Card 3: VAT 14% (ضريبة القيمة المضافة) */}
-              <div className="flex flex-col justify-between rounded-xl border border-amber-200/80 bg-amber-50/50 p-5 shadow-sm ring-1 ring-amber-500/10 backdrop-blur-md transition hover:border-amber-300 dark:border-amber-900/40 dark:bg-amber-950/20 dark:ring-amber-400/10 border-t-2 border-amber-500 dark:border-amber-400">
+              <div className={`flex flex-col justify-between rounded-xl p-5 shadow-sm backdrop-blur-md transition border-t-2 ${
+                sector.type === 6
+                  ? 'border border-slate-200/80 bg-slate-50/50 ring-1 ring-slate-500/10 hover:border-slate-300 dark:border-slate-800 dark:bg-slate-900/40 dark:ring-slate-400/10 border-t-slate-700 dark:border-t-slate-500'
+                  : 'border border-amber-200/80 bg-amber-50/50 ring-1 ring-amber-500/10 hover:border-amber-300 dark:border-amber-900/40 dark:bg-amber-950/20 dark:ring-amber-400/10 border-t-amber-500 dark:border-t-amber-400'
+              }`}>
                 <div className="flex items-start justify-between">
                   <div>
                     <span className="text-sm font-bold text-slate-800 dark:text-zinc-100">
@@ -510,7 +528,11 @@ export function SectorDashboard({ sector }: SectorDashboardProps) {
                       Total - Net
                     </p>
                   </div>
-                  <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-500/10 text-amber-600 dark:bg-amber-500/20 dark:text-amber-400 shadow-2xs">
+                  <div className={`flex h-11 w-11 items-center justify-center rounded-xl shadow-2xs ${
+                    sector.type === 6
+                      ? 'bg-slate-200 text-slate-800 dark:bg-slate-800 dark:text-slate-200'
+                      : 'bg-amber-500/10 text-amber-600 dark:bg-amber-500/20 dark:text-amber-400'
+                  }`}>
                     <Percent className="h-5 w-5" />
                   </div>
                 </div>
@@ -525,12 +547,18 @@ export function SectorDashboard({ sector }: SectorDashboardProps) {
                       symbolClassName="text-sm opacity-60 font-normal mr-1.5 select-none"
                     />
                   </div>
-                  <span className="rounded-full bg-amber-100/80 px-2.5 py-0.5 text-xs font-semibold text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
+                  <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                    sector.type === 6
+                      ? 'bg-slate-200 text-slate-800 dark:bg-slate-800 dark:text-slate-200'
+                      : 'bg-amber-100/80 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300'
+                  }`}>
                     14% مستحقة
                   </span>
                 </div>
 
-                <div className="mt-3 flex items-center justify-between border-t border-amber-100/80 pt-2.5 dark:border-amber-900/30 text-xs text-slate-500 dark:text-zinc-400">
+                <div className={`mt-3 flex items-center justify-between border-t pt-2.5 text-xs text-slate-500 dark:text-zinc-400 ${
+                  sector.type === 6 ? 'border-slate-200 dark:border-slate-800' : 'border-amber-100/80 dark:border-amber-900/30'
+                }`}>
                   <span>الضريبة المحصلة للإقرار المالي</span>
                   <span className="font-mono tabular-nums">14%</span>
                 </div>

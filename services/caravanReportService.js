@@ -87,7 +87,7 @@ export class CaravanReportService {
     const secType = Number(sectorType) || 4;
     request.input("sectorType", sql.Int, secType);
 
-    if (secType === 2 || secType === 3) {
+    if (secType === 2 || secType === 3 || secType === 6) {
       const sDate =
         startDate ||
         new Date(Date.now() - 30 * 86400000).toISOString().split("T")[0];
@@ -124,8 +124,10 @@ export class CaravanReportService {
                     FROM [dbo].[Pos_item_post] p WITH (NOLOCK)
                     WHERE p.[Doc_Date] >= @startDate
                       AND p.[Doc_Date] < DATEADD(DAY, 1, @endDate)
-                      AND p.[type] IN (2, 3)
-                      AND p.[Branch_Code] NOT IN (12, 13, 1019, 1020, 1026, 1028)
+                      AND (
+                        (p.[type] IN (2, 3) AND p.[Branch_Code] NOT IN (12, 13, 1019, 1020, 1026, 1028))
+                        OR (p.[type] = 6 OR p.[Branch_Code] IN (118, 120))
+                      )
                       AND (p.[Void_item] = 0 OR p.[Void_item] IS NULL)
                     ${goldenBranchUnion}
                 )
@@ -137,6 +139,7 @@ export class CaravanReportService {
                     SELECT 
                         -- Target Sector Routing:
                         CASE 
+                            WHEN p.[Branch_Type] = 6 OR p.[Branch_Code] IN (118, 120) THEN 6
                             -- Golden (دفتر جولدن / Branch 102 / Group 3) to Sector 2 (Paid Rides):
                             WHEN (p.[Branch_Code] = 102 AND (p.[Group_code] = 3 OR p.[Groupitem_name] LIKE '%gold%')) 
                               OR (p.[Groupitem_name] LIKE '%gold%' AND p.[item_name] LIKE '%جولدن%') THEN 2
@@ -167,6 +170,19 @@ export class CaravanReportService {
 
                         -- Canonical Game Code:
                         CASE 
+                            -- Sector 6 OTH columns:
+                            WHEN p.[Branch_Type] = 6 OR p.[Branch_Code] IN (118, 120) THEN
+                                CASE 
+                                    WHEN p.[item_Code] = '4' OR p.[item_name] LIKE '%ملاكي%' THEN 'parking_private'
+                                    WHEN p.[item_Code] IN ('5', '6', '7') OR p.[item_name] LIKE '%باص%' OR p.[item_name] LIKE '%اتوبيس%' OR p.[item_name] LIKE '%ميكروباص%' THEN 'parking_buses'
+                                    WHEN p.[item_Code] = '8' OR p.[item_name] LIKE '%mask%' THEN 'mask'
+                                    WHEN p.[item_Code] IN ('2', '3') OR p.[item_name] LIKE '%car %' THEN 'g_and_r'
+                                    WHEN p.[item_Code] = '1' OR p.[item_name] LIKE '%خازينة%' OR p.[item_name] LIKE '%امان%' OR p.[item_name] LIKE '%أمان%' OR p.[item_name] LIKE '%lock%' THEN 'locker'
+                                    WHEN p.[item_name] LIKE '%طفطف%' OR p.[item_name] LIKE '%taftaf%' THEN 'taftaf'
+                                    WHEN p.[item_name] LIKE '%مترو%' OR p.[item_name] LIKE '%metro%' THEN 'metro_cash'
+                                    WHEN p.[item_name] LIKE '%تليفون%' OR p.[item_name] LIKE '%telephon%' THEN 'telephon'
+                                    ELSE 'locker'
+                                END
                             -- Golden always Code 'golden'
                             WHEN (p.[Branch_Code] = 102 AND (p.[Group_code] = 3 OR p.[Groupitem_name] LIKE '%gold%')) 
                               OR (p.[Groupitem_name] LIKE '%gold%' AND p.[item_name] LIKE '%جولدن%') THEN 'golden'
@@ -195,6 +211,19 @@ export class CaravanReportService {
 
                         -- Canonical Game Name:
                         CASE 
+                            -- Sector 6 OTH columns:
+                            WHEN p.[Branch_Type] = 6 OR p.[Branch_Code] IN (118, 120) THEN
+                                CASE 
+                                    WHEN p.[item_Code] = '4' OR p.[item_name] LIKE '%ملاكي%' THEN 'Private'
+                                    WHEN p.[item_Code] IN ('5', '6', '7') OR p.[item_name] LIKE '%باص%' OR p.[item_name] LIKE '%اتوبيس%' OR p.[item_name] LIKE '%ميكروباص%' THEN 'Buses'
+                                    WHEN p.[item_Code] = '8' OR p.[item_name] LIKE '%mask%' THEN 'Mask'
+                                    WHEN p.[item_Code] IN ('2', '3') OR p.[item_name] LIKE '%car %' THEN 'G&R'
+                                    WHEN p.[item_Code] = '1' OR p.[item_name] LIKE '%خازينة%' OR p.[item_name] LIKE '%امان%' OR p.[item_name] LIKE '%أمان%' OR p.[item_name] LIKE '%lock%' THEN 'Locker'
+                                    WHEN p.[item_name] LIKE '%طفطف%' OR p.[item_name] LIKE '%taftaf%' THEN 'Taftaf'
+                                    WHEN p.[item_name] LIKE '%مترو%' OR p.[item_name] LIKE '%metro%' THEN 'Cash'
+                                    WHEN p.[item_name] LIKE '%تليفون%' OR p.[item_name] LIKE '%telephon%' THEN 'Telephon'
+                                    ELSE p.[item_name]
+                                END
                             WHEN (p.[Branch_Code] = 102 AND (p.[Group_code] = 3 OR p.[Groupitem_name] LIKE '%gold%')) 
                               OR (p.[Groupitem_name] LIKE '%gold%' AND p.[item_name] LIKE '%جولدن%') THEN N'الذهبية'
                             WHEN p.[Group_code] = 1 OR p.[Groupitem_name] LIKE '%ديسكفر%' THEN N'الديسكفري'
@@ -319,8 +348,10 @@ export class CaravanReportService {
                 FROM [dbo].[Pos_item_post] p WITH (NOLOCK)
                 WHERE p.[Doc_Date] >= @startDate
                   AND p.[Doc_Date] < DATEADD(DAY, 1, @endDate)
-                  AND p.[type] IN (2, 3)
-                  AND p.[Branch_Code] NOT IN (12, 13, 1019, 1020, 1026, 1028)
+                  AND (
+                    (p.[type] IN (2, 3) AND p.[Branch_Code] NOT IN (12, 13, 1019, 1020, 1026, 1028))
+                    OR (p.[type] = 6 OR p.[Branch_Code] IN (118, 120))
+                  )
                   AND (p.[Void_item] = 0 OR p.[Void_item] IS NULL)
                 ${goldenItemsUnion}
             )
@@ -336,6 +367,7 @@ export class CaravanReportService {
                 SELECT 
                     -- Target Sector Routing:
                     CASE 
+                        WHEN p.[Branch_Type] = 6 OR p.[Branch_Code] IN (118, 120) THEN 6
                         -- Golden (دفتر جولدن / Branch 102 / Group 3) to Sector 2 (Paid Rides):
                         WHEN (p.[Branch_Code] = 102 AND (p.[Group_code] = 3 OR p.[Groupitem_name] LIKE '%gold%')) 
                           OR (p.[Groupitem_name] LIKE '%gold%' AND p.[item_name] LIKE '%جولدن%') THEN 2
@@ -366,6 +398,19 @@ export class CaravanReportService {
 
                     -- Canonical Game Code:
                     CASE 
+                        -- Sector 6 OTH columns:
+                        WHEN p.[Branch_Type] = 6 OR p.[Branch_Code] IN (118, 120) THEN
+                            CASE 
+                                WHEN p.[item_Code] = '4' OR p.[item_name] LIKE '%ملاكي%' THEN 'parking_private'
+                                WHEN p.[item_Code] IN ('5', '6', '7') OR p.[item_name] LIKE '%باص%' OR p.[item_name] LIKE '%اتوبيس%' OR p.[item_name] LIKE '%ميكروباص%' THEN 'parking_buses'
+                                WHEN p.[item_Code] = '8' OR p.[item_name] LIKE '%mask%' THEN 'mask'
+                                WHEN p.[item_Code] IN ('2', '3') OR p.[item_name] LIKE '%car %' THEN 'g_and_r'
+                                WHEN p.[item_Code] = '1' OR p.[item_name] LIKE '%خازينة%' OR p.[item_name] LIKE '%امان%' OR p.[item_name] LIKE '%أمان%' OR p.[item_name] LIKE '%lock%' THEN 'locker'
+                                WHEN p.[item_name] LIKE '%طفطف%' OR p.[item_name] LIKE '%taftaf%' THEN 'taftaf'
+                                WHEN p.[item_name] LIKE '%مترو%' OR p.[item_name] LIKE '%metro%' THEN 'metro_cash'
+                                WHEN p.[item_name] LIKE '%تليفون%' OR p.[item_name] LIKE '%telephon%' THEN 'telephon'
+                                ELSE 'locker'
+                            END
                         -- Golden always Code 'golden'
                         WHEN (p.[Branch_Code] = 102 AND (p.[Group_code] = 3 OR p.[Groupitem_name] LIKE '%gold%')) 
                           OR (p.[Groupitem_name] LIKE '%gold%' AND p.[item_name] LIKE '%جولدن%') THEN 'golden'
@@ -394,6 +439,19 @@ export class CaravanReportService {
 
                     -- Canonical Game Name:
                     CASE 
+                        -- Sector 6 OTH columns:
+                        WHEN p.[Branch_Type] = 6 OR p.[Branch_Code] IN (118, 120) THEN
+                            CASE 
+                                WHEN p.[item_Code] = '4' OR p.[item_name] LIKE '%ملاكي%' THEN 'Private'
+                                WHEN p.[item_Code] IN ('5', '6', '7') OR p.[item_name] LIKE '%باص%' OR p.[item_name] LIKE '%اتوبيس%' OR p.[item_name] LIKE '%ميكروباص%' THEN 'Buses'
+                                WHEN p.[item_Code] = '8' OR p.[item_name] LIKE '%mask%' THEN 'Mask'
+                                WHEN p.[item_Code] IN ('2', '3') OR p.[item_name] LIKE '%car %' THEN 'G&R'
+                                WHEN p.[item_Code] = '1' OR p.[item_name] LIKE '%خازينة%' OR p.[item_name] LIKE '%امان%' OR p.[item_name] LIKE '%أمان%' OR p.[item_name] LIKE '%lock%' THEN 'Locker'
+                                WHEN p.[item_name] LIKE '%طفطف%' OR p.[item_name] LIKE '%taftaf%' THEN 'Taftaf'
+                                WHEN p.[item_name] LIKE '%مترو%' OR p.[item_name] LIKE '%metro%' THEN 'Cash'
+                                WHEN p.[item_name] LIKE '%تليفون%' OR p.[item_name] LIKE '%telephon%' THEN 'Telephon'
+                                ELSE p.[item_name]
+                            END
                         WHEN (p.[Branch_Code] = 102 AND (p.[Group_code] = 3 OR p.[Groupitem_name] LIKE '%gold%')) 
                           OR (p.[Groupitem_name] LIKE '%gold%' AND p.[item_name] LIKE '%جولدن%') THEN N'الذهبية'
                         WHEN p.[Group_code] = 1 OR p.[Groupitem_name] LIKE '%ديسكفر%' THEN N'الديسكفري'
@@ -595,8 +653,8 @@ export class CaravanReportService {
   }) {
     const secType = Number(sectorType) || 4;
 
-    // قطاعات الألعاب (Type = 2) والفيديو جيم (Type = 3): تجميع على مستوى الأصناف/الألعاب
-    if (secType === 2 || secType === 3) {
+    // قطاعات الألعاب (Type = 2) والفيديو جيم (Type = 3) والأمانات والانتظار (Type = 6): تجميع على مستوى الأصناف
+    if (secType === 2 || secType === 3 || secType === 6) {
       return this.getItemLevelReportData({
         startDate,
         endDate,

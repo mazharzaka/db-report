@@ -581,6 +581,18 @@ export function CaravanFiltersToolbar({
                 onChange={(val) => onRideStatusFilterChange?.(val as 'active' | 'inactive' | 'all')}
               />
             )}
+
+            {sectorType === 6 && (
+              <Segmented
+                options={[
+                  { id: 'all', label: 'الكل' },
+                  { id: 'active', label: 'النشطة' },
+                ]}
+                value={rideStatusFilter === 'active' ? 'active' : 'all'}
+                onChange={(val) => onRideStatusFilterChange?.(val as 'active' | 'inactive' | 'all')}
+                activeClassName="bg-[#1e293b] text-white shadow-xs font-bold"
+              />
+            )}
           </div>
 
           {/* Granularity Switcher */}
@@ -665,6 +677,18 @@ export function CaravanFiltersToolbar({
             selectedBranches={selectedBranches}
             onChange={onSelectedBranchesChange}
           />
+
+          {sectorType === 6 && (
+            <Segmented
+              options={[
+                { id: 'all', label: 'الكل' },
+                { id: 'active', label: 'النشطة' },
+              ]}
+              value={rideStatusFilter === 'active' ? 'active' : 'all'}
+              onChange={(val) => onRideStatusFilterChange?.(val as 'active' | 'inactive' | 'all')}
+              activeClassName="bg-[#1e293b] text-white shadow-xs font-bold"
+            />
+          )}
         </div>
       </div>
 
