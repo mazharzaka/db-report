@@ -100,6 +100,13 @@ async function handleCaravanReport(req, res) {
     }
     branches = branches.map((b) => b.trim()).filter(Boolean);
 
+    const bypassCache =
+      queryParams.refresh === "1" ||
+      queryParams.refresh === "true" ||
+      queryParams.bypassCache === "1" ||
+      queryParams.bypassCache === "true" ||
+      queryParams.bypassCache === true;
+
     const report = await CaravanReportService.getReportData({
       startDate: startDate ? String(startDate).trim() : getYesterdayDateString(),
       endDate: endDate
@@ -109,6 +116,7 @@ async function handleCaravanReport(req, res) {
       granularity: (granularity || "summary").toLowerCase(),
       sortBy: (sort || "total_desc").toLowerCase(),
       sectorType: secType,
+      bypassCache,
     });
 
     res.json({

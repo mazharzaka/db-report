@@ -988,20 +988,8 @@ export const DailyRevenueMatrix = React.memo(function DailyRevenueMatrix({
       }
 
       const branchValues = dateMap.get(dateKey)!;
-      const currentVal = branchValues.get(branchKey) || {
-        cash: 0,
-        visa: 0,
-        cl: 0,
-        rawTotal: 0,
-      };
-      branchValues.set(branchKey, {
-        cash: currentVal.cash + cash,
-        visa: currentVal.visa + visa,
-        cl: currentVal.cl + cl,
-        rawTotal: currentVal.rawTotal + rawTotal,
-      });
 
-      // Track OTH metrics when sectorType === 6
+      // Track OTH metrics when sectorType === 6 (single-pass mapping — NEVER double-add with branchKey)
       if (sectorType === 6) {
         let mappedAny = false;
         OTH_SECTOR_COLUMNS.forEach((col) => {
@@ -1011,7 +999,7 @@ export const DailyRevenueMatrix = React.memo(function DailyRevenueMatrix({
           } else if (typeof (r as any)[col.id] === 'number') {
             colVal = (r as any)[col.id];
           }
-          if (colVal > 0) {
+          if (Math.abs(colVal) > 0.0001) {
             mappedAny = true;
             const cur = branchValues.get(col.id) || { cash: 0, visa: 0, cl: 0, rawTotal: 0 };
             branchValues.set(col.id, {
@@ -1029,20 +1017,26 @@ export const DailyRevenueMatrix = React.memo(function DailyRevenueMatrix({
           const bName = String(r.name || '').trim().toLowerCase();
 
           let targetColId = '';
-          if (bCode === '120' || bName.includes('parking') || bName.includes('بارك') || bCode === 'parking_private') {
+          if (OTH_SECTOR_COLUMNS.some((c) => c.id === bCode) || bCode === 'unmapped') {
+            targetColId = bCode;
+          } else if (bCode === '120' || bName.includes('parking') || bName.includes('بارك')) {
             targetColId = 'parking_private';
-          } else if (bCode === 'parking_buses' || bName.includes('buses') || bName.includes('باص')) {
+          } else if (bName.includes('buses') || bName.includes('باص')) {
             targetColId = 'parking_buses';
           } else if (bCode.includes('mask') || bName.includes('ماسك') || bName.includes('mask')) {
             targetColId = 'mask';
-          } else if (bCode === '118' || bName.includes('deposit') || bName.includes('أمانات') || bName.includes('امانات') || bCode === 'locker') {
+          } else if (bCode === '118' || bName.includes('أمانات') || bName.includes('امانات') || bName.includes('locker')) {
             targetColId = 'locker';
+          } else if (bName.includes('deposit') || bName.includes('تأمين') || bName.includes('تامين')) {
+            targetColId = 'g_deposit';
           } else if (bCode.includes('telephon') || bName.includes('تليفون')) {
             targetColId = 'telephon';
-          } else if (bCode === 'g_and_r' || bName.includes('g&r')) {
+          } else if (bName.includes('net coffee') || bName.includes('نت كافيه')) {
+            targetColId = 'net_coffee';
+          } else if (bName.includes('g&r')) {
             targetColId = 'g_and_r';
-          } else if (OTH_SECTOR_COLUMNS.some((c) => c.id === bCode)) {
-            targetColId = bCode;
+          } else {
+            targetColId = 'unmapped';
           }
 
           if (targetColId) {
@@ -1053,9 +1047,25 @@ export const DailyRevenueMatrix = React.memo(function DailyRevenueMatrix({
               cl: cur.cl + cl,
               rawTotal: cur.rawTotal + itemBaseTotal,
             });
-            branchTotals.set(targetColId, (branchTotals.get(targetColId) || 0) + itemBaseTotal);
+            // Avoid double-incrementing branchTotals when branchKey already equals targetColId
+            if (targetColId !== branchKey) {
+              branchTotals.set(targetColId, (branchTotals.get(targetColId) || 0) + itemBaseTotal);
+            }
           }
         }
+      } else {
+        const currentVal = branchValues.get(branchKey) || {
+          cash: 0,
+          visa: 0,
+          cl: 0,
+          rawTotal: 0,
+        };
+        branchValues.set(branchKey, {
+          cash: currentVal.cash + cash,
+          visa: currentVal.visa + visa,
+          cl: currentVal.cl + cl,
+          rawTotal: currentVal.rawTotal + rawTotal,
+        });
       }
     });
 
@@ -1124,6 +1134,9 @@ export const DailyRevenueMatrix = React.memo(function DailyRevenueMatrix({
         branchCode: c.id,
         name: c.header,
       }));
+      if ((branchTotals.get('unmapped') || 0) > 0.0001) {
+        cols.push({ branchCode: 'unmapped', name: 'Unmapped' });
+      }
       if (effectiveRideStatusFilter === 'active') {
         cols = cols.filter((c) => (branchTotals.get(c.branchCode) || 0) > 0.0001);
       }
@@ -1213,33 +1226,36 @@ export const DailyRevenueMatrix = React.memo(function DailyRevenueMatrix({
         rawDailyCoupons = dPay.cl;
       }
 
-      // Sector 6: calculate the 5 reconciliation columns
+      // Sector 6: calculate the 5 reconciliation columns using RAW un-transformed amounts
+      // (avoiding double applyCalcMode when calcMode is 'net' or 'vat', and honoring POS_Post Cash/Visa/C.L)
       if (sectorType === 6) {
-        const valOf = (k: string) => values[k] || 0;
+        const rawValOf = (k: string) => {
+          const it = branchValues?.get(k);
+          if (!it) return 0;
+          const sumPay = it.cash + it.visa + it.cl;
+          return Math.abs(sumPay) > 0.0001 ? sumPay : it.rawTotal;
+        };
 
-        // Cash = Parking (Private + Buses) + Mask + Telephon + G&R + Net Coffee + Locker
-        rawDailyCash =
-          valOf('parking_private') +
-          valOf('parking_buses') +
-          valOf('mask') +
-          valOf('telephon') +
-          valOf('g_and_r') +
-          valOf('net_coffee') +
-          valOf('locker');
+        if (datePaymentMap.has(date)) {
+          const dPay = datePaymentMap.get(date)!;
+          rawDailyCash = dPay.cash;
+          rawDailyVisa = dPay.visa;
+          rawDailyCoupons = dPay.cl;
+        } else {
+          rawDailyCash =
+            rawValOf('parking_private') +
+            rawValOf('parking_buses') +
+            rawValOf('mask') +
+            rawValOf('telephon') +
+            rawValOf('g_and_r') +
+            rawValOf('net_coffee') +
+            rawValOf('locker') +
+            rawValOf('unmapped');
+          rawDailyCoupons = rawValOf('tel_accrual') + rawValOf('sh_ov');
+          rawDailyVisa = 0;
+        }
 
-        // C.L = Tel.Accrual + Sh_Ov
-        rawDailyCoupons =
-          valOf('tel_accrual') +
-          valOf('sh_ov');
-
-        // G.Deposit = G.Deposit
-        const rawDailyGDeposit = valOf('g_deposit');
-
-        // Visa = Visa
-        rawDailyVisa = valOf('visa');
-
-        // TOTAL = Cash + C.L + G.Deposit + Visa
-        rawDailyTotal = rawDailyCash + rawDailyCoupons + rawDailyGDeposit + rawDailyVisa;
+        // rawDailyTotal is already the exact sum of all OTH columns for this date
       }
 
       // Apply calcMode to daily aggregate columns
