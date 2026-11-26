@@ -97,12 +97,10 @@ export const PAID_RIDES_DISPLAY_NAMES: Record<string, string> = {
   'golden': 'Golden',
   'topspin': 'Top Spin',
   '8': 'Go Kart',
-  'moto': 'Moto',
   '4': '7 D',
   '1': 'Discovery',
   '113': 'Horse',
   '6': 'Tornado',
-  'camel': 'Camel',
   '115': 'Funny Slides',
   'fire': 'Fire Brigade',
   '2': 'Super Spin',
@@ -116,23 +114,19 @@ export const PAID_RIDES_SECTOR_ORDER: string[] = [
   'golden',    // 4. Golden (الذهبية / VIP / الباقات) — Active
   'topspin',   // 5. Top Spin (التوب سبين) — Inactive
   '8',         // 6. Go Kart (السيارات) — Active
-  'moto',      // 7. Moto (الموتوسيكلات) — Inactive
-  '4',         // 8. 7 D (7D) — Active
-  '1',         // 9. Discovery (الديسكفري) — Active
-  '113',       // 10. Horse (الخيل — 113) — Active
-  '6',         // 11. Tornado (التورنيدو) — Active
-  'camel',     // 12. Camel (الجمال) — Inactive
-  '115',       // 13. Funny Slides (شلال المرح — 115) — Active
-  'fire',      // 14. Fire Brigade (المطافي) — Inactive
-  '2',         // 15. Super Spin (السوبر سبين) — Active
-  '14',        // 16. Laser zone (الليزر زون) — Active
+  '4',         // 7. 7 D (7D) — Active
+  '1',         // 8. Discovery (الديسكفري) — Active
+  '113',       // 9. Horse (الخيل — 113) — Active
+  '6',         // 10. Tornado (التورنيدو) — Active
+  '115',       // 11. Funny Slides (شلال المرح — 115) — Active
+  'fire',      // 12. Fire Brigade (المطافي) — Inactive
+  '2',         // 13. Super Spin (السوبر سبين) — Active
+  '14',        // 14. Laser zone (الليزر زون) — Active
 ];
 
 export const PAID_RIDES_INACTIVE_CODES = new Set([
   'simulator',
   'topspin',
-  'moto',
-  'camel',
   'fire',
 ]);
 
@@ -336,6 +330,152 @@ const MatrixTableRow = React.memo(function MatrixTableRow({
     );
   }
 
+  if (sectorType === 5) {
+    const r = row as any;
+    const formatCell = (val: number, isCurrency = true) => {
+      const hasVal = Math.abs(val) > 0.0001;
+      return (
+        <span className={hasVal ? 'text-slate-900 dark:text-white font-bold' : 'text-slate-400 dark:text-zinc-600 font-normal opacity-40'}>
+          {hasVal ? (isCurrency ? MONEY_FORMATTER.format(val) : val.toLocaleString()) : (isCurrency ? '0.00' : '0')}
+        </span>
+      );
+    };
+
+    return (
+      <tr className={`group transition-colors duration-150 ${hoverRowClass}`}>
+        {/* Date Column (Sticky Right) */}
+        <td className={`sticky right-0 z-10 px-4 py-3.5 text-center font-bold text-sm lg:text-base text-slate-900 border-l border-slate-200 bg-slate-50/95 ${hoverCellClass} dark:border-zinc-800 dark:bg-zinc-900/95 dark:text-zinc-100 transition-colors`}>
+          <div className="flex flex-col items-center">
+            <span>{row.date}</span>
+            {r.hasAdjustment && (
+              <span className="text-[10px] text-cyan-600 dark:text-cyan-400 font-sans font-bold" title={r.adjustmentNotes}>
+                معدّل
+              </span>
+            )}
+          </div>
+        </td>
+
+        {/* Silver */}
+        <td className={`px-3 py-3 text-center font-mono text-sm border-l border-slate-200/60 dark:border-zinc-800/40 ${hoverCellClass}`}>
+          {formatCell(r.silverRev || 0)}
+        </td>
+        <td className={`px-2 py-3 text-center font-mono text-xs border-l border-slate-200/60 dark:border-zinc-800/40 ${hoverCellClass}`}>
+          {formatCell(r.silverSold || 0, false)}
+        </td>
+
+        {/* Golden */}
+        <td className={`px-3 py-3 text-center font-mono text-sm border-l border-slate-200/60 dark:border-zinc-800/40 ${hoverCellClass}`}>
+          {formatCell(r.goldenRev || 0)}
+        </td>
+        <td className={`px-2 py-3 text-center font-mono text-xs border-l border-slate-200/60 dark:border-zinc-800/40 ${hoverCellClass}`}>
+          {formatCell(r.goldenSold || 0, false)}
+        </td>
+
+        {/* Silver Combo */}
+        <td className={`px-3 py-3 text-center font-mono text-sm border-l border-slate-200/60 dark:border-zinc-800/40 ${hoverCellClass}`}>
+          {formatCell(r.silverComboRev || 0)}
+        </td>
+        <td className={`px-2 py-3 text-center font-mono text-xs border-l border-slate-200/60 dark:border-zinc-800/40 ${hoverCellClass}`}>
+          {formatCell(r.silverComboSold || 0, false)}
+        </td>
+
+        {/* Family */}
+        <td className={`px-3 py-3 text-center font-mono text-sm border-l border-slate-200/60 dark:border-zinc-800/40 ${hoverCellClass}`}>
+          {formatCell(r.familyRev || 0)}
+        </td>
+        <td className={`px-2 py-3 text-center font-mono text-xs border-l border-slate-200/60 dark:border-zinc-800/40 ${hoverCellClass}`}>
+          {formatCell(r.familySold || 0, false)}
+        </td>
+
+        {/* S&M */}
+        <td className={`px-3 py-3 text-center font-mono text-sm border-l border-slate-200/60 dark:border-zinc-800/40 ${hoverCellClass}`}>
+          {formatCell(r.smRev || 0)}
+        </td>
+        <td className={`px-2 py-3 text-center font-mono text-xs border-l border-slate-200/60 dark:border-zinc-800/40 ${hoverCellClass}`}>
+          {formatCell(r.smSold || 0, false)}
+        </td>
+        <td className={`px-2 py-3 text-center font-mono text-xs border-l border-slate-200/60 dark:border-zinc-800/40 ${hoverCellClass} text-emerald-600 dark:text-emerald-400 font-bold`}>
+          {formatCell(r.smFree || 0, false)}
+        </td>
+
+        {/* Promotion */}
+        <td className={`px-3 py-3 text-center font-mono text-sm border-l border-slate-200/60 dark:border-zinc-800/40 ${hoverCellClass}`}>
+          {formatCell(r.promoRev || 0)}
+        </td>
+        <td className={`px-2 py-3 text-center font-mono text-xs border-l border-slate-200/60 dark:border-zinc-800/40 ${hoverCellClass}`}>
+          {formatCell(r.promoSold || 0, false)}
+        </td>
+
+        {/* B.G Staff */}
+        <td className={`px-3 py-3 text-center font-mono text-sm border-l border-slate-200/60 dark:border-zinc-800/40 ${hoverCellClass}`}>
+          {formatCell(r.bgRev || 0)}
+        </td>
+        <td className={`px-2 py-3 text-center font-mono text-xs border-l border-slate-200/60 dark:border-zinc-800/40 ${hoverCellClass}`}>
+          {formatCell(r.bgVouchers || (r.bgRev > 0 ? 1 : 0), false)}
+        </td>
+
+        {/* TOTAL REV */}
+        <td className={`px-4 py-3.5 text-center font-black text-base tabular-nums border-l border-slate-200/60 dark:border-zinc-800/40 ${totalRevColClass} ${hoverCellClass}`}>
+          <Money value={r.totalTicketRev || 0} />
+        </td>
+
+        {/* TOTAL SOLD */}
+        <td className={`px-3 py-3.5 text-center font-black text-sm tabular-nums border-l border-slate-200/60 dark:border-zinc-800/40 ${hoverCellClass} text-slate-900 dark:text-white`}>
+          {(r.totalTicketSold || 0).toLocaleString()}
+        </td>
+
+        {/* TOTAL FREE */}
+        <td className={`px-3 py-3.5 text-center font-black text-sm tabular-nums border-l border-slate-200/60 dark:border-zinc-800/40 ${hoverCellClass} text-emerald-600 dark:text-emerald-400`}>
+          {(r.totalFree || 0).toLocaleString()}
+        </td>
+
+        {/* G.R.R */}
+        <td className={`px-4 py-3.5 text-center font-black text-base tabular-nums border-l border-slate-200/60 dark:border-zinc-800/40 ${hoverCellClass} text-cyan-600 dark:text-cyan-400`}>
+          <Money value={r.grr || 0} />
+        </td>
+
+        {/* Payments: Cash, Visa, C/L */}
+        <td className={`px-3 py-3 text-center font-mono text-sm border-l border-slate-200/60 dark:border-zinc-800/40 ${hoverCellClass}`}>
+          {formatCell(r.cash || 0)}
+        </td>
+        <td className={`px-3 py-3 text-center font-mono text-sm border-l border-slate-200/60 dark:border-zinc-800/40 ${hoverCellClass}`}>
+          {formatCell(r.visa || 0)}
+        </td>
+        <td className={`px-3 py-3 text-center font-mono text-sm border-l border-slate-200/60 dark:border-zinc-800/40 ${hoverCellClass}`}>
+          {formatCell(r.cl || 0)}
+        </td>
+
+        {/* Actual Taxes */}
+        <td className={`px-3 py-3 text-center font-mono text-xs border-l border-slate-200/60 dark:border-zinc-800/40 ${hoverCellClass}`}>
+          {formatCell(r.entranceGross || 0)}
+        </td>
+        <td className={`px-3 py-3 text-center font-mono text-xs border-l border-slate-200/60 dark:border-zinc-800/40 ${hoverCellClass}`}>
+          {formatCell(r.theaterGross || 0)}
+        </td>
+        <td className={`px-3 py-3 text-center font-mono text-xs border-l border-slate-200/60 dark:border-zinc-800/40 ${hoverCellClass}`}>
+          {formatCell(r.taftafGross || 0)}
+        </td>
+        <td className={`px-3 py-3 text-center font-mono text-xs border-l border-slate-200/60 dark:border-zinc-800/40 ${hoverCellClass} text-amber-500 font-bold`}>
+          {formatCell(r.totalVat || 0)}
+        </td>
+        <td className={`px-3 py-3 text-center font-mono text-sm border-l border-slate-200/60 dark:border-zinc-800/40 ${hoverCellClass} font-bold`}>
+          {formatCell(r.netRevenue || 0)}
+        </td>
+
+        {/* Accounting Standard (53.33 / 26.67 / 20.00) */}
+        <td className={`px-3 py-3 text-center font-mono text-xs border-l border-slate-200/60 dark:border-zinc-800/40 ${hoverCellClass}`}>
+          {formatCell(r.stdEntranceGross || 0)}
+        </td>
+        <td className={`px-3 py-3 text-center font-mono text-xs border-l border-slate-200/60 dark:border-zinc-800/40 ${hoverCellClass}`}>
+          {formatCell(r.stdTheaterGross || 0)}
+        </td>
+        <td className={`px-3 py-3 text-center font-mono text-xs ${hoverCellClass}`}>
+          {formatCell(r.stdTaftafGross || 0)}
+        </td>
+      </tr>
+    );
+  }
+
   if (sectorType === 6) {
     return (
       <tr className={`group transition-colors duration-150 ${hoverRowClass}`}>
@@ -352,10 +492,10 @@ const MatrixTableRow = React.memo(function MatrixTableRow({
             <td
               key={col.branchCode}
               className={`px-3 py-3.5 text-center font-mono text-sm tabular-nums border-l border-slate-200/60 dark:border-zinc-800/40 ${hoverCellClass} ${hasVal
-                  ? val < 0
-                    ? 'text-rose-600 dark:text-rose-400 font-bold'
-                    : 'text-slate-900 dark:text-white font-bold'
-                  : 'text-slate-400 dark:text-zinc-600 font-normal opacity-40'
+                ? val < 0
+                  ? 'text-rose-600 dark:text-rose-400 font-bold'
+                  : 'text-slate-900 dark:text-white font-bold'
+                : 'text-slate-400 dark:text-zinc-600 font-normal opacity-40'
                 }`}
             >
               {hasVal ? MONEY_FORMATTER.format(val) : <span className="opacity-40 font-normal">0.00</span>}
@@ -392,60 +532,6 @@ const MatrixTableRow = React.memo(function MatrixTableRow({
 
       {/* Outlet / Game Values */}
       {columns.map((col) => {
-        if (isTwoRowHeader && col.branchCode === 'golden') {
-          const sGolden = row.values['golden_sgolden'] || 0;
-          const platinum = row.values['golden_platinum'] || 0;
-          const diamond = row.values['golden_diamond'] || 0;
-          const vip = row.values['golden_vip'] || 0;
-          const total = row.values['golden'] || (sGolden + platinum + diamond + vip);
-          return (
-            <React.Fragment key={col.branchCode}>
-              <td className={`px-2.5 py-3.5 text-center font-mono text-sm tabular-nums border-l border-slate-200/60 dark:border-zinc-800/40 ${hoverCellClass} ${sGolden > 0 ? 'text-slate-900 dark:text-white font-bold' : 'text-slate-400 dark:text-zinc-600 font-normal opacity-40'}`}>
-                {sGolden > 0 ? MONEY_FORMATTER.format(sGolden) : <span className="opacity-40 font-normal">0.00</span>}
-              </td>
-              <td className={`px-2.5 py-3.5 text-center font-mono text-sm tabular-nums border-l border-slate-200/60 dark:border-zinc-800/40 ${hoverCellClass} ${platinum > 0 ? 'text-slate-900 dark:text-white font-bold' : 'text-slate-400 dark:text-zinc-600 font-normal opacity-40'}`}>
-                {platinum > 0 ? MONEY_FORMATTER.format(platinum) : <span className="opacity-40 font-normal">0.00</span>}
-              </td>
-              <td className={`px-2.5 py-3.5 text-center font-mono text-sm tabular-nums border-l border-slate-200/60 dark:border-zinc-800/40 ${hoverCellClass} ${diamond > 0 ? 'text-slate-900 dark:text-white font-bold' : 'text-slate-400 dark:text-zinc-600 font-normal opacity-40'}`}>
-                {diamond > 0 ? MONEY_FORMATTER.format(diamond) : <span className="opacity-40 font-normal">0.00</span>}
-              </td>
-              <td className={`px-2.5 py-3.5 text-center font-mono text-sm tabular-nums border-l border-slate-200/60 dark:border-zinc-800/40 ${hoverCellClass} ${vip > 0 ? 'text-slate-900 dark:text-white font-bold' : 'text-slate-400 dark:text-zinc-600 font-normal opacity-40'}`}>
-                {vip > 0 ? MONEY_FORMATTER.format(vip) : <span className="opacity-40 font-normal">0.00</span>}
-              </td>
-              <td className={`px-3 py-3.5 text-left font-bold text-base lg:text-lg tabular-nums border-l border-slate-200/60 dark:border-zinc-800/40 ${hoverCellClass} ${total > 0 ? 'text-slate-900 dark:text-white font-black' : 'text-slate-400 dark:text-zinc-600 font-normal opacity-40'}`}>
-                {total > 0 ? MONEY_FORMATTER.format(total) : <span className="opacity-40 font-normal">—</span>}
-              </td>
-            </React.Fragment>
-          );
-        }
-
-        if (isTwoRowHeader && col.branchCode === '4') {
-          const cash = row.values['4_cash'] || 0;
-          const platinum = row.values['4_platinum'] || 0;
-          const diamond = row.values['4_diamond'] || 0;
-          const visa = row.values['4_visa'] || 0;
-          const total = row.values['4'] || (cash + platinum + diamond + visa);
-          return (
-            <React.Fragment key={col.branchCode}>
-              <td className={`px-2.5 py-3.5 text-center font-mono text-sm tabular-nums border-l border-slate-200/60 dark:border-zinc-800/40 ${hoverCellClass} ${cash > 0 ? 'text-slate-900 dark:text-white font-bold' : 'text-slate-400 dark:text-zinc-600 font-normal opacity-40'}`}>
-                {cash > 0 ? MONEY_FORMATTER.format(cash) : <span className="opacity-40 font-normal">0.00</span>}
-              </td>
-              <td className={`px-2.5 py-3.5 text-center font-mono text-sm tabular-nums border-l border-slate-200/60 dark:border-zinc-800/40 ${hoverCellClass} ${platinum > 0 ? 'text-slate-900 dark:text-white font-bold' : 'text-slate-400 dark:text-zinc-600 font-normal opacity-40'}`}>
-                {platinum > 0 ? MONEY_FORMATTER.format(platinum) : <span className="opacity-40 font-normal">0.00</span>}
-              </td>
-              <td className={`px-2.5 py-3.5 text-center font-mono text-sm tabular-nums border-l border-slate-200/60 dark:border-zinc-800/40 ${hoverCellClass} ${diamond > 0 ? 'text-slate-900 dark:text-white font-bold' : 'text-slate-400 dark:text-zinc-600 font-normal opacity-40'}`}>
-                {diamond > 0 ? MONEY_FORMATTER.format(diamond) : <span className="opacity-40 font-normal">0.00</span>}
-              </td>
-              <td className={`px-2.5 py-3.5 text-center font-mono text-sm tabular-nums border-l border-slate-200/60 dark:border-zinc-800/40 ${hoverCellClass} ${visa > 0 ? 'text-slate-900 dark:text-white font-bold' : 'text-slate-400 dark:text-zinc-600 font-normal opacity-40'}`}>
-                {visa > 0 ? MONEY_FORMATTER.format(visa) : <span className="opacity-40 font-normal">0.00</span>}
-              </td>
-              <td className={`px-3 py-3.5 text-left font-bold text-base lg:text-lg tabular-nums border-l border-slate-200/60 dark:border-zinc-800/40 ${hoverCellClass} ${total > 0 ? 'text-slate-900 dark:text-white font-black' : 'text-slate-400 dark:text-zinc-600 font-normal opacity-40'}`}>
-                {total > 0 ? MONEY_FORMATTER.format(total) : <span className="opacity-40 font-normal">—</span>}
-              </td>
-            </React.Fragment>
-          );
-        }
-
         const val = row.values[col.branchCode] || 0;
         const hasValue = Math.abs(val) > 0.0001;
         return (
@@ -910,6 +996,16 @@ export const DailyRevenueMatrix = React.memo(function DailyRevenueMatrix({
 
   // Stage 1: Raw Pivot & Grouping (Runs ONLY when raw rows change)
   const aggregatedData = useMemo(() => {
+    if (sectorType === 5) {
+      return {
+        cols: [],
+        dateMap: new Map(),
+        datePaymentMap: new Map(),
+        dateFbMap: new Map(),
+        rawDates: (rows as any[]).map((r) => r.date || r.period),
+      };
+    }
+
     const colMap = new Map<string, string>();
     const branchTotals = new Map<string, number>();
     const dateMap = new Map<
@@ -928,13 +1024,43 @@ export const DailyRevenueMatrix = React.memo(function DailyRevenueMatrix({
     rows.forEach((r) => {
       const rawDate = 'date' in r && r.date ? r.date : r.period;
       const dateKey = (rawDate || 'غير محدد').trim();
-      const branchKey = String(r.branchCode || '').trim();
-      const branchName =
+      let branchKey = String(r.branchCode || '').trim();
+      let branchName =
         sectorType === 3
           ? VGAMES_DISPLAY_NAMES[branchKey] || r.name || `لعبة ${branchKey}`
           : sectorType === 2
             ? PAID_RIDES_DISPLAY_NAMES[branchKey] || r.name || `لعبة ${branchKey}`
             : CARAVAN_DISPLAY_NAMES[branchKey] || r.name || `منفذ ${branchKey}`;
+
+      if (sectorType === 6) {
+        const bCode = branchKey.toLowerCase();
+        const bName = String(r.name || '').trim().toLowerCase();
+
+        if (bCode === '120' || bCode === 'parking_private' || bName.includes('ملاكي') || (bName.includes('parking') && !bName.includes('bus') && !bName.includes('باص'))) {
+          branchKey = 'parking_private';
+        } else if (bCode === 'parking_buses' || bName.includes('buses') || bName.includes('باص') || bName.includes('اتوبيس') || bName.includes('ميكروباص')) {
+          branchKey = 'parking_buses';
+        } else if (bCode === 'mask' || bCode.includes('mask') || bName.includes('ماسك')) {
+          branchKey = 'mask';
+        } else if (bCode === '118' || bCode === 'locker' || bName.includes('deposit') || bName.includes('أمانات') || bName.includes('امانات') || bName.includes('خازين') || bName.includes('lock')) {
+          branchKey = 'locker';
+        } else if (bCode === 'g_and_r' || bCode.includes('g_and_r') || bName.includes('g&r') || bName.includes('car ')) {
+          branchKey = 'g_and_r';
+        } else if (bCode === 'taftaf' || bName.includes('طفطف') || bName.includes('taftaf')) {
+          branchKey = 'taftaf';
+        } else if (bCode === 'metro' || bCode.startsWith('metro_') || bName.includes('مترو') || bName.includes('metro')) {
+          branchKey = bCode.startsWith('metro_') ? bCode : 'metro_cash';
+        } else if (bCode === 'telephon' || bName.includes('تليفون') || bName.includes('telephon')) {
+          branchKey = 'telephon';
+        } else {
+          const matchedOth = OTH_SECTOR_COLUMNS.find((c) => c.id === bCode);
+          if (matchedOth) {
+            branchKey = matchedOth.id;
+          }
+        }
+        const othCol = OTH_SECTOR_COLUMNS.find((c) => c.id === branchKey);
+        branchName = othCol ? othCol.header : (r.name || branchKey);
+      }
 
       if (branchKey && !colMap.has(branchKey)) {
         colMap.set(branchKey, branchName);
@@ -946,6 +1072,7 @@ export const DailyRevenueMatrix = React.memo(function DailyRevenueMatrix({
       const rawTotal = Number(r.total) || 0;
       const itemBaseTotal = Math.abs(cash + visa + cl) > 0.0001 ? (cash + visa + cl) : rawTotal;
 
+      // Single accumulation into branchTotals - NEVER duplicated
       branchTotals.set(branchKey, (branchTotals.get(branchKey) || 0) + itemBaseTotal);
 
       // Track F&B metrics when sectorType === 1
@@ -988,6 +1115,18 @@ export const DailyRevenueMatrix = React.memo(function DailyRevenueMatrix({
       }
 
       const branchValues = dateMap.get(dateKey)!;
+      const currentVal = branchValues.get(branchKey) || {
+        cash: 0,
+        visa: 0,
+        cl: 0,
+        rawTotal: 0,
+      };
+      branchValues.set(branchKey, {
+        cash: currentVal.cash + cash,
+        visa: currentVal.visa + visa,
+        cl: currentVal.cl + cl,
+        rawTotal: currentVal.rawTotal + rawTotal,
+      });
 
       // Track OTH metrics when sectorType === 6 (single-pass mapping — NEVER double-add with branchKey)
       if (sectorType === 6) {
@@ -999,7 +1138,7 @@ export const DailyRevenueMatrix = React.memo(function DailyRevenueMatrix({
           } else if (typeof (r as any)[col.id] === 'number') {
             colVal = (r as any)[col.id];
           }
-          if (Math.abs(colVal) > 0.0001) {
+          if (colVal > 0) {
             mappedAny = true;
             const cur = branchValues.get(col.id) || { cash: 0, visa: 0, cl: 0, rawTotal: 0 };
             branchValues.set(col.id, {
@@ -1017,26 +1156,20 @@ export const DailyRevenueMatrix = React.memo(function DailyRevenueMatrix({
           const bName = String(r.name || '').trim().toLowerCase();
 
           let targetColId = '';
-          if (OTH_SECTOR_COLUMNS.some((c) => c.id === bCode) || bCode === 'unmapped') {
-            targetColId = bCode;
-          } else if (bCode === '120' || bName.includes('parking') || bName.includes('بارك')) {
+          if (bCode === '120' || bName.includes('parking') || bName.includes('بارك') || bCode === 'parking_private') {
             targetColId = 'parking_private';
-          } else if (bName.includes('buses') || bName.includes('باص')) {
+          } else if (bCode === 'parking_buses' || bName.includes('buses') || bName.includes('باص')) {
             targetColId = 'parking_buses';
           } else if (bCode.includes('mask') || bName.includes('ماسك') || bName.includes('mask')) {
             targetColId = 'mask';
-          } else if (bCode === '118' || bName.includes('أمانات') || bName.includes('امانات') || bName.includes('locker')) {
+          } else if (bCode === '118' || bName.includes('deposit') || bName.includes('أمانات') || bName.includes('امانات') || bCode === 'locker') {
             targetColId = 'locker';
-          } else if (bName.includes('deposit') || bName.includes('تأمين') || bName.includes('تامين')) {
-            targetColId = 'g_deposit';
           } else if (bCode.includes('telephon') || bName.includes('تليفون')) {
             targetColId = 'telephon';
-          } else if (bName.includes('net coffee') || bName.includes('نت كافيه')) {
-            targetColId = 'net_coffee';
-          } else if (bName.includes('g&r')) {
+          } else if (bCode === 'g_and_r' || bName.includes('g&r')) {
             targetColId = 'g_and_r';
-          } else {
-            targetColId = 'unmapped';
+          } else if (OTH_SECTOR_COLUMNS.some((c) => c.id === bCode)) {
+            targetColId = bCode;
           }
 
           if (targetColId) {
@@ -1047,10 +1180,7 @@ export const DailyRevenueMatrix = React.memo(function DailyRevenueMatrix({
               cl: cur.cl + cl,
               rawTotal: cur.rawTotal + itemBaseTotal,
             });
-            // Avoid double-incrementing branchTotals when branchKey already equals targetColId
-            if (targetColId !== branchKey) {
-              branchTotals.set(targetColId, (branchTotals.get(targetColId) || 0) + itemBaseTotal);
-            }
+            branchTotals.set(targetColId, (branchTotals.get(targetColId) || 0) + itemBaseTotal);
           }
         }
       } else {
@@ -1064,7 +1194,7 @@ export const DailyRevenueMatrix = React.memo(function DailyRevenueMatrix({
           cash: currentVal.cash + cash,
           visa: currentVal.visa + visa,
           cl: currentVal.cl + cl,
-          rawTotal: currentVal.rawTotal + rawTotal,
+          rawTotal: currentVal.rawTotal + itemBaseTotal,
         });
       }
     });
@@ -1153,6 +1283,42 @@ export const DailyRevenueMatrix = React.memo(function DailyRevenueMatrix({
 
   // Stage 2: Dynamic Metric Projection & Aggregate Totals (Instant O(Dates * Columns))
   const { columns, matrixRows, columnTotals, grandTotal, grandCash, grandVisa, grandCoupons, grandCashVisa, grandFood, grandBeverage, grandOther, grandCost } = useMemo(() => {
+    if (sectorType === 5) {
+      const sortedRows = [...(rows as any[])].sort((a, b) => {
+        const dateA = a.date || a.period || '';
+        const dateB = b.date || b.period || '';
+        const cmp = dateA.localeCompare(dateB);
+        return sortOrder === 'asc' ? cmp : -cmp;
+      });
+
+      let rawOverallTotal = 0;
+      let rawOverallCash = 0;
+      let rawOverallVisa = 0;
+      let rawOverallCoupons = 0;
+
+      sortedRows.forEach((r) => {
+        rawOverallTotal += Number(r.totalTicketRev) || 0;
+        rawOverallCash += Number(r.cash) || 0;
+        rawOverallVisa += Number(r.visa) || 0;
+        rawOverallCoupons += Number(r.cl) || 0;
+      });
+
+      return {
+        columns: [],
+        matrixRows: sortedRows,
+        columnTotals: {} as Record<string, number>,
+        grandTotal: rawOverallTotal,
+        grandCash: rawOverallCash,
+        grandVisa: rawOverallVisa,
+        grandCoupons: rawOverallCoupons,
+        grandCashVisa: rawOverallCash + rawOverallVisa,
+        grandFood: 0,
+        grandBeverage: 0,
+        grandOther: 0,
+        grandCost: 0,
+      };
+    }
+
     const { cols, dateMap, datePaymentMap, dateFbMap, rawDates } = aggregatedData;
 
     const dates = [...rawDates].sort((a, b) => {
@@ -1323,7 +1489,58 @@ export const DailyRevenueMatrix = React.memo(function DailyRevenueMatrix({
       grandOther: applyCalcMode(rawOverallOther, calcMode),
       grandCost: applyCalcMode(rawOverallCost, calcMode),
     };
-  }, [aggregatedData, sortOrder, calcMode]);
+  }, [aggregatedData, sortOrder, calcMode, rows, sectorType]);
+
+  const gateTotals = useMemo(() => {
+    if (sectorType !== 5) return null;
+    const t = {
+      silverRev: 0, silverSold: 0,
+      goldenRev: 0, goldenSold: 0,
+      silverComboRev: 0, silverComboSold: 0,
+      familyRev: 0, familySold: 0,
+      smRev: 0, smSold: 0, smFree: 0,
+      promoRev: 0, promoSold: 0,
+      bgRev: 0, bgVouchers: 0,
+      totalTicketRev: 0, totalTicketSold: 0, totalFree: 0,
+      grr: 0,
+      cash: 0, visa: 0, cl: 0,
+      entranceGross: 0, theaterGross: 0, taftafGross: 0, totalVat: 0, netRevenue: 0,
+      stdEntranceGross: 0, stdTheaterGross: 0, stdTaftafGross: 0,
+    };
+    matrixRows.forEach((r: any) => {
+      t.silverRev += Number(r.silverRev) || 0;
+      t.silverSold += Number(r.silverSold) || 0;
+      t.goldenRev += Number(r.goldenRev) || 0;
+      t.goldenSold += Number(r.goldenSold) || 0;
+      t.silverComboRev += Number(r.silverComboRev) || 0;
+      t.silverComboSold += Number(r.silverComboSold) || 0;
+      t.familyRev += Number(r.familyRev) || 0;
+      t.familySold += Number(r.familySold) || 0;
+      t.smRev += Number(r.smRev) || 0;
+      t.smSold += Number(r.smSold) || 0;
+      t.smFree += Number(r.smFree) || 0;
+      t.promoRev += Number(r.promoRev) || 0;
+      t.promoSold += Number(r.promoSold) || 0;
+      t.bgRev += Number(r.bgRev) || 0;
+      t.bgVouchers += Number(r.bgVouchers || (r.bgRev > 0 ? 1 : 0)) || 0;
+      t.totalTicketRev += Number(r.totalTicketRev) || 0;
+      t.totalTicketSold += Number(r.totalTicketSold) || 0;
+      t.totalFree += Number(r.totalFree) || 0;
+      t.grr += Number(r.grr) || 0;
+      t.cash += Number(r.cash) || 0;
+      t.visa += Number(r.visa) || 0;
+      t.cl += Number(r.cl) || 0;
+      t.entranceGross += Number(r.entranceGross) || 0;
+      t.theaterGross += Number(r.theaterGross) || 0;
+      t.taftafGross += Number(r.taftafGross) || 0;
+      t.totalVat += Number(r.totalVat) || 0;
+      t.netRevenue += Number(r.netRevenue) || 0;
+      t.stdEntranceGross += Number(r.stdEntranceGross) || 0;
+      t.stdTheaterGross += Number(r.stdTheaterGross) || 0;
+      t.stdTaftafGross += Number(r.stdTaftafGross) || 0;
+    });
+    return t;
+  }, [matrixRows, sectorType]);
 
   const totalRestaurantDays = restaurantData?.dayGroups.length || 0;
   const isRestaurantDayMode = isRestaurants && effectiveGranularity === 'day';
@@ -1453,24 +1670,23 @@ export const DailyRevenueMatrix = React.memo(function DailyRevenueMatrix({
   }, [sectorType, columns]);
 
   const isTwoRowHeader =
-    (isPaidRides && effectiveRideStatusFilter === 'all') ||
     isRestaurants ||
+    sectorType === 5 ||
     (sectorType === 6 && othHeaderGroups.some((g) => g.parentHeader !== null));
 
   const totalTableCols = useMemo(() => {
     if (isRestaurants) {
       return calcMode === 'vat' ? 5 : 8;
     }
+    if (sectorType === 5) {
+      return 29;
+    }
     if (sectorType === 6) {
       return 1 + columns.length + 5;
     }
-    const outletsCount = columns.reduce(
-      (acc, c) =>
-        acc + (isTwoRowHeader && (c.branchCode === 'golden' || c.branchCode === '4') ? 5 : 1),
-      0
-    );
+    const outletsCount = columns.length;
     return 1 + outletsCount + (calcMode === 'vat' ? 1 : 4);
-  }, [columns, isTwoRowHeader, calcMode, isRestaurants, sectorType]);
+  }, [columns, calcMode, isRestaurants, sectorType]);
 
   const handleExportToExcel = async () => {
     try {
@@ -1482,7 +1698,13 @@ export const DailyRevenueMatrix = React.memo(function DailyRevenueMatrix({
       workbook.creator = 'Dream Park ERP';
       workbook.created = new Date();
 
-      const excelTheme = sectorType === 6 ? {
+      const excelTheme = sectorType === 5 ? {
+        tabColor: 'FF064E3B',
+        titleColor: 'FF064E3B',
+        headerFill: 'FFD1FAE5',
+        footerFill: 'FF064E3B',
+        footerFont: 'FFFFFFFF',
+      } : sectorType === 6 ? {
         tabColor: 'FF1E293B',
         titleColor: 'FF0F172A',
         headerFill: 'FFE2E8F0',
@@ -1515,6 +1737,8 @@ export const DailyRevenueMatrix = React.memo(function DailyRevenueMatrix({
         } else {
           entityName = 'الكرفانات والمحلات';
         }
+      } else if (secType === 5) {
+        entityName = 'بوابات التذاكر';
       } else if (secType === 2) {
         const filterWord =
           effectiveRideStatusFilter === 'active'
@@ -1900,6 +2124,236 @@ export const DailyRevenueMatrix = React.memo(function DailyRevenueMatrix({
         const sigCell = signatureRow.getCell(1);
         sigCell.font = { name: 'Times New Roman', size: 11, bold: true, color: { argb: 'FF0F172A' } };
         sigCell.alignment = { vertical: 'middle', horizontal: 'center' };
+      } else if (sectorType === 5) {
+        // Gate Excel export matching official Dream Park `ticket` sheet
+        const gateCols = [
+          { key: 'date', width: 14 },
+          { key: 'silverRev', width: 14 },
+          { key: 'silverSold', width: 10 },
+          { key: 'goldenRev', width: 14 },
+          { key: 'goldenSold', width: 10 },
+          { key: 'comboRev', width: 14 },
+          { key: 'comboSold', width: 10 },
+          { key: 'familyRev', width: 14 },
+          { key: 'familySold', width: 10 },
+          { key: 'smRev', width: 14 },
+          { key: 'smSold', width: 10 },
+          { key: 'smFree', width: 10 },
+          { key: 'promoRev', width: 14 },
+          { key: 'promoSold', width: 10 },
+          { key: 'bgRev', width: 14 },
+          { key: 'bgVouchers', width: 10 },
+          { key: 'totalRev', width: 16 },
+          { key: 'totalSold', width: 12 },
+          { key: 'totalFree', width: 12 },
+          { key: 'grr', width: 16 },
+          { key: 'cash', width: 14 },
+          { key: 'visa', width: 14 },
+          { key: 'cl', width: 14 },
+          { key: 'entGross', width: 14 },
+          { key: 'thrGross', width: 14 },
+          { key: 'tafGross', width: 14 },
+          { key: 'totVat', width: 14 },
+          { key: 'netRev', width: 16 },
+          { key: 'stdEnt', width: 14 },
+          { key: 'stdThr', width: 14 },
+          { key: 'stdTaf', width: 14 },
+        ];
+        worksheet.columns = gateCols;
+        const totalGateColsCount = gateCols.length;
+
+        // Rows 1 & 2: Logo and Title
+        const row1 = worksheet.addRow([]);
+        row1.height = 28;
+        const row2 = worksheet.addRow([]);
+        row2.height = 24;
+
+        try {
+          const logoRes = await fetch('/dreampark-logo.png');
+          if (logoRes.ok) {
+            const logoBuffer = await logoRes.arrayBuffer();
+            const imageId = workbook.addImage({
+              buffer: logoBuffer,
+              extension: 'png',
+            });
+            worksheet.addImage(imageId, {
+              tl: { col: 0, row: 0 },
+              ext: { width: 110, height: 48 },
+            });
+          }
+        } catch (logoErr) {
+          console.warn('Could not load logo for Excel export:', logoErr);
+        }
+
+        worksheet.mergeCells(1, 3, 2, 20);
+        const titleCell = worksheet.getCell(1, 3);
+        titleCell.value = excelTitle;
+        titleCell.font = { name: 'Times New Roman', size: 15, bold: true, color: { argb: 'FF064E3B' } };
+        titleCell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+
+        // Headers: Rows 3 & 4
+        const row3 = worksheet.getRow(3);
+        row3.height = 28;
+        const row4 = worksheet.getRow(4);
+        row4.height = 26;
+
+        // Date (Col 1)
+        worksheet.mergeCells(3, 1, 4, 1);
+        worksheet.getCell(3, 1).value = 'Date';
+        styleRange(worksheet, 3, 1, 4, 1, { font: headerFontNormal, fill: headerFillPattern, alignment: centerMiddleAlign, border: thinBorder });
+
+        // Category merges on Row 3
+        const catDefs = [
+          { name: 'Silver', span: 2, sub: ['قيمة', 'تذاكر'] },
+          { name: 'Golden', span: 2, sub: ['قيمة', 'تذاكر'] },
+          { name: 'Silver Combo', span: 2, sub: ['قيمة', 'تذاكر'] },
+          { name: 'Family', span: 2, sub: ['قيمة', 'تذاكر'] },
+          { name: 'S&M', span: 3, sub: ['قيمة', 'تذاكر', 'مجاني'] },
+          { name: 'Promotion', span: 2, sub: ['قيمة', 'تذاكر'] },
+          { name: 'B.G', span: 2, sub: ['قيمة', 'دفاتر'] },
+        ];
+        let currCol = 2;
+        catDefs.forEach((cd) => {
+          worksheet.mergeCells(3, currCol, 3, currCol + cd.span - 1);
+          worksheet.getCell(3, currCol).value = cd.name;
+          styleRange(worksheet, 3, currCol, 3, currCol + cd.span - 1, { font: headerFontNormal, fill: headerFillPattern, alignment: centerMiddleAlign, border: thinBorder });
+          cd.sub.forEach((sName, sIdx) => {
+            const colPos = currCol + sIdx;
+            worksheet.getCell(4, colPos).value = sName;
+            styleRange(worksheet, 4, colPos, 4, colPos, { font: headerFontSub, fill: headerFillPattern, alignment: centerMiddleAlign, border: thinBorder });
+          });
+          currCol += cd.span;
+        });
+
+        // Standalone summary columns (Rows 3 & 4 merged)
+        const singles = ['TOTAL REV', 'TOTAL SOLD', 'TOTAL FREE', 'G.R.R'];
+        singles.forEach((s) => {
+          worksheet.mergeCells(3, currCol, 4, currCol);
+          worksheet.getCell(3, currCol).value = s;
+          styleRange(worksheet, 3, currCol, 4, currCol, { font: headerFontNormal, fill: headerFillPattern, alignment: centerMiddleAlign, border: thinBorder });
+          currCol++;
+        });
+
+        // Payments
+        worksheet.mergeCells(3, currCol, 3, currCol + 2);
+        worksheet.getCell(3, currCol).value = 'طرق السداد (Payments)';
+        styleRange(worksheet, 3, currCol, 3, currCol + 2, { font: headerFontNormal, fill: headerFillPattern, alignment: centerMiddleAlign, border: thinBorder });
+        ['Cash', 'Visa', 'C/L'].forEach((p, idx) => {
+          worksheet.getCell(4, currCol + idx).value = p;
+          styleRange(worksheet, 4, currCol + idx, 4, currCol + idx, { font: headerFontSub, fill: headerFillPattern, alignment: centerMiddleAlign, border: thinBorder });
+        });
+        currCol += 3;
+
+        // Actual VAT
+        worksheet.mergeCells(3, currCol, 3, currCol + 4);
+        worksheet.getCell(3, currCol).value = 'الضريبة الفعلية (Actual VAT)';
+        styleRange(worksheet, 3, currCol, 3, currCol + 4, { font: headerFontNormal, fill: headerFillPattern, alignment: centerMiddleAlign, border: thinBorder });
+        ['دخول (14%)', 'ملاهي (5%)', 'طفطف (0%)', 'إجمالي الضريبة', 'صافي الإيراد'].forEach((v, idx) => {
+          worksheet.getCell(4, currCol + idx).value = v;
+          styleRange(worksheet, 4, currCol + idx, 4, currCol + idx, { font: headerFontSub, fill: headerFillPattern, alignment: centerMiddleAlign, border: thinBorder });
+        });
+        currCol += 5;
+
+        // Standard Split
+        worksheet.mergeCells(3, currCol, 3, currCol + 2);
+        worksheet.getCell(3, currCol).value = 'المعيار المحاسبي (Standard Split)';
+        styleRange(worksheet, 3, currCol, 3, currCol + 2, { font: headerFontNormal, fill: headerFillPattern, alignment: centerMiddleAlign, border: thinBorder });
+        ['دخول 53.33%', 'ملاهي 26.67%', 'طفطف 20.00%'].forEach((st, idx) => {
+          worksheet.getCell(4, currCol + idx).value = st;
+          styleRange(worksheet, 4, currCol + idx, 4, currCol + idx, { font: headerFontSub, fill: headerFillPattern, alignment: centerMiddleAlign, border: thinBorder });
+        });
+
+        // Rows data
+        matrixRows.forEach((r: any) => {
+          const rowData = [
+            r.date,
+            r.silverRev || 0, r.silverSold || 0,
+            r.goldenRev || 0, r.goldenSold || 0,
+            r.silverComboRev || 0, r.silverComboSold || 0,
+            r.familyRev || 0, r.familySold || 0,
+            r.smRev || 0, r.smSold || 0, r.smFree || 0,
+            r.promoRev || 0, r.promoSold || 0,
+            r.bgRev || 0, r.bgVouchers || (r.bgRev > 0 ? 1 : 0),
+            r.totalTicketRev || 0,
+            r.totalTicketSold || 0,
+            r.totalFree || 0,
+            r.grr || 0,
+            r.cash || 0, r.visa || 0, r.cl || 0,
+            r.entranceGross || 0, r.theaterGross || 0, r.taftafGross || 0, r.totalVat || 0, r.netRevenue || 0,
+            r.stdEntranceGross || 0, r.stdTheaterGross || 0, r.stdTaftafGross || 0
+          ];
+          const row = worksheet.addRow(rowData);
+          row.height = 24;
+
+          const dateCell = row.getCell(1);
+          dateCell.alignment = { vertical: 'middle', horizontal: 'center' };
+          dateCell.font = { name: 'Times New Roman', size: 11, bold: true, color: { argb: 'FF0F172A' } };
+          dateCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF8FAFC' } };
+          dateCell.border = thinBorder;
+
+          const qtyColsSet = new Set([3, 5, 7, 9, 11, 12, 14, 16, 18, 19]);
+          for (let c = 2; c <= totalGateColsCount; c++) {
+            const cell = row.getCell(c);
+            cell.border = thinBorder;
+            cell.alignment = { vertical: 'middle', horizontal: 'right' };
+            if (qtyColsSet.has(c)) {
+              cell.numFmt = '#,##0';
+              cell.font = { name: 'Times New Roman', size: 11, color: { argb: 'FF0F172A' } };
+            } else {
+              cell.numFmt = '#,##0.00';
+              cell.font = { name: 'Times New Roman', size: 11, bold: c === 17 || c === 20, color: { argb: 'FF0F172A' } };
+            }
+            if (c === 17) {
+              cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD1FAE5' } };
+            }
+          }
+        });
+
+        // Grand Total row
+        const footerVals = [
+          'TOTAL',
+          gateTotals?.silverRev || 0, gateTotals?.silverSold || 0,
+          gateTotals?.goldenRev || 0, gateTotals?.goldenSold || 0,
+          gateTotals?.silverComboRev || 0, gateTotals?.silverComboSold || 0,
+          gateTotals?.familyRev || 0, gateTotals?.familySold || 0,
+          gateTotals?.smRev || 0, gateTotals?.smSold || 0, gateTotals?.smFree || 0,
+          gateTotals?.promoRev || 0, gateTotals?.promoSold || 0,
+          gateTotals?.bgRev || 0, gateTotals?.bgVouchers || 0,
+          gateTotals?.totalTicketRev || 0,
+          gateTotals?.totalTicketSold || 0,
+          gateTotals?.totalFree || 0,
+          gateTotals?.grr || 0,
+          gateTotals?.cash || 0, gateTotals?.visa || 0, gateTotals?.cl || 0,
+          gateTotals?.entranceGross || 0, gateTotals?.theaterGross || 0, gateTotals?.taftafGross || 0, gateTotals?.totalVat || 0, gateTotals?.netRevenue || 0,
+          gateTotals?.stdEntranceGross || 0, gateTotals?.stdTheaterGross || 0, gateTotals?.stdTaftafGross || 0
+        ];
+        const totalRow = worksheet.addRow(footerVals);
+        totalRow.height = 32;
+
+        const footerDateCell = totalRow.getCell(1);
+        footerDateCell.alignment = { vertical: 'middle', horizontal: 'center' };
+        footerDateCell.font = { name: 'Times New Roman', size: 13, bold: true, color: { argb: 'FFFFFFFF' } };
+        footerDateCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF064E3B' } };
+        footerDateCell.border = doubleBottomBorder;
+
+        const qtyColsSet = new Set([3, 5, 7, 9, 11, 12, 14, 16, 18, 19]);
+        for (let c = 2; c <= totalGateColsCount; c++) {
+          const cell = totalRow.getCell(c);
+          cell.alignment = { vertical: 'middle', horizontal: 'right' };
+          cell.font = { name: 'Times New Roman', size: 12, bold: true, color: { argb: 'FFFFFFFF' } };
+          cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF064E3B' } };
+          cell.border = doubleBottomBorder;
+          cell.numFmt = qtyColsSet.has(c) ? '#,##0' : '#,##0.00';
+        }
+
+        // Blank Row & Signature
+        const blankRow = worksheet.addRow([]);
+        blankRow.height = 18;
+        const signatureRow = worksheet.addRow(['INCOME AUDITOR']);
+        signatureRow.height = 24;
+        const sigCell = signatureRow.getCell(1);
+        sigCell.font = { name: 'Times New Roman', size: 11, bold: true, color: { argb: 'FF0F172A' } };
+        sigCell.alignment = { vertical: 'middle', horizontal: 'center' };
       } else if (sectorType === 6) {
         // 2. Setup Export Columns for Type 6 (OTH Sheet Layout)
         const othExportCols = [
@@ -2100,39 +2554,21 @@ export const DailyRevenueMatrix = React.memo(function DailyRevenueMatrix({
         const exportColumns: ExportColDef[] = [];
 
         columns.forEach((col) => {
-          if (isTwoRowHeader && col.branchCode === 'golden') {
-            exportColumns.push(
-              { key: 'golden_sgolden', header: 'S.Golden', parentHeader: 'Golden', width: 14, getValue: (r) => r.values['golden_sgolden'] || 0, getTotal: () => columnTotals['golden_sgolden'] || 0 },
-              { key: 'golden_platinum', header: 'Platinum', parentHeader: 'Golden', width: 14, getValue: (r) => r.values['golden_platinum'] || 0, getTotal: () => columnTotals['golden_platinum'] || 0 },
-              { key: 'golden_diamond', header: 'Diamond', parentHeader: 'Golden', width: 14, getValue: (r) => r.values['golden_diamond'] || 0, getTotal: () => columnTotals['golden_diamond'] || 0 },
-              { key: 'golden_vip', header: 'VIP', parentHeader: 'Golden', width: 14, getValue: (r) => r.values['golden_vip'] || 0, getTotal: () => columnTotals['golden_vip'] || 0 },
-              { key: 'golden_total', header: 'Total', parentHeader: 'Golden', width: 16, getValue: (r) => r.values['golden'] || 0, getTotal: () => columnTotals['golden'] || 0 }
-            );
-          } else if (isTwoRowHeader && col.branchCode === '4') {
-            exportColumns.push(
-              { key: '4_cash', header: 'Cash', parentHeader: '7 D', width: 14, getValue: (r) => r.values['4_cash'] || 0, getTotal: () => columnTotals['4_cash'] || 0 },
-              { key: '4_platinum', header: 'Platinum', parentHeader: '7 D', width: 14, getValue: (r) => r.values['4_platinum'] || 0, getTotal: () => columnTotals['4_platinum'] || 0 },
-              { key: '4_diamond', header: 'Diamond', parentHeader: '7 D', width: 14, getValue: (r) => r.values['4_diamond'] || 0, getTotal: () => columnTotals['4_diamond'] || 0 },
-              { key: '4_visa', header: 'Visa', parentHeader: '7 D', width: 14, getValue: (r) => r.values['4_visa'] || 0, getTotal: () => columnTotals['4_visa'] || 0 },
-              { key: '4_total', header: 'Total', parentHeader: '7 D', width: 16, getValue: (r) => r.values['4'] || 0, getTotal: () => columnTotals['4'] || 0 }
-            );
-          } else {
-            const headerName =
-              sectorType === 3
-                ? (VGAMES_DISPLAY_NAMES[col.branchCode] || col.name)
-                : sectorType === 2
-                  ? (PAID_RIDES_DISPLAY_NAMES[col.branchCode] || col.name)
-                  : (CARAVAN_DISPLAY_NAMES[col.branchCode] || col.name);
+          const headerName =
+            sectorType === 3
+              ? (VGAMES_DISPLAY_NAMES[col.branchCode] || col.name)
+              : sectorType === 2
+                ? (PAID_RIDES_DISPLAY_NAMES[col.branchCode] || col.name)
+                : (CARAVAN_DISPLAY_NAMES[col.branchCode] || col.name);
 
-            exportColumns.push({
-              key: `col_${col.branchCode}`,
-              header: headerName,
-              width: 18,
-              isShop: sectorType === 4 && SHOP_BRANCH_CODES_SET.has(col.branchCode),
-              getValue: (r) => r.values[col.branchCode] || 0,
-              getTotal: () => columnTotals[col.branchCode] || 0,
-            });
-          }
+          exportColumns.push({
+            key: `col_${col.branchCode}`,
+            header: headerName,
+            width: 18,
+            isShop: sectorType === 4 && SHOP_BRANCH_CODES_SET.has(col.branchCode),
+            getValue: (r) => r.values[col.branchCode] || 0,
+            getTotal: () => columnTotals[col.branchCode] || 0,
+          });
         });
 
         // Summary columns on the right (matching English Copy of RETAL.xls layout)
@@ -2805,6 +3241,74 @@ export const DailyRevenueMatrix = React.memo(function DailyRevenueMatrix({
                   )}
                 </tr>
               </>
+            ) : sectorType === 5 ? (
+              <>
+                {/* Row 1: Gate Headers */}
+                <tr className="bg-[#064e3b] text-white border-b border-[#022c22] sticky top-0 z-20 shadow-xs">
+                  <th
+                    rowSpan={2}
+                    className="sticky right-0 z-30 px-4 py-4 font-black text-center align-middle border-l border-white/20 min-w-[140px] bg-[#064e3b] text-white"
+                  >
+                    <div className="flex items-center justify-center gap-2">
+                      <Calendar className="h-4 w-4 text-white/80" />
+                      <span className="font-bold text-sm text-white">التاريخ</span>
+                    </div>
+                  </th>
+                  <th colSpan={2} className="px-3 py-2.5 text-center align-middle border-l border-white/20 font-black text-sm tracking-wide bg-[#064e3b] text-white">Silver</th>
+                  <th colSpan={2} className="px-3 py-2.5 text-center align-middle border-l border-white/20 font-black text-sm tracking-wide bg-[#064e3b] text-white">Golden</th>
+                  <th colSpan={2} className="px-3 py-2.5 text-center align-middle border-l border-white/20 font-black text-sm tracking-wide bg-[#064e3b] text-white">Silver Combo</th>
+                  <th colSpan={2} className="px-3 py-2.5 text-center align-middle border-l border-white/20 font-black text-sm tracking-wide bg-[#064e3b] text-white">Family</th>
+                  <th colSpan={3} className="px-3 py-2.5 text-center align-middle border-l border-white/20 font-black text-sm tracking-wide bg-[#064e3b] text-white">S&M</th>
+                  <th colSpan={2} className="px-3 py-2.5 text-center align-middle border-l border-white/20 font-black text-sm tracking-wide bg-[#064e3b] text-white">Promotion</th>
+                  <th colSpan={2} className="px-3 py-2.5 text-center align-middle border-l border-white/20 font-black text-sm tracking-wide bg-[#064e3b] text-white">B.G</th>
+                  <th rowSpan={2} className="px-4 py-4 font-black text-center align-middle min-w-[150px] text-sm text-white bg-[#022c22] border-l border-white/20">TOTAL REV</th>
+                  <th rowSpan={2} className="px-3 py-4 font-black text-center align-middle min-w-[100px] text-sm text-white bg-[#064e3b] border-l border-white/20">TOTAL SOLD</th>
+                  <th rowSpan={2} className="px-3 py-4 font-black text-center align-middle min-w-[100px] text-sm text-emerald-300 bg-[#064e3b] border-l border-white/20">TOTAL FREE</th>
+                  <th rowSpan={2} className="px-4 py-4 font-black text-center align-middle min-w-[150px] text-sm text-cyan-300 bg-[#064e3b] border-l border-white/20">G.R.R</th>
+                  <th colSpan={3} className="px-3 py-2.5 text-center align-middle border-l border-white/20 font-black text-sm tracking-wide bg-[#064e3b] text-white">طرق السداد (Payments)</th>
+                  <th colSpan={5} className="px-3 py-2.5 text-center align-middle border-l border-white/20 font-black text-sm tracking-wide bg-[#064e3b] text-white">الضريبة الفعلية (Actual VAT)</th>
+                  <th colSpan={3} className="px-3 py-2.5 text-center align-middle font-black text-sm tracking-wide bg-[#064e3b] text-white">المعيار المحاسبي (Standard Split)</th>
+                </tr>
+                {/* Row 2: Sub-headers */}
+                <tr className="bg-[#043427] text-white border-b border-[#022c22] sticky top-[48px] z-20 shadow-xs text-xs font-bold">
+                  {/* Silver */}
+                  <th className="px-3 py-2 text-center border-l border-white/20 min-w-[110px]">قيمة</th>
+                  <th className="px-2 py-2 text-center border-l border-white/20 min-w-[70px]">تذاكر</th>
+                  {/* Golden */}
+                  <th className="px-3 py-2 text-center border-l border-white/20 min-w-[110px]">قيمة</th>
+                  <th className="px-2 py-2 text-center border-l border-white/20 min-w-[70px]">تذاكر</th>
+                  {/* Silver Combo */}
+                  <th className="px-3 py-2 text-center border-l border-white/20 min-w-[110px]">قيمة</th>
+                  <th className="px-2 py-2 text-center border-l border-white/20 min-w-[70px]">تذاكر</th>
+                  {/* Family */}
+                  <th className="px-3 py-2 text-center border-l border-white/20 min-w-[110px]">قيمة</th>
+                  <th className="px-2 py-2 text-center border-l border-white/20 min-w-[70px]">تذاكر</th>
+                  {/* S&M */}
+                  <th className="px-3 py-2 text-center border-l border-white/20 min-w-[110px]">قيمة</th>
+                  <th className="px-2 py-2 text-center border-l border-white/20 min-w-[70px]">تذاكر</th>
+                  <th className="px-2 py-2 text-center border-l border-white/20 min-w-[70px] text-emerald-300">مجاني</th>
+                  {/* Promotion */}
+                  <th className="px-3 py-2 text-center border-l border-white/20 min-w-[110px]">قيمة</th>
+                  <th className="px-2 py-2 text-center border-l border-white/20 min-w-[70px]">تذاكر</th>
+                  {/* B.G */}
+                  <th className="px-3 py-2 text-center border-l border-white/20 min-w-[100px]">قيمة</th>
+                  <th className="px-2 py-2 text-center border-l border-white/20 min-w-[70px]">دفاتر</th>
+                  {/* Payments: Cash, Visa, C/L */}
+                  <th className="px-3 py-2 text-center border-l border-white/20 min-w-[110px]">Cash</th>
+                  <th className="px-3 py-2 text-center border-l border-white/20 min-w-[110px]">Visa</th>
+                  <th className="px-3 py-2 text-center border-l border-white/20 min-w-[110px]">C/L</th>
+                  {/* Actual VAT */}
+                  <th className="px-3 py-2 text-center border-l border-white/20 min-w-[100px]">دخول (14%)</th>
+                  <th className="px-3 py-2 text-center border-l border-white/20 min-w-[100px]">ملاهي (5%)</th>
+                  <th className="px-3 py-2 text-center border-l border-white/20 min-w-[100px]">طفطف (0%)</th>
+                  <th className="px-3 py-2 text-center border-l border-white/20 min-w-[100px] text-amber-300">إجمالي الضريبة</th>
+                  <th className="px-3 py-2 text-center border-l border-white/20 min-w-[110px]">صافي الإيراد</th>
+                  {/* Standard Split */}
+                  <th className="px-3 py-2 text-center border-l border-white/20 min-w-[100px]">دخول 53.33%</th>
+                  <th className="px-3 py-2 text-center border-l border-white/20 min-w-[100px]">ملاهي 26.67%</th>
+                  <th className="px-3 py-2 text-center min-w-[100px]">طفطف 20.00%</th>
+                </tr>
+              </>
             ) : sectorType === 6 ? (
               <>
                 {/* Row 1: Grouped & Single Headers for Sector 6 */}
@@ -2921,19 +3425,6 @@ export const DailyRevenueMatrix = React.memo(function DailyRevenueMatrix({
                   {columns.map((col) => {
                     const isShop = sectorType === 4 && SHOP_BRANCH_CODES_SET.has(col.branchCode);
                     const isGame = sectorType === 2 || sectorType === 3;
-                    if (isTwoRowHeader && (col.branchCode === 'golden' || col.branchCode === '4')) {
-                      const titleText = col.branchCode === 'golden' ? 'Golden' : '7 D';
-                      return (
-                        <th
-                          key={col.branchCode}
-                          colSpan={5}
-                          className={`px-3 py-2 text-center border-l font-black text-sm tracking-wide border-slate-300 dark:border-zinc-700 ${theme.matrix.headerBg} text-slate-900 dark:text-white`}
-                        >
-                          {titleText}
-                        </th>
-                      );
-                    }
-
                     return (
                       <th
                         key={col.branchCode}
@@ -3012,37 +3503,6 @@ export const DailyRevenueMatrix = React.memo(function DailyRevenueMatrix({
                     </>
                   )}
                 </tr>
-
-                {/* Sub-header Row for Two-Level Grouped Headers */}
-                {isTwoRowHeader && (
-                  <tr className={`border-b border-white/20 ${theme.solidBg} text-white sticky top-[48px] z-20 shadow-xs text-xs sm:text-sm font-bold`}>
-                    {columns.map((col) => {
-                      if (col.branchCode === 'golden') {
-                        return (
-                          <React.Fragment key="golden-sub-headers">
-                            <th className="px-2.5 py-2.5 text-center align-middle border-l border-white/20 min-w-[80px] text-xs sm:text-sm font-bold text-white">S.Golden</th>
-                            <th className="px-2.5 py-2.5 text-center align-middle border-l border-white/20 min-w-[80px] text-xs sm:text-sm font-bold text-white">Platinum</th>
-                            <th className="px-2.5 py-2.5 text-center align-middle border-l border-white/20 min-w-[80px] text-xs sm:text-sm font-bold text-white">Diamond</th>
-                            <th className="px-2.5 py-2.5 text-center align-middle border-l border-white/20 min-w-[80px] text-xs sm:text-sm font-bold text-white">VIP</th>
-                            <th className="px-3 py-2.5 text-center align-middle border-l border-white/20 min-w-[90px] text-xs sm:text-sm font-black text-white">Total</th>
-                          </React.Fragment>
-                        );
-                      }
-                      if (col.branchCode === '4') {
-                        return (
-                          <React.Fragment key="4-sub-headers">
-                            <th className="px-2.5 py-2.5 text-center align-middle border-l border-white/20 min-w-[80px] text-xs sm:text-sm font-bold text-white">Cash</th>
-                            <th className="px-2.5 py-2.5 text-center align-middle border-l border-white/20 min-w-[80px] text-xs sm:text-sm font-bold text-white">Platinum</th>
-                            <th className="px-2.5 py-2.5 text-center align-middle border-l border-white/20 min-w-[80px] text-xs sm:text-sm font-bold text-white">Diamond</th>
-                            <th className="px-2.5 py-2.5 text-center align-middle border-l border-white/20 min-w-[80px] text-xs sm:text-sm font-bold text-white">Visa</th>
-                            <th className="px-3 py-2.5 text-center align-middle border-l border-white/20 min-w-[90px] text-xs sm:text-sm font-black text-white">Total</th>
-                          </React.Fragment>
-                        );
-                      }
-                      return null;
-                    })}
-                  </tr>
-                )}
               </>
             )}
           </thead>
@@ -3386,6 +3846,56 @@ export const DailyRevenueMatrix = React.memo(function DailyRevenueMatrix({
                     </>
                   )}
                 </tr>
+              ) : sectorType === 5 ? (
+                <tr className="border-t-2 border-[#022c22] bg-[#064e3b] font-mono font-bold text-white shadow-xs">
+                  <td className="sticky right-0 z-30 px-4 py-4 text-center text-sm font-sans font-black border-l border-white/20 bg-[#064e3b] text-white">
+                    الإجمالي (TOTAL)
+                  </td>
+                  {/* Silver */}
+                  <td className="px-3 py-3 text-center border-l border-white/20 font-mono text-sm">{gateTotals?.silverRev ? MONEY_FORMATTER.format(gateTotals.silverRev) : '0.00'}</td>
+                  <td className="px-2 py-3 text-center border-l border-white/20 font-mono text-xs">{gateTotals?.silverSold?.toLocaleString() || '0'}</td>
+                  {/* Golden */}
+                  <td className="px-3 py-3 text-center border-l border-white/20 font-mono text-sm">{gateTotals?.goldenRev ? MONEY_FORMATTER.format(gateTotals.goldenRev) : '0.00'}</td>
+                  <td className="px-2 py-3 text-center border-l border-white/20 font-mono text-xs">{gateTotals?.goldenSold?.toLocaleString() || '0'}</td>
+                  {/* Silver Combo */}
+                  <td className="px-3 py-3 text-center border-l border-white/20 font-mono text-sm">{gateTotals?.silverComboRev ? MONEY_FORMATTER.format(gateTotals.silverComboRev) : '0.00'}</td>
+                  <td className="px-2 py-3 text-center border-l border-white/20 font-mono text-xs">{gateTotals?.silverComboSold?.toLocaleString() || '0'}</td>
+                  {/* Family */}
+                  <td className="px-3 py-3 text-center border-l border-white/20 font-mono text-sm">{gateTotals?.familyRev ? MONEY_FORMATTER.format(gateTotals.familyRev) : '0.00'}</td>
+                  <td className="px-2 py-3 text-center border-l border-white/20 font-mono text-xs">{gateTotals?.familySold?.toLocaleString() || '0'}</td>
+                  {/* S&M */}
+                  <td className="px-3 py-3 text-center border-l border-white/20 font-mono text-sm">{gateTotals?.smRev ? MONEY_FORMATTER.format(gateTotals.smRev) : '0.00'}</td>
+                  <td className="px-2 py-3 text-center border-l border-white/20 font-mono text-xs">{gateTotals?.smSold?.toLocaleString() || '0'}</td>
+                  <td className="px-2 py-3 text-center border-l border-white/20 font-mono text-xs text-emerald-300 font-bold">{gateTotals?.smFree?.toLocaleString() || '0'}</td>
+                  {/* Promotion */}
+                  <td className="px-3 py-3 text-center border-l border-white/20 font-mono text-sm">{gateTotals?.promoRev ? MONEY_FORMATTER.format(gateTotals.promoRev) : '0.00'}</td>
+                  <td className="px-2 py-3 text-center border-l border-white/20 font-mono text-xs">{gateTotals?.promoSold?.toLocaleString() || '0'}</td>
+                  {/* B.G */}
+                  <td className="px-3 py-3 text-center border-l border-white/20 font-mono text-sm">{gateTotals?.bgRev ? MONEY_FORMATTER.format(gateTotals.bgRev) : '0.00'}</td>
+                  <td className="px-2 py-3 text-center border-l border-white/20 font-mono text-xs">{gateTotals?.bgVouchers?.toLocaleString() || '0'}</td>
+                  {/* TOTAL REV */}
+                  <td className="px-4 py-4 text-center text-base lg:text-lg font-black border-l border-white/20 text-white bg-[#022c22]">{gateTotals?.totalTicketRev ? MONEY_FORMATTER.format(gateTotals.totalTicketRev) : '0.00'}</td>
+                  {/* TOTAL SOLD */}
+                  <td className="px-3 py-4 text-center text-sm font-bold border-l border-white/20 text-white">{gateTotals?.totalTicketSold?.toLocaleString() || '0'}</td>
+                  {/* TOTAL FREE */}
+                  <td className="px-3 py-4 text-center text-sm font-bold border-l border-white/20 text-emerald-300">{gateTotals?.totalFree?.toLocaleString() || '0'}</td>
+                  {/* G.R.R */}
+                  <td className="px-4 py-4 text-center text-base lg:text-lg font-black border-l border-white/20 text-cyan-300">{gateTotals?.grr ? MONEY_FORMATTER.format(gateTotals.grr) : '0.00'}</td>
+                  {/* Payments: Cash, Visa, C/L */}
+                  <td className="px-3 py-3 text-center border-l border-white/20 font-mono text-sm">{gateTotals?.cash ? MONEY_FORMATTER.format(gateTotals.cash) : '0.00'}</td>
+                  <td className="px-3 py-3 text-center border-l border-white/20 font-mono text-sm">{gateTotals?.visa ? MONEY_FORMATTER.format(gateTotals.visa) : '0.00'}</td>
+                  <td className="px-3 py-3 text-center border-l border-white/20 font-mono text-sm">{gateTotals?.cl ? MONEY_FORMATTER.format(gateTotals.cl) : '0.00'}</td>
+                  {/* Actual VAT */}
+                  <td className="px-3 py-3 text-center border-l border-white/20 font-mono text-xs">{gateTotals?.entranceGross ? MONEY_FORMATTER.format(gateTotals.entranceGross) : '0.00'}</td>
+                  <td className="px-3 py-3 text-center border-l border-white/20 font-mono text-xs">{gateTotals?.theaterGross ? MONEY_FORMATTER.format(gateTotals.theaterGross) : '0.00'}</td>
+                  <td className="px-3 py-3 text-center border-l border-white/20 font-mono text-xs">{gateTotals?.taftafGross ? MONEY_FORMATTER.format(gateTotals.taftafGross) : '0.00'}</td>
+                  <td className="px-3 py-3 text-center border-l border-white/20 font-mono text-xs text-amber-300 font-bold">{gateTotals?.totalVat ? MONEY_FORMATTER.format(gateTotals.totalVat) : '0.00'}</td>
+                  <td className="px-3 py-3 text-center border-l border-white/20 font-mono text-sm font-bold">{gateTotals?.netRevenue ? MONEY_FORMATTER.format(gateTotals.netRevenue) : '0.00'}</td>
+                  {/* Standard Split */}
+                  <td className="px-3 py-3 text-center border-l border-white/20 font-mono text-xs">{gateTotals?.stdEntranceGross ? MONEY_FORMATTER.format(gateTotals.stdEntranceGross) : '0.00'}</td>
+                  <td className="px-3 py-3 text-center border-l border-white/20 font-mono text-xs">{gateTotals?.stdTheaterGross ? MONEY_FORMATTER.format(gateTotals.stdTheaterGross) : '0.00'}</td>
+                  <td className="px-3 py-3 text-center font-mono text-xs">{gateTotals?.stdTaftafGross ? MONEY_FORMATTER.format(gateTotals.stdTaftafGross) : '0.00'}</td>
+                </tr>
               ) : sectorType === 6 ? (
                 <tr className="bg-[#0f172a] !text-white font-bold">
                   <td className="sticky right-0 z-30 px-4 py-4 text-center font-sans text-sm lg:text-base font-black border-l border-white/20 bg-[#0f172a] !text-white">
@@ -3425,34 +3935,6 @@ export const DailyRevenueMatrix = React.memo(function DailyRevenueMatrix({
                     الإجمالي
                   </td>
                   {columns.map((col) => {
-                    if (isTwoRowHeader && col.branchCode === 'golden') {
-                      const total = columnTotals['golden'] || 0;
-                      return (
-                        <React.Fragment key={col.branchCode}>
-                          <td className={`px-2 py-4 text-center font-mono text-xs border-l border-white/20 !text-white/70 ${theme.solidBg}`}>0.00</td>
-                          <td className={`px-2 py-4 text-center font-mono text-xs border-l border-white/20 !text-white/70 ${theme.solidBg}`}>0.00</td>
-                          <td className={`px-2 py-4 text-center font-mono text-xs border-l border-white/20 !text-white/70 ${theme.solidBg}`}>0.00</td>
-                          <td className={`px-2 py-4 text-center font-mono text-xs border-l border-white/20 !text-white/70 ${theme.solidBg}`}>0.00</td>
-                          <td className={`px-3 py-4 text-left font-black text-base lg:text-lg border-l border-white/20 !text-white ${theme.solidBg}`}>
-                            {MONEY_FORMATTER.format(total)}
-                          </td>
-                        </React.Fragment>
-                      );
-                    }
-                    if (isTwoRowHeader && col.branchCode === '4') {
-                      const total = columnTotals['4'] || 0;
-                      return (
-                        <React.Fragment key={col.branchCode}>
-                          <td className={`px-2 py-4 text-center font-mono text-xs border-l border-white/20 !text-white/70 ${theme.solidBg}`}>0.00</td>
-                          <td className={`px-2 py-4 text-center font-mono text-xs border-l border-white/20 !text-white/70 ${theme.solidBg}`}>0.00</td>
-                          <td className={`px-2 py-4 text-center font-mono text-xs border-l border-white/20 !text-white/70 ${theme.solidBg}`}>0.00</td>
-                          <td className={`px-2 py-4 text-center font-mono text-xs border-l border-white/20 !text-white/70 ${theme.solidBg}`}>0.00</td>
-                          <td className={`px-3 py-4 text-left font-black text-base lg:text-lg border-l border-white/20 !text-white ${theme.solidBg}`}>
-                            {MONEY_FORMATTER.format(total)}
-                          </td>
-                        </React.Fragment>
-                      );
-                    }
                     const total = columnTotals[col.branchCode] || 0;
                     return (
                       <td

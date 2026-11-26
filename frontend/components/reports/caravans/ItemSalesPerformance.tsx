@@ -207,15 +207,15 @@ export function ItemSalesPerformance({
             </span>
             <span
               className={`mt-1 block text-lg font-extrabold tabular-nums tracking-tight font-mono ${
-                summary.revenueGrowthPct !== null && summary.revenueGrowthPct >= 0
+                summary.revenueGrowthPct != null && summary.revenueGrowthPct >= 0
                   ? 'text-orange-600 dark:text-[#c4b5fd]'
-                  : summary.revenueGrowthPct !== null
+                  : summary.revenueGrowthPct != null
                   ? 'text-amber-600 dark:text-yellow-300'
                   : 'text-slate-400 dark:text-zinc-400'
               }`}
               dir="ltr"
             >
-              {summary.revenueGrowthPct !== null
+              {summary.revenueGrowthPct != null
                 ? `${summary.revenueGrowthPct >= 0 ? '+' : ''}${summary.revenueGrowthPct.toFixed(1)}%`
                 : '—'}
             </span>
@@ -525,7 +525,7 @@ export function ItemSalesPerformance({
                       {fmtMoney(item.prevNetRevenue)}
                     </td>
                     <td className="px-4 py-3.5 text-left tabular-nums whitespace-nowrap" dir="ltr">
-                      {item.growthPct !== null ? (
+                      {item.growthPct != null ? (
                         <span
                           className={`inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 text-xs font-semibold ${
                             isPositive

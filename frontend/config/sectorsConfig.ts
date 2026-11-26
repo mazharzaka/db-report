@@ -477,12 +477,12 @@ export const SECTORS_CONFIG: Record<SectorConfig['id'], SectorConfig> = {
       checkboxActive: 'border-slate-800 bg-[#1e293b] text-white dark:border-slate-600 dark:bg-slate-800',
       chartHex: '#334155',
       kpiCard: {
-        cardBorder: 'border-slate-200 dark:border-slate-700/60',
-        cardBg: 'bg-white dark:bg-slate-900/60',
+        cardBorder: 'border-slate-200/80 dark:border-slate-800',
+        cardBg: 'bg-slate-50/50 dark:bg-slate-900/40',
         cardRing: 'ring-slate-500/10 dark:ring-slate-400/10',
         cardHover: 'hover:border-slate-400 dark:hover:border-slate-600',
-        badge: 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-200',
-        divider: 'border-slate-200 dark:border-slate-700/40',
+        badge: 'bg-slate-200 text-slate-800 dark:bg-slate-800 dark:text-slate-200',
+        divider: 'border-slate-200 dark:border-slate-800',
       },
       matrix: {
         topBorder: 'border-t-4 border-[#1e293b]',

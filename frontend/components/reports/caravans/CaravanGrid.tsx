@@ -289,7 +289,7 @@ export const CaravanGrid = React.memo(function CaravanGrid({
       case 'marketShare':
         return (
           <span className="inline-flex rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-800 font-mono border border-slate-200 dark:bg-slate-800 dark:text-zinc-200 dark:border-white/5">
-            {r.marketShare.toFixed(1)}%
+            {(Number(r.marketShare) || 0).toFixed(1)}%
           </span>
         );
       case 'cash':
@@ -494,7 +494,7 @@ export const CaravanGrid = React.memo(function CaravanGrid({
     {
       key: 'marketShare',
       label: 'الحصة السوقية (Market Share %)',
-      getValue: (r: CaravanRecord) => `${r.marketShare.toFixed(1)}%`,
+      getValue: (r: CaravanRecord) => `${(Number(r.marketShare) || 0).toFixed(1)}%`,
       totalValue: '100%',
       color: 'text-orange-600 dark:text-violet-300 font-semibold',
     },
