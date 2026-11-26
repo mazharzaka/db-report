@@ -239,11 +239,10 @@ export function SectorDashboard({ sector }: SectorDashboardProps) {
                   <button
                     type="button"
                     onClick={() => dash.setViewMode("standard")}
-                    className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-bold transition ${
-                      dash.viewMode === "standard"
-                        ? `${sector.theme.btnActive} shadow-sm border border-slate-200/80 dark:border-zinc-800`
-                        : "text-slate-600 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-zinc-300"
-                    }`}
+                    className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-bold transition ${dash.viewMode === "standard"
+                      ? `${sector.theme.btnActive} shadow-sm border border-slate-200/80 dark:border-zinc-800`
+                      : "text-slate-600 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-zinc-300"
+                      }`}
                   >
                     <BarChart3 className="h-3.5 w-3.5" />
                     <span>التقرير القياسي</span>
@@ -251,11 +250,10 @@ export function SectorDashboard({ sector }: SectorDashboardProps) {
                   <button
                     type="button"
                     onClick={() => dash.setViewMode("comparison")}
-                    className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-bold transition ${
-                      dash.viewMode === "comparison"
-                        ? `${sector.theme.btnActive} shadow-sm border border-slate-200/80 dark:border-zinc-800`
-                        : "text-slate-600 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-zinc-300"
-                    }`}
+                    className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-bold transition ${dash.viewMode === "comparison"
+                      ? `${sector.theme.btnActive} shadow-sm border border-slate-200/80 dark:border-zinc-800`
+                      : "text-slate-600 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-zinc-300"
+                      }`}
                   >
                     <Scale className="h-3.5 w-3.5" />
                     <span>مقارنة فترتين</span>
@@ -417,7 +415,11 @@ export function SectorDashboard({ sector }: SectorDashboardProps) {
             <div className="grid grid-cols-1 gap-4 md:grid-cols-3 break-inside-avoid">
               {/* Card 1: Total Revenue (شامل الضريبة) */}
               <div
-                className={`flex flex-col justify-between rounded-xl border ${sector.theme.kpiCard.cardBorder} ${sector.theme.kpiCard.cardBg} p-5 shadow-sm ring-1 ${sector.theme.kpiCard.cardRing} backdrop-blur-md transition ${sector.theme.kpiCard.cardHover} border-t-2 ${sector.theme.borderAccent}`}
+                className={`flex flex-col justify-between rounded-xl p-5 shadow-sm backdrop-blur-md transition border-t-2 ${
+                  sector.type === 6
+                    ? 'border border-slate-200/80 bg-slate-50/50 ring-1 ring-slate-500/10 hover:border-slate-300 dark:border-slate-800 dark:bg-slate-900/40 dark:ring-slate-400/10 border-t-slate-700 dark:border-t-slate-500'
+                    : `border ${sector.theme.kpiCard.cardBorder} ${sector.theme.kpiCard.cardBg} ring-1 ${sector.theme.kpiCard.cardRing} ${sector.theme.kpiCard.cardHover} ${sector.theme.borderAccent}`
+                }`}
               >
                 <div className="flex items-start justify-between">
                   <div>
@@ -429,7 +431,11 @@ export function SectorDashboard({ sector }: SectorDashboardProps) {
                     </p>
                   </div>
                   <div
-                    className={`flex h-11 w-11 items-center justify-center rounded-xl ${sector.theme.iconBox} shadow-2xs`}
+                    className={`flex h-11 w-11 items-center justify-center rounded-xl shadow-2xs ${
+                      sector.type === 6
+                        ? 'bg-slate-200 text-slate-800 dark:bg-slate-800 dark:text-slate-200'
+                        : sector.theme.iconBox
+                    }`}
                   >
                     <DollarSign className="h-5 w-5" />
                   </div>
@@ -446,14 +452,22 @@ export function SectorDashboard({ sector }: SectorDashboardProps) {
                     />
                   </div>
                   <span
-                    className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${sector.theme.kpiCard.badge}`}
+                    className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                      sector.type === 6
+                        ? 'bg-slate-200 text-slate-800 dark:bg-slate-800 dark:text-slate-200'
+                        : sector.theme.kpiCard.badge
+                    }`}
                   >
                     الإجمالي
                   </span>
                 </div>
 
                 <div
-                  className={`mt-3 flex items-center justify-between border-t ${sector.theme.kpiCard.divider} pt-2.5 text-xs text-slate-500 dark:text-zinc-400`}
+                  className={`mt-3 flex items-center justify-between border-t pt-2.5 text-xs text-slate-500 dark:text-zinc-400 ${
+                    sector.type === 6
+                      ? 'border-slate-200 dark:border-slate-800'
+                      : sector.theme.kpiCard.divider
+                  }`}
                 >
                   <span>محسوب وفق المنافذ المعروضة</span>
                   <span className="font-mono tabular-nums">
@@ -463,11 +477,10 @@ export function SectorDashboard({ sector }: SectorDashboardProps) {
               </div>
 
               {/* Card 2: Net Sales (الصافي) */}
-              <div className={`flex flex-col justify-between rounded-xl p-5 shadow-sm backdrop-blur-md transition border-t-2 ${
-                sector.type === 6
-                  ? 'border border-slate-200/80 bg-slate-50/50 ring-1 ring-slate-500/10 hover:border-slate-300 dark:border-slate-800 dark:bg-slate-900/40 dark:ring-slate-400/10 border-t-slate-700 dark:border-t-slate-500'
-                  : 'border border-emerald-200/80 bg-emerald-50/50 ring-1 ring-emerald-500/10 hover:border-emerald-300 dark:border-emerald-900/40 dark:bg-emerald-950/20 dark:ring-emerald-400/10 border-t-emerald-500 dark:border-t-emerald-400'
-              }`}>
+              <div className={`flex flex-col justify-between rounded-xl p-5 shadow-sm backdrop-blur-md transition border-t-2 ${sector.type === 6
+                ? 'border border-slate-200/80 bg-slate-50/50 ring-1 ring-slate-500/10 hover:border-slate-300 dark:border-slate-800 dark:bg-slate-900/40 dark:ring-slate-400/10 border-t-slate-700 dark:border-t-slate-500'
+                : 'border border-emerald-200/80 bg-emerald-50/50 ring-1 ring-emerald-500/10 hover:border-emerald-300 dark:border-emerald-900/40 dark:bg-emerald-950/20 dark:ring-emerald-400/10 border-t-emerald-500 dark:border-t-emerald-400'
+                }`}>
                 <div className="flex items-start justify-between">
                   <div>
                     <span className="text-sm font-bold text-slate-800 dark:text-zinc-100">
@@ -477,11 +490,10 @@ export function SectorDashboard({ sector }: SectorDashboardProps) {
                       Retail (Total / 1.14)
                     </p>
                   </div>
-                  <div className={`flex h-11 w-11 items-center justify-center rounded-xl shadow-2xs ${
-                    sector.type === 6
-                      ? 'bg-slate-200 text-slate-800 dark:bg-slate-800 dark:text-slate-200'
-                      : 'bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400'
-                  }`}>
+                  <div className={`flex h-11 w-11 items-center justify-center rounded-xl shadow-2xs ${sector.type === 6
+                    ? 'bg-slate-200 text-slate-800 dark:bg-slate-800 dark:text-slate-200'
+                    : 'bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400'
+                    }`}>
                     <Receipt className="h-5 w-5" />
                   </div>
                 </div>
@@ -496,29 +508,26 @@ export function SectorDashboard({ sector }: SectorDashboardProps) {
                       symbolClassName="text-sm opacity-60 font-normal mr-1.5 select-none"
                     />
                   </div>
-                  <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-                    sector.type === 6
-                      ? 'bg-slate-200 text-slate-800 dark:bg-slate-800 dark:text-slate-200'
-                      : 'bg-emerald-100/80 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300'
-                  }`}>
+                  <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${sector.type === 6
+                    ? 'bg-slate-200 text-slate-800 dark:bg-slate-800 dark:text-slate-200'
+                    : 'bg-emerald-100/80 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300'
+                    }`}>
                     قبل الضريبة
                   </span>
                 </div>
 
-                <div className={`mt-3 flex items-center justify-between border-t pt-2.5 text-xs text-slate-500 dark:text-zinc-400 ${
-                  sector.type === 6 ? 'border-slate-200 dark:border-slate-800' : 'border-emerald-100/80 dark:border-emerald-900/30'
-                }`}>
+                <div className={`mt-3 flex items-center justify-between border-t pt-2.5 text-xs text-slate-500 dark:text-zinc-400 ${sector.type === 6 ? 'border-slate-200 dark:border-slate-800' : 'border-emerald-100/80 dark:border-emerald-900/30'
+                  }`}>
                   <span>صافي الدخل التشغيلي للمبيعات</span>
                   <span className="font-mono tabular-nums">87.7%</span>
                 </div>
               </div>
 
               {/* Card 3: VAT 14% (ضريبة القيمة المضافة) */}
-              <div className={`flex flex-col justify-between rounded-xl p-5 shadow-sm backdrop-blur-md transition border-t-2 ${
-                sector.type === 6
-                  ? 'border border-slate-200/80 bg-slate-50/50 ring-1 ring-slate-500/10 hover:border-slate-300 dark:border-slate-800 dark:bg-slate-900/40 dark:ring-slate-400/10 border-t-slate-700 dark:border-t-slate-500'
-                  : 'border border-amber-200/80 bg-amber-50/50 ring-1 ring-amber-500/10 hover:border-amber-300 dark:border-amber-900/40 dark:bg-amber-950/20 dark:ring-amber-400/10 border-t-amber-500 dark:border-t-amber-400'
-              }`}>
+              <div className={`flex flex-col justify-between rounded-xl p-5 shadow-sm backdrop-blur-md transition border-t-2 ${sector.type === 6
+                ? 'border border-slate-200/80 bg-slate-50/50 ring-1 ring-slate-500/10 hover:border-slate-300 dark:border-slate-800 dark:bg-slate-900/40 dark:ring-slate-400/10 border-t-slate-700 dark:border-t-slate-500'
+                : 'border border-amber-200/80 bg-amber-50/50 ring-1 ring-amber-500/10 hover:border-amber-300 dark:border-amber-900/40 dark:bg-amber-950/20 dark:ring-amber-400/10 border-t-amber-500 dark:border-t-amber-400'
+                }`}>
                 <div className="flex items-start justify-between">
                   <div>
                     <span className="text-sm font-bold text-slate-800 dark:text-zinc-100">
@@ -528,11 +537,10 @@ export function SectorDashboard({ sector }: SectorDashboardProps) {
                       Total - Net
                     </p>
                   </div>
-                  <div className={`flex h-11 w-11 items-center justify-center rounded-xl shadow-2xs ${
-                    sector.type === 6
-                      ? 'bg-slate-200 text-slate-800 dark:bg-slate-800 dark:text-slate-200'
-                      : 'bg-amber-500/10 text-amber-600 dark:bg-amber-500/20 dark:text-amber-400'
-                  }`}>
+                  <div className={`flex h-11 w-11 items-center justify-center rounded-xl shadow-2xs ${sector.type === 6
+                    ? 'bg-slate-200 text-slate-800 dark:bg-slate-800 dark:text-slate-200'
+                    : 'bg-amber-500/10 text-amber-600 dark:bg-amber-500/20 dark:text-amber-400'
+                    }`}>
                     <Percent className="h-5 w-5" />
                   </div>
                 </div>
@@ -547,18 +555,16 @@ export function SectorDashboard({ sector }: SectorDashboardProps) {
                       symbolClassName="text-sm opacity-60 font-normal mr-1.5 select-none"
                     />
                   </div>
-                  <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-                    sector.type === 6
-                      ? 'bg-slate-200 text-slate-800 dark:bg-slate-800 dark:text-slate-200'
-                      : 'bg-amber-100/80 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300'
-                  }`}>
+                  <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${sector.type === 6
+                    ? 'bg-slate-200 text-slate-800 dark:bg-slate-800 dark:text-slate-200'
+                    : 'bg-amber-100/80 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300'
+                    }`}>
                     14% مستحقة
                   </span>
                 </div>
 
-                <div className={`mt-3 flex items-center justify-between border-t pt-2.5 text-xs text-slate-500 dark:text-zinc-400 ${
-                  sector.type === 6 ? 'border-slate-200 dark:border-slate-800' : 'border-amber-100/80 dark:border-amber-900/30'
-                }`}>
+                <div className={`mt-3 flex items-center justify-between border-t pt-2.5 text-xs text-slate-500 dark:text-zinc-400 ${sector.type === 6 ? 'border-slate-200 dark:border-slate-800' : 'border-amber-100/80 dark:border-amber-900/30'
+                  }`}>
                   <span>الضريبة المحصلة للإقرار المالي</span>
                   <span className="font-mono tabular-nums">14%</span>
                 </div>
@@ -594,9 +600,8 @@ export function SectorDashboard({ sector }: SectorDashboardProps) {
 
               return (
                 <div
-                  className={`grid grid-cols-1 gap-4 transition-opacity lg:grid-cols-12 break-inside-avoid ${
-                    dash.loading ? "opacity-60" : ""
-                  } ${!dash.printConfig.charts ? "print:hidden" : ""}`}
+                  className={`grid grid-cols-1 gap-4 transition-opacity lg:grid-cols-12 break-inside-avoid ${dash.loading ? "opacity-60" : ""
+                    } ${!dash.printConfig.charts ? "print:hidden" : ""}`}
                 >
                   <Card
                     className={
@@ -607,19 +612,17 @@ export function SectorDashboard({ sector }: SectorDashboardProps) {
                     title={`مقارنة أداء منافذ ${sector.label}`}
                     subtitle={
                       isSingleDay
-                        ? `جميع منافذ القطاع (${dash.comparisonStats.length} منفذ) مرتبة حسب ${
-                            dash.barMetric === "revenue"
-                              ? "الإجمالي الشامل"
-                              : "عدد العمليات"
-                          }`
+                        ? `جميع منافذ القطاع (${dash.comparisonStats.length} منفذ) مرتبة حسب ${dash.barMetric === "revenue"
+                          ? "الإجمالي الشامل"
+                          : "عدد العمليات"
+                        }`
                         : `أعلى ${Math.min(
-                            dash.comparisonStats.length,
-                            10,
-                          )} منافذ مرتبة حسب ${
-                            dash.barMetric === "revenue"
-                              ? "الإجمالي الشامل"
-                              : "عدد العمليات"
-                          }`
+                          dash.comparisonStats.length,
+                          10,
+                        )} منافذ مرتبة حسب ${dash.barMetric === "revenue"
+                          ? "الإجمالي الشامل"
+                          : "عدد العمليات"
+                        }`
                     }
                     action={
                       <Segmented
@@ -671,9 +674,8 @@ export function SectorDashboard({ sector }: SectorDashboardProps) {
             {/* ROW 3: FINANCIAL CONTROL (Active Voids Alert & Master Ledger)         */}
             {/* --------------------------------------------------------------------- */}
             <div
-              className={`space-y-4 print:space-y-3 print:break-inside-auto ${
-                !dash.printConfig.table ? "print:hidden" : ""
-              }`}
+              className={`space-y-4 print:space-y-3 print:break-inside-auto ${!dash.printConfig.table ? "print:hidden" : ""
+                }`}
             >
               {/* Active Voids Alert Widget */}
               <VoidsAlertWidget rows={dash.records} />

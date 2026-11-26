@@ -97,12 +97,10 @@ export const PAID_RIDES_DISPLAY_NAMES: Record<string, string> = {
   'golden': 'Golden',
   'topspin': 'Top Spin',
   '8': 'Go Kart',
-  'moto': 'Moto',
   '4': '7 D',
   '1': 'Discovery',
   '113': 'Horse',
   '6': 'Tornado',
-  'camel': 'Camel',
   '115': 'Funny Slides',
   'fire': 'Fire Brigade',
   '2': 'Super Spin',
@@ -116,23 +114,19 @@ export const PAID_RIDES_SECTOR_ORDER: string[] = [
   'golden',    // 4. Golden (الذهبية / VIP / الباقات) — Active
   'topspin',   // 5. Top Spin (التوب سبين) — Inactive
   '8',         // 6. Go Kart (السيارات) — Active
-  'moto',      // 7. Moto (الموتوسيكلات) — Inactive
-  '4',         // 8. 7 D (7D) — Active
-  '1',         // 9. Discovery (الديسكفري) — Active
-  '113',       // 10. Horse (الخيل — 113) — Active
-  '6',         // 11. Tornado (التورنيدو) — Active
-  'camel',     // 12. Camel (الجمال) — Inactive
-  '115',       // 13. Funny Slides (شلال المرح — 115) — Active
-  'fire',      // 14. Fire Brigade (المطافي) — Inactive
-  '2',         // 15. Super Spin (السوبر سبين) — Active
-  '14',        // 16. Laser zone (الليزر زون) — Active
+  '4',         // 7. 7 D (7D) — Active
+  '1',         // 8. Discovery (الديسكفري) — Active
+  '113',       // 9. Horse (الخيل — 113) — Active
+  '6',         // 10. Tornado (التورنيدو) — Active
+  '115',       // 11. Funny Slides (شلال المرح — 115) — Active
+  'fire',      // 12. Fire Brigade (المطافي) — Inactive
+  '2',         // 13. Super Spin (السوبر سبين) — Active
+  '14',        // 14. Laser zone (الليزر زون) — Active
 ];
 
 export const PAID_RIDES_INACTIVE_CODES = new Set([
   'simulator',
   'topspin',
-  'moto',
-  'camel',
   'fire',
 ]);
 
@@ -352,10 +346,10 @@ const MatrixTableRow = React.memo(function MatrixTableRow({
             <td
               key={col.branchCode}
               className={`px-3 py-3.5 text-center font-mono text-sm tabular-nums border-l border-slate-200/60 dark:border-zinc-800/40 ${hoverCellClass} ${hasVal
-                  ? val < 0
-                    ? 'text-rose-600 dark:text-rose-400 font-bold'
-                    : 'text-slate-900 dark:text-white font-bold'
-                  : 'text-slate-400 dark:text-zinc-600 font-normal opacity-40'
+                ? val < 0
+                  ? 'text-rose-600 dark:text-rose-400 font-bold'
+                  : 'text-slate-900 dark:text-white font-bold'
+                : 'text-slate-400 dark:text-zinc-600 font-normal opacity-40'
                 }`}
             >
               {hasVal ? MONEY_FORMATTER.format(val) : <span className="opacity-40 font-normal">0.00</span>}
@@ -392,60 +386,6 @@ const MatrixTableRow = React.memo(function MatrixTableRow({
 
       {/* Outlet / Game Values */}
       {columns.map((col) => {
-        if (isTwoRowHeader && col.branchCode === 'golden') {
-          const sGolden = row.values['golden_sgolden'] || 0;
-          const platinum = row.values['golden_platinum'] || 0;
-          const diamond = row.values['golden_diamond'] || 0;
-          const vip = row.values['golden_vip'] || 0;
-          const total = row.values['golden'] || (sGolden + platinum + diamond + vip);
-          return (
-            <React.Fragment key={col.branchCode}>
-              <td className={`px-2.5 py-3.5 text-center font-mono text-sm tabular-nums border-l border-slate-200/60 dark:border-zinc-800/40 ${hoverCellClass} ${sGolden > 0 ? 'text-slate-900 dark:text-white font-bold' : 'text-slate-400 dark:text-zinc-600 font-normal opacity-40'}`}>
-                {sGolden > 0 ? MONEY_FORMATTER.format(sGolden) : <span className="opacity-40 font-normal">0.00</span>}
-              </td>
-              <td className={`px-2.5 py-3.5 text-center font-mono text-sm tabular-nums border-l border-slate-200/60 dark:border-zinc-800/40 ${hoverCellClass} ${platinum > 0 ? 'text-slate-900 dark:text-white font-bold' : 'text-slate-400 dark:text-zinc-600 font-normal opacity-40'}`}>
-                {platinum > 0 ? MONEY_FORMATTER.format(platinum) : <span className="opacity-40 font-normal">0.00</span>}
-              </td>
-              <td className={`px-2.5 py-3.5 text-center font-mono text-sm tabular-nums border-l border-slate-200/60 dark:border-zinc-800/40 ${hoverCellClass} ${diamond > 0 ? 'text-slate-900 dark:text-white font-bold' : 'text-slate-400 dark:text-zinc-600 font-normal opacity-40'}`}>
-                {diamond > 0 ? MONEY_FORMATTER.format(diamond) : <span className="opacity-40 font-normal">0.00</span>}
-              </td>
-              <td className={`px-2.5 py-3.5 text-center font-mono text-sm tabular-nums border-l border-slate-200/60 dark:border-zinc-800/40 ${hoverCellClass} ${vip > 0 ? 'text-slate-900 dark:text-white font-bold' : 'text-slate-400 dark:text-zinc-600 font-normal opacity-40'}`}>
-                {vip > 0 ? MONEY_FORMATTER.format(vip) : <span className="opacity-40 font-normal">0.00</span>}
-              </td>
-              <td className={`px-3 py-3.5 text-left font-bold text-base lg:text-lg tabular-nums border-l border-slate-200/60 dark:border-zinc-800/40 ${hoverCellClass} ${total > 0 ? 'text-slate-900 dark:text-white font-black' : 'text-slate-400 dark:text-zinc-600 font-normal opacity-40'}`}>
-                {total > 0 ? MONEY_FORMATTER.format(total) : <span className="opacity-40 font-normal">—</span>}
-              </td>
-            </React.Fragment>
-          );
-        }
-
-        if (isTwoRowHeader && col.branchCode === '4') {
-          const cash = row.values['4_cash'] || 0;
-          const platinum = row.values['4_platinum'] || 0;
-          const diamond = row.values['4_diamond'] || 0;
-          const visa = row.values['4_visa'] || 0;
-          const total = row.values['4'] || (cash + platinum + diamond + visa);
-          return (
-            <React.Fragment key={col.branchCode}>
-              <td className={`px-2.5 py-3.5 text-center font-mono text-sm tabular-nums border-l border-slate-200/60 dark:border-zinc-800/40 ${hoverCellClass} ${cash > 0 ? 'text-slate-900 dark:text-white font-bold' : 'text-slate-400 dark:text-zinc-600 font-normal opacity-40'}`}>
-                {cash > 0 ? MONEY_FORMATTER.format(cash) : <span className="opacity-40 font-normal">0.00</span>}
-              </td>
-              <td className={`px-2.5 py-3.5 text-center font-mono text-sm tabular-nums border-l border-slate-200/60 dark:border-zinc-800/40 ${hoverCellClass} ${platinum > 0 ? 'text-slate-900 dark:text-white font-bold' : 'text-slate-400 dark:text-zinc-600 font-normal opacity-40'}`}>
-                {platinum > 0 ? MONEY_FORMATTER.format(platinum) : <span className="opacity-40 font-normal">0.00</span>}
-              </td>
-              <td className={`px-2.5 py-3.5 text-center font-mono text-sm tabular-nums border-l border-slate-200/60 dark:border-zinc-800/40 ${hoverCellClass} ${diamond > 0 ? 'text-slate-900 dark:text-white font-bold' : 'text-slate-400 dark:text-zinc-600 font-normal opacity-40'}`}>
-                {diamond > 0 ? MONEY_FORMATTER.format(diamond) : <span className="opacity-40 font-normal">0.00</span>}
-              </td>
-              <td className={`px-2.5 py-3.5 text-center font-mono text-sm tabular-nums border-l border-slate-200/60 dark:border-zinc-800/40 ${hoverCellClass} ${visa > 0 ? 'text-slate-900 dark:text-white font-bold' : 'text-slate-400 dark:text-zinc-600 font-normal opacity-40'}`}>
-                {visa > 0 ? MONEY_FORMATTER.format(visa) : <span className="opacity-40 font-normal">0.00</span>}
-              </td>
-              <td className={`px-3 py-3.5 text-left font-bold text-base lg:text-lg tabular-nums border-l border-slate-200/60 dark:border-zinc-800/40 ${hoverCellClass} ${total > 0 ? 'text-slate-900 dark:text-white font-black' : 'text-slate-400 dark:text-zinc-600 font-normal opacity-40'}`}>
-                {total > 0 ? MONEY_FORMATTER.format(total) : <span className="opacity-40 font-normal">—</span>}
-              </td>
-            </React.Fragment>
-          );
-        }
-
         const val = row.values[col.branchCode] || 0;
         const hasValue = Math.abs(val) > 0.0001;
         return (
@@ -928,13 +868,43 @@ export const DailyRevenueMatrix = React.memo(function DailyRevenueMatrix({
     rows.forEach((r) => {
       const rawDate = 'date' in r && r.date ? r.date : r.period;
       const dateKey = (rawDate || 'غير محدد').trim();
-      const branchKey = String(r.branchCode || '').trim();
-      const branchName =
+      let branchKey = String(r.branchCode || '').trim();
+      let branchName =
         sectorType === 3
           ? VGAMES_DISPLAY_NAMES[branchKey] || r.name || `لعبة ${branchKey}`
           : sectorType === 2
             ? PAID_RIDES_DISPLAY_NAMES[branchKey] || r.name || `لعبة ${branchKey}`
             : CARAVAN_DISPLAY_NAMES[branchKey] || r.name || `منفذ ${branchKey}`;
+
+      if (sectorType === 6) {
+        const bCode = branchKey.toLowerCase();
+        const bName = String(r.name || '').trim().toLowerCase();
+
+        if (bCode === '120' || bCode === 'parking_private' || bName.includes('ملاكي') || (bName.includes('parking') && !bName.includes('bus') && !bName.includes('باص'))) {
+          branchKey = 'parking_private';
+        } else if (bCode === 'parking_buses' || bName.includes('buses') || bName.includes('باص') || bName.includes('اتوبيس') || bName.includes('ميكروباص')) {
+          branchKey = 'parking_buses';
+        } else if (bCode === 'mask' || bCode.includes('mask') || bName.includes('ماسك')) {
+          branchKey = 'mask';
+        } else if (bCode === '118' || bCode === 'locker' || bName.includes('deposit') || bName.includes('أمانات') || bName.includes('امانات') || bName.includes('خازين') || bName.includes('lock')) {
+          branchKey = 'locker';
+        } else if (bCode === 'g_and_r' || bCode.includes('g_and_r') || bName.includes('g&r') || bName.includes('car ')) {
+          branchKey = 'g_and_r';
+        } else if (bCode === 'taftaf' || bName.includes('طفطف') || bName.includes('taftaf')) {
+          branchKey = 'taftaf';
+        } else if (bCode === 'metro' || bCode.startsWith('metro_') || bName.includes('مترو') || bName.includes('metro')) {
+          branchKey = bCode.startsWith('metro_') ? bCode : 'metro_cash';
+        } else if (bCode === 'telephon' || bName.includes('تليفون') || bName.includes('telephon')) {
+          branchKey = 'telephon';
+        } else {
+          const matchedOth = OTH_SECTOR_COLUMNS.find((c) => c.id === bCode);
+          if (matchedOth) {
+            branchKey = matchedOth.id;
+          }
+        }
+        const othCol = OTH_SECTOR_COLUMNS.find((c) => c.id === branchKey);
+        branchName = othCol ? othCol.header : (r.name || branchKey);
+      }
 
       if (branchKey && !colMap.has(branchKey)) {
         colMap.set(branchKey, branchName);
@@ -946,6 +916,7 @@ export const DailyRevenueMatrix = React.memo(function DailyRevenueMatrix({
       const rawTotal = Number(r.total) || 0;
       const itemBaseTotal = Math.abs(cash + visa + cl) > 0.0001 ? (cash + visa + cl) : rawTotal;
 
+      // Single accumulation into branchTotals - NEVER duplicated
       branchTotals.set(branchKey, (branchTotals.get(branchKey) || 0) + itemBaseTotal);
 
       // Track F&B metrics when sectorType === 1
@@ -988,31 +959,12 @@ export const DailyRevenueMatrix = React.memo(function DailyRevenueMatrix({
       }
 
       const branchValues = dateMap.get(dateKey)!;
-      const currentVal = branchValues.get(branchKey) || {
-        cash: 0,
-        visa: 0,
-        cl: 0,
-        rawTotal: 0,
-      };
-      branchValues.set(branchKey, {
-        cash: currentVal.cash + cash,
-        visa: currentVal.visa + visa,
-        cl: currentVal.cl + cl,
-        rawTotal: currentVal.rawTotal + rawTotal,
-      });
 
-      // Track OTH metrics when sectorType === 6
-      if (sectorType === 6) {
-        let mappedAny = false;
+      // Handle nested values object if present (e.g. from pre-aggregated matrix)
+      if (sectorType === 6 && (r as any).values && typeof (r as any).values === 'object') {
         OTH_SECTOR_COLUMNS.forEach((col) => {
-          let colVal = 0;
-          if ((r as any).values && typeof (r as any).values[col.id] === 'number') {
-            colVal = (r as any).values[col.id];
-          } else if (typeof (r as any)[col.id] === 'number') {
-            colVal = (r as any)[col.id];
-          }
+          const colVal = Number((r as any).values[col.id]) || 0;
           if (colVal > 0) {
-            mappedAny = true;
             const cur = branchValues.get(col.id) || { cash: 0, visa: 0, cl: 0, rawTotal: 0 };
             branchValues.set(col.id, {
               cash: cur.cash + colVal,
@@ -1023,39 +975,20 @@ export const DailyRevenueMatrix = React.memo(function DailyRevenueMatrix({
             branchTotals.set(col.id, (branchTotals.get(col.id) || 0) + colVal);
           }
         });
-
-        if (!mappedAny) {
-          const bCode = String(r.branchCode || '').trim().toLowerCase();
-          const bName = String(r.name || '').trim().toLowerCase();
-
-          let targetColId = '';
-          if (bCode === '120' || bName.includes('parking') || bName.includes('بارك') || bCode === 'parking_private') {
-            targetColId = 'parking_private';
-          } else if (bCode === 'parking_buses' || bName.includes('buses') || bName.includes('باص')) {
-            targetColId = 'parking_buses';
-          } else if (bCode.includes('mask') || bName.includes('ماسك') || bName.includes('mask')) {
-            targetColId = 'mask';
-          } else if (bCode === '118' || bName.includes('deposit') || bName.includes('أمانات') || bName.includes('امانات') || bCode === 'locker') {
-            targetColId = 'locker';
-          } else if (bCode.includes('telephon') || bName.includes('تليفون')) {
-            targetColId = 'telephon';
-          } else if (bCode === 'g_and_r' || bName.includes('g&r')) {
-            targetColId = 'g_and_r';
-          } else if (OTH_SECTOR_COLUMNS.some((c) => c.id === bCode)) {
-            targetColId = bCode;
-          }
-
-          if (targetColId) {
-            const cur = branchValues.get(targetColId) || { cash: 0, visa: 0, cl: 0, rawTotal: 0 };
-            branchValues.set(targetColId, {
-              cash: cur.cash + cash,
-              visa: cur.visa + visa,
-              cl: cur.cl + cl,
-              rawTotal: cur.rawTotal + itemBaseTotal,
-            });
-            branchTotals.set(targetColId, (branchTotals.get(targetColId) || 0) + itemBaseTotal);
-          }
-        }
+      } else {
+        // Standard single record accumulation - EXACTLY ONCE
+        const currentVal = branchValues.get(branchKey) || {
+          cash: 0,
+          visa: 0,
+          cl: 0,
+          rawTotal: 0,
+        };
+        branchValues.set(branchKey, {
+          cash: currentVal.cash + cash,
+          visa: currentVal.visa + visa,
+          cl: currentVal.cl + cl,
+          rawTotal: currentVal.rawTotal + itemBaseTotal,
+        });
       }
     });
 
@@ -1437,7 +1370,6 @@ export const DailyRevenueMatrix = React.memo(function DailyRevenueMatrix({
   }, [sectorType, columns]);
 
   const isTwoRowHeader =
-    (isPaidRides && effectiveRideStatusFilter === 'all') ||
     isRestaurants ||
     (sectorType === 6 && othHeaderGroups.some((g) => g.parentHeader !== null));
 
@@ -1448,13 +1380,9 @@ export const DailyRevenueMatrix = React.memo(function DailyRevenueMatrix({
     if (sectorType === 6) {
       return 1 + columns.length + 5;
     }
-    const outletsCount = columns.reduce(
-      (acc, c) =>
-        acc + (isTwoRowHeader && (c.branchCode === 'golden' || c.branchCode === '4') ? 5 : 1),
-      0
-    );
+    const outletsCount = columns.length;
     return 1 + outletsCount + (calcMode === 'vat' ? 1 : 4);
-  }, [columns, isTwoRowHeader, calcMode, isRestaurants, sectorType]);
+  }, [columns, calcMode, isRestaurants, sectorType]);
 
   const handleExportToExcel = async () => {
     try {
@@ -2084,39 +2012,21 @@ export const DailyRevenueMatrix = React.memo(function DailyRevenueMatrix({
         const exportColumns: ExportColDef[] = [];
 
         columns.forEach((col) => {
-          if (isTwoRowHeader && col.branchCode === 'golden') {
-            exportColumns.push(
-              { key: 'golden_sgolden', header: 'S.Golden', parentHeader: 'Golden', width: 14, getValue: (r) => r.values['golden_sgolden'] || 0, getTotal: () => columnTotals['golden_sgolden'] || 0 },
-              { key: 'golden_platinum', header: 'Platinum', parentHeader: 'Golden', width: 14, getValue: (r) => r.values['golden_platinum'] || 0, getTotal: () => columnTotals['golden_platinum'] || 0 },
-              { key: 'golden_diamond', header: 'Diamond', parentHeader: 'Golden', width: 14, getValue: (r) => r.values['golden_diamond'] || 0, getTotal: () => columnTotals['golden_diamond'] || 0 },
-              { key: 'golden_vip', header: 'VIP', parentHeader: 'Golden', width: 14, getValue: (r) => r.values['golden_vip'] || 0, getTotal: () => columnTotals['golden_vip'] || 0 },
-              { key: 'golden_total', header: 'Total', parentHeader: 'Golden', width: 16, getValue: (r) => r.values['golden'] || 0, getTotal: () => columnTotals['golden'] || 0 }
-            );
-          } else if (isTwoRowHeader && col.branchCode === '4') {
-            exportColumns.push(
-              { key: '4_cash', header: 'Cash', parentHeader: '7 D', width: 14, getValue: (r) => r.values['4_cash'] || 0, getTotal: () => columnTotals['4_cash'] || 0 },
-              { key: '4_platinum', header: 'Platinum', parentHeader: '7 D', width: 14, getValue: (r) => r.values['4_platinum'] || 0, getTotal: () => columnTotals['4_platinum'] || 0 },
-              { key: '4_diamond', header: 'Diamond', parentHeader: '7 D', width: 14, getValue: (r) => r.values['4_diamond'] || 0, getTotal: () => columnTotals['4_diamond'] || 0 },
-              { key: '4_visa', header: 'Visa', parentHeader: '7 D', width: 14, getValue: (r) => r.values['4_visa'] || 0, getTotal: () => columnTotals['4_visa'] || 0 },
-              { key: '4_total', header: 'Total', parentHeader: '7 D', width: 16, getValue: (r) => r.values['4'] || 0, getTotal: () => columnTotals['4'] || 0 }
-            );
-          } else {
-            const headerName =
-              sectorType === 3
-                ? (VGAMES_DISPLAY_NAMES[col.branchCode] || col.name)
-                : sectorType === 2
-                  ? (PAID_RIDES_DISPLAY_NAMES[col.branchCode] || col.name)
-                  : (CARAVAN_DISPLAY_NAMES[col.branchCode] || col.name);
+          const headerName =
+            sectorType === 3
+              ? (VGAMES_DISPLAY_NAMES[col.branchCode] || col.name)
+              : sectorType === 2
+                ? (PAID_RIDES_DISPLAY_NAMES[col.branchCode] || col.name)
+                : (CARAVAN_DISPLAY_NAMES[col.branchCode] || col.name);
 
-            exportColumns.push({
-              key: `col_${col.branchCode}`,
-              header: headerName,
-              width: 18,
-              isShop: sectorType === 4 && SHOP_BRANCH_CODES_SET.has(col.branchCode),
-              getValue: (r) => r.values[col.branchCode] || 0,
-              getTotal: () => columnTotals[col.branchCode] || 0,
-            });
-          }
+          exportColumns.push({
+            key: `col_${col.branchCode}`,
+            header: headerName,
+            width: 18,
+            isShop: sectorType === 4 && SHOP_BRANCH_CODES_SET.has(col.branchCode),
+            getValue: (r) => r.values[col.branchCode] || 0,
+            getTotal: () => columnTotals[col.branchCode] || 0,
+          });
         });
 
         // Summary columns on the right (matching English Copy of RETAL.xls layout)
@@ -2905,19 +2815,6 @@ export const DailyRevenueMatrix = React.memo(function DailyRevenueMatrix({
                   {columns.map((col) => {
                     const isShop = sectorType === 4 && SHOP_BRANCH_CODES_SET.has(col.branchCode);
                     const isGame = sectorType === 2 || sectorType === 3;
-                    if (isTwoRowHeader && (col.branchCode === 'golden' || col.branchCode === '4')) {
-                      const titleText = col.branchCode === 'golden' ? 'Golden' : '7 D';
-                      return (
-                        <th
-                          key={col.branchCode}
-                          colSpan={5}
-                          className={`px-3 py-2 text-center border-l font-black text-sm tracking-wide border-slate-300 dark:border-zinc-700 ${theme.matrix.headerBg} text-slate-900 dark:text-white`}
-                        >
-                          {titleText}
-                        </th>
-                      );
-                    }
-
                     return (
                       <th
                         key={col.branchCode}
@@ -2996,37 +2893,6 @@ export const DailyRevenueMatrix = React.memo(function DailyRevenueMatrix({
                     </>
                   )}
                 </tr>
-
-                {/* Sub-header Row for Two-Level Grouped Headers */}
-                {isTwoRowHeader && (
-                  <tr className={`border-b border-white/20 ${theme.solidBg} text-white sticky top-[48px] z-20 shadow-xs text-xs sm:text-sm font-bold`}>
-                    {columns.map((col) => {
-                      if (col.branchCode === 'golden') {
-                        return (
-                          <React.Fragment key="golden-sub-headers">
-                            <th className="px-2.5 py-2.5 text-center align-middle border-l border-white/20 min-w-[80px] text-xs sm:text-sm font-bold text-white">S.Golden</th>
-                            <th className="px-2.5 py-2.5 text-center align-middle border-l border-white/20 min-w-[80px] text-xs sm:text-sm font-bold text-white">Platinum</th>
-                            <th className="px-2.5 py-2.5 text-center align-middle border-l border-white/20 min-w-[80px] text-xs sm:text-sm font-bold text-white">Diamond</th>
-                            <th className="px-2.5 py-2.5 text-center align-middle border-l border-white/20 min-w-[80px] text-xs sm:text-sm font-bold text-white">VIP</th>
-                            <th className="px-3 py-2.5 text-center align-middle border-l border-white/20 min-w-[90px] text-xs sm:text-sm font-black text-white">Total</th>
-                          </React.Fragment>
-                        );
-                      }
-                      if (col.branchCode === '4') {
-                        return (
-                          <React.Fragment key="4-sub-headers">
-                            <th className="px-2.5 py-2.5 text-center align-middle border-l border-white/20 min-w-[80px] text-xs sm:text-sm font-bold text-white">Cash</th>
-                            <th className="px-2.5 py-2.5 text-center align-middle border-l border-white/20 min-w-[80px] text-xs sm:text-sm font-bold text-white">Platinum</th>
-                            <th className="px-2.5 py-2.5 text-center align-middle border-l border-white/20 min-w-[80px] text-xs sm:text-sm font-bold text-white">Diamond</th>
-                            <th className="px-2.5 py-2.5 text-center align-middle border-l border-white/20 min-w-[80px] text-xs sm:text-sm font-bold text-white">Visa</th>
-                            <th className="px-3 py-2.5 text-center align-middle border-l border-white/20 min-w-[90px] text-xs sm:text-sm font-black text-white">Total</th>
-                          </React.Fragment>
-                        );
-                      }
-                      return null;
-                    })}
-                  </tr>
-                )}
               </>
             )}
           </thead>
@@ -3409,34 +3275,6 @@ export const DailyRevenueMatrix = React.memo(function DailyRevenueMatrix({
                     الإجمالي
                   </td>
                   {columns.map((col) => {
-                    if (isTwoRowHeader && col.branchCode === 'golden') {
-                      const total = columnTotals['golden'] || 0;
-                      return (
-                        <React.Fragment key={col.branchCode}>
-                          <td className={`px-2 py-4 text-center font-mono text-xs border-l border-white/20 !text-white/70 ${theme.solidBg}`}>0.00</td>
-                          <td className={`px-2 py-4 text-center font-mono text-xs border-l border-white/20 !text-white/70 ${theme.solidBg}`}>0.00</td>
-                          <td className={`px-2 py-4 text-center font-mono text-xs border-l border-white/20 !text-white/70 ${theme.solidBg}`}>0.00</td>
-                          <td className={`px-2 py-4 text-center font-mono text-xs border-l border-white/20 !text-white/70 ${theme.solidBg}`}>0.00</td>
-                          <td className={`px-3 py-4 text-left font-black text-base lg:text-lg border-l border-white/20 !text-white ${theme.solidBg}`}>
-                            {MONEY_FORMATTER.format(total)}
-                          </td>
-                        </React.Fragment>
-                      );
-                    }
-                    if (isTwoRowHeader && col.branchCode === '4') {
-                      const total = columnTotals['4'] || 0;
-                      return (
-                        <React.Fragment key={col.branchCode}>
-                          <td className={`px-2 py-4 text-center font-mono text-xs border-l border-white/20 !text-white/70 ${theme.solidBg}`}>0.00</td>
-                          <td className={`px-2 py-4 text-center font-mono text-xs border-l border-white/20 !text-white/70 ${theme.solidBg}`}>0.00</td>
-                          <td className={`px-2 py-4 text-center font-mono text-xs border-l border-white/20 !text-white/70 ${theme.solidBg}`}>0.00</td>
-                          <td className={`px-2 py-4 text-center font-mono text-xs border-l border-white/20 !text-white/70 ${theme.solidBg}`}>0.00</td>
-                          <td className={`px-3 py-4 text-left font-black text-base lg:text-lg border-l border-white/20 !text-white ${theme.solidBg}`}>
-                            {MONEY_FORMATTER.format(total)}
-                          </td>
-                        </React.Fragment>
-                      );
-                    }
                     const total = columnTotals[col.branchCode] || 0;
                     return (
                       <td

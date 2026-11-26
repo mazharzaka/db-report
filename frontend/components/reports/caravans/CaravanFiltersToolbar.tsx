@@ -615,13 +615,12 @@ export function CaravanFiltersToolbar({
                   type="button"
                   disabled={isToday || isLoading}
                   onClick={() => !isToday && onApplyPreset(p.id)}
-                  className={`rounded-lg px-3.5 py-1.5 text-xs font-semibold tabular-nums tracking-tight transition-all duration-200 ${
-                    isToday
-                      ? 'opacity-50 cursor-not-allowed pointer-events-none bg-slate-100 text-slate-700 dark:bg-zinc-800 dark:text-zinc-400'
-                      : isActive
-                        ? `${theme.btnActive} shadow-sm font-bold`
-                        : 'bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-zinc-800/80 dark:text-zinc-300 dark:hover:bg-zinc-700 dark:hover:text-white'
-                  }`}
+                  className={`rounded-lg px-3.5 py-1.5 text-xs font-semibold tabular-nums tracking-tight transition-all duration-200 ${isToday
+                    ? 'opacity-50 cursor-not-allowed pointer-events-none bg-slate-100 text-slate-700 dark:bg-zinc-800 dark:text-zinc-400'
+                    : isActive
+                      ? `${theme.btnActive} shadow-sm font-bold`
+                      : 'bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-zinc-800/80 dark:text-zinc-300 dark:hover:bg-zinc-700 dark:hover:text-white'
+                    }`}
                 >
                   {p.label}
                 </button>
@@ -654,11 +653,10 @@ export function CaravanFiltersToolbar({
                 key={p.id}
                 type="button"
                 onClick={() => onApplyCompPreset(p.id)}
-                className={`rounded-lg px-3 py-1 text-xs font-semibold tabular-nums tracking-tight transition-all duration-200 ${
-                  isActive
-                    ? `${theme.btnActive} shadow-sm font-bold`
-                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-zinc-800/80 dark:text-zinc-300 dark:hover:bg-zinc-700 dark:hover:text-white'
-                }`}
+                className={`rounded-lg px-3 py-1 text-xs font-semibold tabular-nums tracking-tight transition-all duration-200 ${isActive
+                  ? `${theme.btnActive} shadow-sm font-bold`
+                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-zinc-800/80 dark:text-zinc-300 dark:hover:bg-zinc-700 dark:hover:text-white'
+                  }`}
               >
                 {p.label}
               </button>
