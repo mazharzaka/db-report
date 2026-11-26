@@ -240,6 +240,37 @@ export function SectorDashboard({ sector }: SectorDashboardProps) {
                     </span>
                   )}
                 </span>
+
+                {dash.responseTimeMs !== null && (
+                  <button
+                    type="button"
+                    onClick={() => dash.triggerRefresh(true)}
+                    disabled={dash.loading || dash.comparisonLoading}
+                    title="اضغط لإعادة التحميل الإجباري وتجاوز الكاش (Bypass Cache)"
+                    className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium shadow-sm transition hover:scale-105 active:scale-95 disabled:opacity-50 cursor-pointer ${
+                      dash.fromCache
+                        ? "border-emerald-500/30 bg-emerald-50/90 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-950/40 dark:text-emerald-300"
+                        : "border-sky-500/30 bg-sky-50/90 text-sky-700 dark:border-sky-500/30 dark:bg-sky-950/40 dark:text-sky-300"
+                    }`}
+                  >
+                    {dash.fromCache ? (
+                      <>
+                        <span className="text-amber-500 dark:text-amber-400">⚡</span>
+                        <span className="font-semibold">من الكاش</span>
+                      </>
+                    ) : (
+                      <>
+                        <RefreshCw
+                          className={`h-3 w-3 text-sky-500 ${dash.loading ? "animate-spin" : ""}`}
+                        />
+                        <span className="font-semibold">بيانات مباشرة</span>
+                      </>
+                    )}
+                    <span className="tabular-nums font-mono text-[11px] opacity-80" dir="ltr">
+                      ({(dash.responseTimeMs / 1000).toFixed(2)}s)
+                    </span>
+                  </button>
+                )}
               </div>
 
               {/* Actions & Mode Switcher */}
@@ -271,8 +302,9 @@ export function SectorDashboard({ sector }: SectorDashboardProps) {
 
                 <button
                   type="button"
-                  onClick={dash.triggerRefresh}
+                  onClick={() => dash.triggerRefresh(true)}
                   disabled={dash.loading || dash.comparisonLoading}
+                  title="تحديث إجباري وتجاوز الكاش (Bypass Cache)"
                   aria-label="تحديث"
                   className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200/80 bg-white/80 text-slate-700 shadow-sm ring-1 ring-slate-900/5 transition hover:text-slate-900 hover:bg-slate-50 dark:border-zinc-800/80 dark:bg-zinc-900/60 dark:ring-white/10 dark:text-zinc-300 dark:hover:text-white dark:hover:bg-zinc-800 disabled:opacity-50 backdrop-blur-xs"
                 >

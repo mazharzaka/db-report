@@ -86,8 +86,10 @@ export async function handleCaravanReport(req, res, next) {
         queryParams.includeAdjustments !== false,
     });
 
+    const isFromCache = Boolean(report && report.fromCache);
+    res.setHeader("X-Cache-Status", isFromCache ? "HIT" : "MISS");
     res.setHeader("X-Response-Time-Ms", String(Date.now() - t0));
-    res.json({ status: "success", ...report });
+    res.json({ status: "success", fromCache: isFromCache, ...report });
   } catch (err) {
     next(err);
   }

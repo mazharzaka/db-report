@@ -345,8 +345,9 @@ export function FinancialDatePicker({
           </button>
           <button
             type="button"
-            disabled={true}
-            className="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-semibold text-slate-700 opacity-50 cursor-not-allowed pointer-events-none dark:border-white/5 dark:bg-[#09090b] dark:text-zinc-300"
+            disabled={isTriggerDisabled}
+            onClick={() => applyPreset('today')}
+            className="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-semibold text-slate-700 transition hover:border-orange-400 hover:bg-orange-50 hover:text-orange-700 dark:border-white/5 dark:bg-[#09090b] dark:text-zinc-300 dark:hover:border-orange-500/40 dark:hover:bg-orange-500/10 dark:hover:text-orange-300 disabled:opacity-50"
           >
             اليوم
           </button>

@@ -20,7 +20,9 @@ const __dirname = path.dirname(__filename);
 const app = express();
 
 // 1. Core Middlewares (CORS, Gzip Compression, Body Parsers, Static Assets)
-app.use(cors());
+app.use(cors({
+  exposedHeaders: ['X-Response-Time-Ms', 'X-Cache-Status']
+}));
 app.use(compressionMiddleware());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
