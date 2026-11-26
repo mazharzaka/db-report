@@ -19,6 +19,7 @@ import { getPool } from "./config/db.js";
 import { CaravanReportService } from "./services/caravanReportService.js";
 import { CaravanItemService } from "./services/caravanItemService.js";
 import { exportCaravanExcel } from "./controllers/exportController.js";
+import { GateAdjustmentsService } from "./services/gateAdjustmentsService.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -109,6 +110,7 @@ async function handleCaravanReport(req, res) {
       granularity: (granularity || "summary").toLowerCase(),
       sortBy: (sort || "total_desc").toLowerCase(),
       sectorType: secType,
+      includeAdjustments: queryParams.includeAdjustments !== 'false' && queryParams.includeAdjustments !== false,
     });
 
     res.json({
@@ -139,6 +141,49 @@ app.get("/api/reports/sectors", handleCaravanReport);
 // 4. مسار تصدير إكسيل المحاسبي المعتمد (ExcelJS RTL)
 app.get("/api/caravans/export", exportCaravanExcel);
 app.get("/api/sectors/export", exportCaravanExcel);
+
+// مسارات إدارة تسويات مبيعات البوابات والتسويق الخارجية (SectorType = 5)
+app.get("/api/gate-adjustments", (req, res) => {
+  try {
+    const { startDate, endDate } = req.query;
+    const data = GateAdjustmentsService.getAdjustments(startDate, endDate);
+    res.json({ status: "success", data });
+  } catch (err) {
+    console.error("[API Error] GET /api/gate-adjustments:", err);
+    res.status(500).json({ status: "error", message: err.message });
+  }
+});
+
+app.post("/api/gate-adjustments", (req, res) => {
+  try {
+    const { date, adjustments } = req.body;
+    if (adjustments && typeof adjustments === 'object' && !date) {
+      for (const [d, val] of Object.entries(adjustments)) {
+        GateAdjustmentsService.saveAdjustment(d, val);
+      }
+      return res.json({ status: "success", message: "Adjustments saved successfully" });
+    }
+    if (!date) {
+      return res.status(400).json({ status: "error", message: "Date is required" });
+    }
+    GateAdjustmentsService.saveAdjustment(date, req.body);
+    res.json({ status: "success", message: `Adjustment for ${date} saved successfully` });
+  } catch (err) {
+    console.error("[API Error] POST /api/gate-adjustments:", err);
+    res.status(500).json({ status: "error", message: err.message });
+  }
+});
+
+app.delete("/api/gate-adjustments/:date", (req, res) => {
+  try {
+    const { date } = req.params;
+    GateAdjustmentsService.deleteAdjustment(date);
+    res.json({ status: "success", message: `Adjustment for ${date} deleted successfully` });
+  } catch (err) {
+    console.error("[API Error] DELETE /api/gate-adjustments:", err);
+    res.status(500).json({ status: "error", message: err.message });
+  }
+});
 
 // 5. التحليلات التشغيلية على مستوى الأصناف (Pos_item_post)
 // params: startDate, endDate, branchCode (واحد أو عدة أكواد مفصولة بفاصلة), metricType = revenue | quantity, mode = best | slow

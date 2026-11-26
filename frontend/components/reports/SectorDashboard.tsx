@@ -40,6 +40,7 @@ import {
   KPIsSkeleton,
 } from "@/components/reports/caravans/ExecutiveKpisSection";
 import { DailyRevenueMatrix } from "@/components/reports/caravans/DailyRevenueMatrix";
+import { GateAdjustmentsModal } from "@/components/reports/caravans/GateAdjustmentsModal";
 import { useSectorDashboard } from "@/hooks/useSectorDashboard";
 import { type SectorConfig, SECTOR_ICONS } from "@/config/sectorsConfig";
 
@@ -54,16 +55,24 @@ export function SectorDashboard({ sector }: SectorDashboardProps) {
     "active" | "inactive" | "all"
   >("all");
   const [drawerOpen, setDrawerOpen] = React.useState(false);
+  const [isGateAdjustmentsOpen, setIsGateAdjustmentsOpen] = React.useState(false);
 
   // Dynamic calculations for the 3 Core KPI Cards based on currently displayed rows
   const financialTotals = React.useMemo(() => {
+    if (sector.type === 5 && dash.summary) {
+      const sum = dash.summary as any;
+      const total = Number(sum.totalTicketRev ?? sum.totalSales) || 0;
+      const net = Number(sum.netRevenue) || (total / 1.14);
+      const vat = Number(sum.totalVat) || (total - net);
+      return { total, net, retail: net, vat };
+    }
     let rawTotal = 0;
     (dash.records || []).forEach((r) => {
       const cash = Number(r.cash) || 0;
       const visa = Number(r.visa) || 0;
       const cl = Number(r.creditLine ?? (r as any).cl) || 0;
       const rowSum =
-        cash + visa + cl > 0 ? cash + visa + cl : Number(r.total) || 0;
+        cash + visa + cl > 0 ? cash + visa + cl : Number((r as any).totalTicketRev ?? r.total) || 0;
       rawTotal += rowSum;
     });
 
@@ -71,7 +80,7 @@ export function SectorDashboard({ sector }: SectorDashboardProps) {
     const vat = rawTotal - net;
 
     return { total: rawTotal, net, retail: net, vat };
-  }, [dash.records]);
+  }, [dash.records, dash.summary, sector.type]);
 
   // Unauthenticated screen guard
   if (dash.isAuthorized === null || !dash.isAuthorized) {
@@ -335,6 +344,7 @@ export function SectorDashboard({ sector }: SectorDashboardProps) {
               dash.setCompPreset("custom");
             }}
             comparisonLoading={dash.comparisonLoading}
+            onOpenGateAdjustments={() => setIsGateAdjustmentsOpen(true)}
           />
         </header>
 
@@ -415,11 +425,10 @@ export function SectorDashboard({ sector }: SectorDashboardProps) {
             <div className="grid grid-cols-1 gap-4 md:grid-cols-3 break-inside-avoid">
               {/* Card 1: Total Revenue (شامل الضريبة) */}
               <div
-                className={`flex flex-col justify-between rounded-xl p-5 shadow-sm backdrop-blur-md transition border-t-2 ${
-                  sector.type === 6
-                    ? 'border border-slate-200/80 bg-slate-50/50 ring-1 ring-slate-500/10 hover:border-slate-300 dark:border-slate-800 dark:bg-slate-900/40 dark:ring-slate-400/10 border-t-slate-700 dark:border-t-slate-500'
-                    : `border ${sector.theme.kpiCard.cardBorder} ${sector.theme.kpiCard.cardBg} ring-1 ${sector.theme.kpiCard.cardRing} ${sector.theme.kpiCard.cardHover} ${sector.theme.borderAccent}`
-                }`}
+                className={`flex flex-col justify-between rounded-xl p-5 shadow-sm backdrop-blur-md transition border-t-2 ${sector.type === 6
+                  ? 'border border-slate-200/80 bg-slate-50/50 ring-1 ring-slate-500/10 hover:border-slate-300 dark:border-slate-800 dark:bg-slate-900/40 dark:ring-slate-400/10 border-t-slate-700 dark:border-t-slate-500'
+                  : `border ${sector.theme.kpiCard.cardBorder} ${sector.theme.kpiCard.cardBg} ring-1 ${sector.theme.kpiCard.cardRing} ${sector.theme.kpiCard.cardHover} ${sector.theme.borderAccent}`
+                  }`}
               >
                 <div className="flex items-start justify-between">
                   <div>
@@ -431,11 +440,10 @@ export function SectorDashboard({ sector }: SectorDashboardProps) {
                     </p>
                   </div>
                   <div
-                    className={`flex h-11 w-11 items-center justify-center rounded-xl shadow-2xs ${
-                      sector.type === 6
-                        ? 'bg-slate-200 text-slate-800 dark:bg-slate-800 dark:text-slate-200'
-                        : sector.theme.iconBox
-                    }`}
+                    className={`flex h-11 w-11 items-center justify-center rounded-xl shadow-2xs ${sector.type === 6
+                      ? 'bg-slate-200 text-slate-800 dark:bg-slate-800 dark:text-slate-200'
+                      : sector.theme.iconBox
+                      }`}
                   >
                     <DollarSign className="h-5 w-5" />
                   </div>
@@ -452,22 +460,20 @@ export function SectorDashboard({ sector }: SectorDashboardProps) {
                     />
                   </div>
                   <span
-                    className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-                      sector.type === 6
-                        ? 'bg-slate-200 text-slate-800 dark:bg-slate-800 dark:text-slate-200'
-                        : sector.theme.kpiCard.badge
-                    }`}
+                    className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${sector.type === 6
+                      ? 'bg-slate-200 text-slate-800 dark:bg-slate-800 dark:text-slate-200'
+                      : sector.theme.kpiCard.badge
+                      }`}
                   >
                     الإجمالي
                   </span>
                 </div>
 
                 <div
-                  className={`mt-3 flex items-center justify-between border-t pt-2.5 text-xs text-slate-500 dark:text-zinc-400 ${
-                    sector.type === 6
-                      ? 'border-slate-200 dark:border-slate-800'
-                      : sector.theme.kpiCard.divider
-                  }`}
+                  className={`mt-3 flex items-center justify-between border-t pt-2.5 text-xs text-slate-500 dark:text-zinc-400 ${sector.type === 6
+                    ? 'border-slate-200 dark:border-slate-800'
+                    : sector.theme.kpiCard.divider
+                    }`}
                 >
                   <span>محسوب وفق المنافذ المعروضة</span>
                   <span className="font-mono tabular-nums">
@@ -673,23 +679,25 @@ export function SectorDashboard({ sector }: SectorDashboardProps) {
             {/* --------------------------------------------------------------------- */}
             {/* ROW 3: FINANCIAL CONTROL (Active Voids Alert & Master Ledger)         */}
             {/* --------------------------------------------------------------------- */}
-            <div
-              className={`space-y-4 print:space-y-3 print:break-inside-auto ${!dash.printConfig.table ? "print:hidden" : ""
-                }`}
-            >
-              {/* Active Voids Alert Widget */}
-              <VoidsAlertWidget rows={dash.records} />
+            {sector.type !== 5 && (
+              <div
+                className={`space-y-4 print:space-y-3 print:break-inside-auto ${!dash.printConfig.table ? "print:hidden" : ""
+                  }`}
+              >
+                {/* Active Voids Alert Widget */}
+                <VoidsAlertWidget rows={dash.records} />
 
-              {/* Master Financial Ledger */}
-              <CaravanGrid
-                rows={dash.records}
-                showPeriod={dash.granularity !== "summary"}
-                loading={dash.loading}
-                singularLabel={sector.singularLabel}
-                pluralLabel={sector.pluralLabel}
-                sectorType={sector.type}
-              />
-            </div>
+                {/* Master Financial Ledger */}
+                <CaravanGrid
+                  rows={dash.records}
+                  showPeriod={dash.granularity !== "summary"}
+                  loading={dash.loading}
+                  singularLabel={sector.singularLabel}
+                  pluralLabel={sector.pluralLabel}
+                  sectorType={sector.type}
+                />
+              </div>
+            )}
 
             {/* --------------------------------------------------------------------- */}
             {/* ROW 4: COLLAPSIBLE ANALYTICAL DRAWER (Lazy-Mounted on Open)           */}
@@ -856,6 +864,16 @@ export function SectorDashboard({ sector }: SectorDashboardProps) {
         onChange={dash.setPrintConfig}
         onPrint={dash.handlePrint}
       />
+
+      {/* External Gate Sales Adjustments Modal (SectorType = 5) */}
+      {sector.type === 5 && (
+        <GateAdjustmentsModal
+          isOpen={isGateAdjustmentsOpen}
+          onClose={() => setIsGateAdjustmentsOpen(false)}
+          onSaved={() => dash.triggerRefresh()}
+          currentDate={dash.start}
+        />
+      )}
     </div>
   );
 }

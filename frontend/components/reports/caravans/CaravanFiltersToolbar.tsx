@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { ChevronDown, Store, Check, Search, Filter, X } from 'lucide-react';
+import { ChevronDown, Store, Check, Search, Filter, X, FileText } from 'lucide-react';
 import type { BranchOption } from '@/types/reports';
 import { FinancialDatePicker } from '@/components/ui/FinancialDatePicker';
 import { Segmented } from '@/components/ui/Segmented';
@@ -522,6 +522,7 @@ export interface CaravanFiltersToolbarProps {
   compEndB: string;
   onCompRangeBChange: (start: string, end: string) => void;
   comparisonLoading?: boolean;
+  onOpenGateAdjustments?: () => void;
 }
 
 export function CaravanFiltersToolbar({
@@ -552,6 +553,7 @@ export function CaravanFiltersToolbar({
   compEndB,
   onCompRangeBChange,
   comparisonLoading = false,
+  onOpenGateAdjustments,
 }: CaravanFiltersToolbarProps) {
   const theme = getSectorTheme(sectorType);
   if (viewMode === 'standard') {
@@ -592,6 +594,18 @@ export function CaravanFiltersToolbar({
                 onChange={(val) => onRideStatusFilterChange?.(val as 'active' | 'inactive' | 'all')}
                 activeClassName="bg-[#1e293b] text-white shadow-xs font-bold"
               />
+            )}
+
+            {sectorType === 5 && (
+              <button
+                type="button"
+                onClick={() => onOpenGateAdjustments?.()}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all border border-cyan-500/40 bg-cyan-500/10 text-cyan-700 dark:text-cyan-300 hover:bg-cyan-500/20 active:scale-95 shadow-2xs"
+                title="تسويات أوامر دخول التسويق والمجموعات وتذاكر المشرفين الخارجية"
+              >
+                <FileText className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" />
+                <span>تسويات المبيعات الخارجية</span>
+              </button>
             )}
           </div>
 

@@ -71,7 +71,7 @@ export function VoidsAlertWidget({ rows, className = '' }: VoidsAlertWidgetProps
           )}
           <div className="rounded-lg bg-white/90 border border-amber-500/30 px-3 py-1 text-amber-900 dark:bg-zinc-900/80 dark:border-amber-500/40 dark:text-amber-200 print:border-black print:bg-transparent print:text-black">
             <span className="text-[10px] text-slate-500 dark:text-zinc-400 font-sans ml-1">نسبة الهدر:</span>
-            <span className="font-bold">{overallVoidRatio.toFixed(1)}%</span>
+            <span className="font-bold">{(Number(overallVoidRatio) || 0).toFixed(1)}%</span>
           </div>
         </div>
       </div>
@@ -125,7 +125,7 @@ export function VoidsAlertWidget({ rows, className = '' }: VoidsAlertWidgetProps
                           : 'bg-rose-100/60 text-rose-800 dark:bg-rose-950/40 dark:text-rose-300 print:bg-transparent'
                       }`}
                     >
-                      {bRatio.toFixed(1)}%
+                      {(Number(bRatio) || 0).toFixed(1)}%
                     </span>
                   </td>
                   <td className="py-2 pl-2 text-left" dir="ltr">
@@ -170,7 +170,7 @@ export function VoidsAlertWidget({ rows, className = '' }: VoidsAlertWidgetProps
                 {fmtMoney(totalSalesOfAffected)}
               </td>
               <td className="py-2 px-3 text-center font-mono text-rose-900 dark:text-rose-200 print:text-black">
-                {overallVoidRatio.toFixed(1)}%
+                {(Number(overallVoidRatio) || 0).toFixed(1)}%
               </td>
               <td className="py-2 pl-2 text-left text-slate-500 font-mono text-xs print:text-black" dir="ltr">
                 —

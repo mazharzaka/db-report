@@ -132,7 +132,7 @@ export function PeriodComparisonDashboard({
         ) : (
           <ArrowDownRight className="h-3.5 w-3.5" />
         )}
-        {Math.abs(growthPct).toFixed(1)}%
+        {(Number(Math.abs(growthPct)) || 0).toFixed(1)}%
       </span>
     );
   };

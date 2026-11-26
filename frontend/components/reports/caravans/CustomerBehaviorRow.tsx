@@ -164,10 +164,10 @@ export function CustomerBehaviorRow({
               <div className="flex items-center justify-between text-xs font-bold mb-1.5">
                 <span className="flex items-center gap-1.5 text-emerald-700 dark:text-emerald-400">
                   <span className="h-2 w-2 rounded-full bg-emerald-500" />
-                  <span>نقدي: {cashPct.toFixed(1)}%</span>
+                  <span>نقدي: {(Number(cashPct) || 0).toFixed(1)}%</span>
                 </span>
                 <span className="flex items-center gap-1.5 text-indigo-700 dark:text-indigo-400">
-                  <span>فيزا / نقاط بيع: {visaPct.toFixed(1)}%</span>
+                  <span>فيزا / نقاط بيع: {(Number(visaPct) || 0).toFixed(1)}%</span>
                   <span className="h-2 w-2 rounded-full bg-indigo-500" />
                 </span>
               </div>
@@ -179,12 +179,12 @@ export function CustomerBehaviorRow({
                 <div
                   style={{ width: `${cashPct}%` }}
                   className="bg-emerald-500 transition-all duration-500"
-                  title={`نقدي: ${cashPct.toFixed(1)}%`}
+                  title={`نقدي: ${(Number(cashPct) || 0).toFixed(1)}%`}
                 />
                 <div
                   style={{ width: `${visaPct}%` }}
                   className="bg-indigo-500 transition-all duration-500"
-                  title={`فيزا وبطاقات: ${visaPct.toFixed(1)}%`}
+                  title={`فيزا وبطاقات: ${(Number(visaPct) || 0).toFixed(1)}%`}
                 />
               </div>
             </div>
@@ -205,7 +205,7 @@ export function CustomerBehaviorRow({
                 <div className="mt-1 flex items-center justify-between text-[11px] text-slate-500 dark:text-zinc-400 font-mono">
                   <span>الحصة:</span>
                   <span className="font-bold text-emerald-600 dark:text-emerald-400">
-                    {cashPct.toFixed(1)}%
+                    {(Number(cashPct) || 0).toFixed(1)}%
                   </span>
                 </div>
               </div>
@@ -224,7 +224,7 @@ export function CustomerBehaviorRow({
                 <div className="mt-1 flex items-center justify-between text-[11px] text-slate-500 dark:text-zinc-400 font-mono">
                   <span>الحصة:</span>
                   <span className="font-bold text-indigo-600 dark:text-indigo-400">
-                    {visaPct.toFixed(1)}%
+                    {(Number(visaPct) || 0).toFixed(1)}%
                   </span>
                 </div>
               </div>

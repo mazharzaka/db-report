@@ -176,12 +176,12 @@ export function TopItemsWidget({
                       </span>
                     ) : (
                       <span className="shrink-0 text-xs font-semibold tabular-nums font-mono text-yellow-600 dark:text-yellow-300" dir="ltr">
-                        {it.share.toFixed(1)}%
+                        {(Number(it.share) || 0).toFixed(1)}%
                       </span>
                     )
                   ) : (
                     <span className="shrink-0 text-xs font-semibold tabular-nums font-mono text-orange-600 dark:text-orange-400" dir="ltr">
-                      {it.share.toFixed(1)}%
+                      {(Number(it.share) || 0).toFixed(1)}%
                     </span>
                   )}
                 </div>
@@ -297,8 +297,8 @@ export function DuelCard({ duel, loading }: { duel: { a: DuelSide; b: DuelSide }
 
           <div className="mt-5">
             <div className="mb-1.5 flex justify-between text-xs font-semibold tabular-nums font-mono" dir="ltr">
-              <span className="text-orange-600 dark:text-[#c4b5fd] font-mono font-medium">{duel.a.share.toFixed(1)}%</span>
-              <span className="text-slate-500 dark:text-zinc-400">{duel.b.share.toFixed(1)}%</span>
+              <span className="text-orange-600 dark:text-[#c4b5fd] font-mono font-medium">{(Number(duel.a?.share) || 0).toFixed(1)}%</span>
+              <span className="text-slate-500 dark:text-zinc-400">{(Number(duel.b?.share) || 0).toFixed(1)}%</span>
             </div>
             <div className="flex h-2.5 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-zinc-950" dir="ltr">
               <div className="h-full bg-orange-500 dark:bg-[#c4b5fd] transition-all duration-500" style={{ width: `${duel.a.share}%` }} />

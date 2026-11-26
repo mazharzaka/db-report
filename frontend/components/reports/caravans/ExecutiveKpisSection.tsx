@@ -142,7 +142,7 @@ function KpiCard({
           <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-bold ${badgeClasses}`}>
             {badge}
           </span>
-        ) : delta !== null ? (
+        ) : delta != null ? (
           <span
             className={`inline-flex items-center gap-0.5 rounded-full px-2.5 py-1 text-xs font-semibold tabular-nums tracking-tight border ${
               isPositive
@@ -152,7 +152,7 @@ function KpiCard({
             dir="ltr"
           >
             {isPositive ? <ArrowUpRight className="h-3.5 w-3.5" /> : <ArrowDownRight className="h-3.5 w-3.5" />}
-            {Math.abs(delta).toFixed(1)}%
+            {(Number(Math.abs(delta)) || 0).toFixed(1)}%
           </span>
         ) : null}
       </div>

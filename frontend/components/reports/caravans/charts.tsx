@@ -315,7 +315,7 @@ export function TopCaravansBars({
                 dir="ltr"
               >
                 <span className="text-xs text-slate-500 dark:text-zinc-400">
-                  {item.share.toFixed(1)}%
+                  {(Number(item.share) || 0).toFixed(1)}%
                 </span>
                 <span className="font-semibold text-slate-900 dark:text-white">
                   {fmtCompact(item.total)}
@@ -467,8 +467,4 @@ export function PaymentDonut({
               )}
             </div>
           </li>
-        ))}
-      </ul>
-    </div>
-  );
-}
+        )

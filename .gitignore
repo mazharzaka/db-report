@@ -49,3 +49,5 @@ Thumbs.db
 .idea/
 *.swp
 *.swo
+
+data/gate_adjustments.json

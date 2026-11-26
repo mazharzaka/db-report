@@ -5,6 +5,7 @@
  */
 
 import { getPool, sql } from "../config/db.js";
+import { GateAdjustmentsService } from "./gateAdjustmentsService.js";
 
 // =========================================================================
 // ⚠️ VOIDS VIEW PLACEHOLDER:
@@ -86,6 +87,15 @@ export class CaravanReportService {
     const request = pool.request();
     const secType = Number(sectorType) || 4;
     request.input("sectorType", sql.Int, secType);
+
+    if (secType === 5) {
+      return [
+        { Code: "101", Name: "Silvertik3 - بوابات العائلات" },
+        { Code: "102", Name: "Silvertik4 - البوابات الرئيسية" },
+        { Code: "103", Name: "Silvertik2 - البوابات الاحتياطية" },
+        { Code: "104", Name: "Sales3 - مبيعات المجموعات والتسويق" },
+      ];
+    }
 
     if (secType === 2 || secType === 3 || secType === 6) {
       const sDate =
@@ -634,6 +644,435 @@ export class CaravanReportService {
   }
 
   /**
+   * تقرير تحليلي محاسبي فائق السرعة لبوابات وتذاكر دريم بارك (Type = 5)
+   * يعتمد على الفرز المباشر لجداول القاعدة الأساسية POS_Sub_post و POS_Post
+   * مع المطابقة المحاسبية التامة لفئات التذاكر وتطبيق استبعاد دفتر الألعاب والضرائب الفعلية والمعيارية والتسويات الخارجية.
+   */
+  static async getGatesReportData({
+    startDate = "2026-01-01",
+    endDate = new Date().toISOString().split("T")[0],
+    branches = [],
+    granularity = "day",
+    sortBy = "date_asc",
+    sectorType = 5,
+    includeAdjustments = true,
+  }) {
+    const startTime = Date.now();
+    const pool = await getPool();
+
+    // 1. استعلامات متوازية فائقة السرعة على جداول القاعدة الأساسية SARGable
+    const itemReq = pool.request();
+    itemReq.input("startDate", sql.Date, startDate);
+    itemReq.input("endDate", sql.Date, endDate);
+
+    const posReq = pool.request();
+    posReq.input("startDate", sql.Date, startDate);
+    posReq.input("endDate", sql.Date, endDate);
+
+    // تصفية المنافذ إن وجدت
+    let validBranches = Array.isArray(branches)
+      ? branches.map(b => Number(String(b).trim())).filter(n => Number.isFinite(n))
+      : [];
+    let branchFilterClause = "s.Branch_Code IN (101, 102, 103, 104)";
+    let posBranchFilterClause = "p.Branch_Code IN (101, 102, 103, 104)";
+    if (validBranches.length > 0) {
+      const allowed = validBranches.filter(b => [101, 102, 103, 104].includes(b));
+      if (allowed.length > 0) {
+        branchFilterClause = `s.Branch_Code IN (${allowed.join(", ")})`;
+        posBranchFilterClause = `p.Branch_Code IN (${allowed.join(", ")})`;
+      }
+    }
+
+    const [itemRes, posRes] = await Promise.all([
+      itemReq.query(`
+        SELECT s.Doc_Date, s.Branch_Code, s.Doc_NO, s.item_Code, s.item_name, s.Item_Qunt, s.Item_Price, s.item_Sels_Tax_P,
+               (s.Item_Qunt * s.Item_Price * (1.0 + ISNULL(s.item_Sels_Tax_P, 0) / 100.0)) as GrossAmount
+        FROM [dbo].[POS_Sub_post] s WITH (NOLOCK)
+        WHERE ${branchFilterClause}
+          AND s.Doc_Date >= @startDate AND s.Doc_Date < DATEADD(DAY, 1, @endDate)
+          AND (s.Void_item = 0 OR s.Void_item IS NULL)
+        OPTION (LOOP JOIN, RECOMPILE)
+      `),
+      posReq.query(`
+        SELECT p.Doc_Date, p.Branch_Code, p.Doc_NO, p.TotalInv, p.NetOfInv, p.Cash, p.Visa, p.Visa2, p.Visa3, p.[C/L], p.Deposit, p.TotalDesc
+        FROM [dbo].[POS_Post] p WITH (NOLOCK)
+        WHERE ${posBranchFilterClause}
+          AND p.Doc_Date >= @startDate AND p.Doc_Date < DATEADD(DAY, 1, @endDate)
+          AND (p.Void = 0 OR p.Void IS NULL)
+        OPTION (LOOP JOIN, RECOMPILE)
+      `)
+    ]);
+
+    // 2. تحميل التسويات الخارجية للتسويق والمبيعات
+    const adjustmentsMap = GateAdjustmentsService.getAdjustments(startDate, endDate);
+
+    // 3. بناء الفترات (Periods)
+    const normGranularity = (granularity || "day").toLowerCase();
+    const periodMap = new Map();
+
+    const getPeriodKey = (d) => {
+      const dt = new Date(d);
+      const yyyy = dt.getFullYear();
+      const mm = String(dt.getMonth() + 1).padStart(2, '0');
+      const dd = String(dt.getDate()).padStart(2, '0');
+      if (normGranularity === 'month') return `${yyyy}-${mm}`;
+      if (normGranularity === 'summary' || normGranularity === 'total') return 'SUMMARY';
+      return `${yyyy}-${mm}-${dd}`;
+    };
+
+    const getPeriodRecord = (key, dateStr) => {
+      if (!periodMap.has(key)) {
+        const dt = new Date(dateStr);
+        const yyyy = dt.getFullYear();
+        const mm = String(dt.getMonth() + 1).padStart(2, '0');
+        const dd = String(dt.getDate()).padStart(2, '0');
+        const rowDate = normGranularity === 'summary' ? `${startDate} إلى ${endDate}` : (normGranularity === 'month' ? `${yyyy}-${mm}` : `${yyyy}-${mm}-${dd}`);
+
+        periodMap.set(key, {
+          period: key,
+          date: rowDate,
+          silverRev: 0, silverSold: 0,
+          goldenRev: 0, goldenSold: 0, excludedGoldenBooklet: 0,
+          silverComboRev: 0, silverComboSold: 0,
+          diamondRev: 0, diamondSold: 0,
+          vipRev: 0, vipSold: 0,
+          familyRev: 0, familySold: 0,
+          familyPlusRev: 0, familyPlusSold: 0,
+          familyPlusPartnerRev: 0, familyPlusPartnerSold: 0,
+          smRev: 0, smSold: 0, smFree: 0,
+          smRawPosRev: 0, smRawPosSold: 0,
+          promoRev: 0, promoSold: 0,
+          promoRawPosRev: 0, promoCommissionDeduction: 0, promoOrphanQty: 0,
+          bgRev: 0, bgSold: 0, bgVouchersSet: new Set(),
+          vendersRev: 0, vendersSold: 0,
+          unmappedRev: 0, unmappedSold: 0,
+          totalTicketRev: 0, totalTicketSold: 0, totalFree: 0, grr: 0,
+          cash: 0, visa: 0, cl: 0,
+          // Actual Tax Breakdown
+          entranceGross: 0, entranceVat: 0, entranceNet: 0,
+          theaterGross: 0, theaterVat: 0, theaterNet: 0,
+          taftafGross: 0, totalVat: 0, netRevenue: 0,
+          // Accounting Standard (53.33% / 26.67% / 20.00%)
+          stdEntranceGross: 0, stdTheaterGross: 0, stdTaftafGross: 0,
+          stdEntranceVat: 0, stdTheaterVat: 0, stdTotalVat: 0, stdNetRevenue: 0,
+          hasAdjustment: false,
+          adjustmentNotes: "",
+          adjustmentsApplied: []
+        });
+      }
+      return periodMap.get(key);
+    };
+
+    // 4. معالجة وتصنيف بنود التذاكر من POS_Sub_post
+    for (const r of itemRes.recordset) {
+      const pKey = getPeriodKey(r.Doc_Date);
+      const rec = getPeriodRecord(pKey, r.Doc_Date);
+
+      const name = String(r.item_name || '').toLowerCase();
+      const code = Number(r.Branch_Code);
+      const gross = Number(r.GrossAmount) || 0;
+      const qty = Number(r.Item_Qunt) || 0;
+      const taxP = Number(r.item_Sels_Tax_P) || 0;
+      const isEntrance = name.includes('entrance') || (!name.includes('theater') && !name.includes('taftaf'));
+
+      // استبعاد دفتر كوبونات ألعاب جولدن من الفرع 102 (يتبع قطاع الألعاب Type 2)
+      if (code === 102 && (name.includes('دفتر') || name.includes('booklet'))) {
+        rec.excludedGoldenBooklet += gross;
+        continue;
+      }
+
+      // تجميع أجزاء الضرائب الفعلية
+      if (taxP === 14) {
+        rec.entranceGross += gross;
+        const net = gross / 1.14;
+        rec.entranceNet += net;
+        rec.entranceVat += (gross - net);
+      } else if (taxP === 5) {
+        rec.theaterGross += gross;
+        const net = gross / 1.05;
+        rec.theaterNet += net;
+        rec.theaterVat += (gross - net);
+      } else {
+        rec.taftafGross += gross;
+      }
+
+      // توجيه الفئات الدقيق
+      if (code === 101 || name.includes('family')) {
+        if (name.includes('partner') || name.includes('بارتنر')) {
+          rec.familyPlusPartnerRev += gross;
+          if (isEntrance) rec.familyPlusPartnerSold += qty;
+        } else if (name.includes('plus') || name.includes('بلس')) {
+          rec.familyPlusRev += gross;
+          if (isEntrance) rec.familyPlusSold += qty;
+        } else {
+          rec.familyRev += gross;
+          if (isEntrance) rec.familySold += qty;
+        }
+      } else if (code === 102 && name.includes('silver') && !name.includes('compo') && !name.includes('combo')) {
+        rec.silverRev += gross;
+        if (isEntrance) rec.silverSold += qty;
+      } else if (code === 102 && (name.includes('golden') || name.includes('gold'))) {
+        rec.goldenRev += gross;
+        if (isEntrance) rec.goldenSold += qty;
+      } else if (code === 102 && (name.includes('compo') || name.includes('combo'))) {
+        rec.silverComboRev += gross;
+        if (isEntrance) rec.silverComboSold += qty;
+      } else if (name.includes('diamond') || name.includes('دايموند')) {
+        rec.diamondRev += gross;
+        if (isEntrance) rec.diamondSold += qty;
+      } else if (name.includes('vip')) {
+        rec.vipRev += gross;
+        if (isEntrance) rec.vipSold += qty;
+      } else if (code === 104 && (name.includes('sttaf') || name.includes('staff') || name.includes('عامل'))) {
+        rec.bgRev += gross;
+        if (isEntrance) rec.bgSold += qty;
+        if (r.Doc_NO) rec.bgVouchersSet.add(r.Doc_NO);
+      } else if (code === 104 && (name.includes('215') || name.includes('220') || name.includes('210') || name.includes('grop') || name.includes('group'))) {
+        rec.smRev += gross;
+        rec.smRawPosRev += gross;
+        if (isEntrance) {
+          rec.smSold += qty;
+          rec.smRawPosSold += qty;
+        }
+      } else if (code === 104) {
+        // عروض وتخفيضات Promotion
+        rec.promoRawPosRev += gross;
+        // صنف W 230 خاضع لخصم 10 جنيه عمولة تسويقية لكل تذكرة
+        if (name.includes('w 230') && isEntrance) {
+          rec.promoCommissionDeduction += (qty * 10);
+        }
+        if (name.includes('ايتام')) {
+          if (isEntrance) rec.promoOrphanQty += qty;
+        } else if (isEntrance) {
+          rec.promoSold += qty;
+        }
+        rec.promoRev += gross;
+      } else if (name.includes('vender') || name.includes('فيندور')) {
+        rec.vendersRev += gross;
+        if (isEntrance) rec.vendersSold += qty;
+      } else {
+        rec.unmappedRev += gross;
+        if (isEntrance) rec.unmappedSold += qty;
+      }
+    }
+
+    // 5. تسوية مبيعات العروض بخصم العمولة
+    for (const rec of periodMap.values()) {
+      rec.promoRev -= rec.promoCommissionDeduction;
+    }
+
+    // 6. معالجة الدفعات وتعديل دفتر جولدن وعمولة Doc 7
+    for (const p of posRes.recordset) {
+      const pKey = getPeriodKey(p.Doc_Date);
+      const rec = getPeriodRecord(pKey, p.Doc_Date);
+
+      const code = Number(p.Branch_Code);
+      let cash = Number(p.Cash) || 0;
+      let visa = (Number(p.Visa) || 0) + (Number(p.Visa2) || 0) + (Number(p.Visa3) || 0);
+      let cl = Number(p['C/L']) || 0;
+
+      // تعديل عمولة W 230 من الآجل (C/L) في الفرع 104
+      if (code === 104 && cl > 0 && rec.promoCommissionDeduction > 0) {
+        cl = Math.max(0, cl - rec.promoCommissionDeduction);
+      }
+
+      rec.cash += cash;
+      rec.visa += visa;
+      rec.cl += cl;
+    }
+
+    // تعديل دفتر جولدن من دفعات الفرع 102
+    for (const rec of periodMap.values()) {
+      if (rec.excludedGoldenBooklet > 0) {
+        if (rec.cash >= rec.excludedGoldenBooklet) {
+          rec.cash -= rec.excludedGoldenBooklet;
+        } else {
+          const rem = rec.excludedGoldenBooklet - rec.cash;
+          rec.cash = 0;
+          rec.visa = Math.max(0, rec.visa - rem);
+        }
+      }
+    }
+
+    // 7. دمج التسويات الخارجية للمبيعات والتسويق (External Adjustments)
+    if (includeAdjustments) {
+      for (const [adjDate, adj] of Object.entries(adjustmentsMap)) {
+        const pKey = getPeriodKey(adjDate);
+        if (periodMap.has(pKey)) {
+          const rec = periodMap.get(pKey);
+          const smExtRev = Number(adj.smExternalRevenue) || 0;
+          const smExtSold = Number(adj.smExternalSold) || 0;
+          const smFree = Number(adj.smFree) || 0;
+          const promoAdjRev = Number(adj.promoAdjustmentRev) || 0;
+          const promoAdjSold = Number(adj.promoAdjustmentSold) || 0;
+          const bgAdjRev = Number(adj.bgAdjustmentRev) || 0;
+
+          rec.smRev += smExtRev;
+          rec.smSold += smExtSold;
+          rec.smFree += smFree;
+          rec.promoRev += promoAdjRev;
+          rec.promoSold += promoAdjSold;
+          rec.bgRev += bgAdjRev;
+          rec.cl += (smExtRev + promoAdjRev + bgAdjRev);
+
+          rec.hasAdjustment = true;
+          rec.adjustmentNotes = [rec.adjustmentNotes, adj.notes].filter(Boolean).join(" | ");
+          rec.adjustmentsApplied.push(adj);
+        }
+      }
+    }
+
+    // 8. حساب الإجماليات والضرائب المعيارية والقيم النهائية
+    const records = [];
+    for (const rec of periodMap.values()) {
+      rec.bgVouchers = rec.bgVouchersSet.size || (rec.bgRev > 0 ? 1 : 0);
+      delete rec.bgVouchersSet;
+
+      rec.totalTicketRev = rec.silverRev + rec.goldenRev + rec.silverComboRev +
+                           rec.diamondRev + rec.vipRev + rec.familyRev +
+                           rec.familyPlusRev + rec.familyPlusPartnerRev +
+                           rec.smRev + rec.promoRev + rec.bgRev +
+                           rec.vendersRev + rec.unmappedRev;
+
+      rec.totalFree = rec.smFree;
+      rec.totalTicketSold = rec.silverSold + rec.goldenSold + rec.silverComboSold +
+                            rec.diamondSold + rec.vipSold + rec.familySold +
+                            rec.familyPlusSold + rec.familyPlusPartnerSold +
+                            rec.smSold + rec.promoSold + rec.totalFree;
+
+      rec.grr = rec.totalTicketRev - rec.bgRev;
+
+      // ضريبة فعلية
+      rec.totalVat = rec.entranceVat + rec.theaterVat;
+      rec.netRevenue = rec.totalTicketRev - rec.totalVat;
+
+      // ضرائب ومعايير محاسبية (53.33% / 26.67% / 20.00%)
+      rec.stdEntranceGross = rec.totalTicketRev * 0.5333;
+      rec.stdTheaterGross = rec.totalTicketRev * 0.2667;
+      rec.stdTaftafGross = rec.totalTicketRev * 0.2000;
+      rec.stdEntranceVat = rec.stdEntranceGross - (rec.stdEntranceGross / 1.14);
+      rec.stdTheaterVat = rec.stdTheaterGross - (rec.stdTheaterGross / 1.05);
+      rec.stdTotalVat = rec.stdEntranceVat + rec.stdTheaterVat;
+      rec.stdNetRevenue = rec.totalTicketRev - rec.stdTotalVat;
+
+      // توافق كامل مع الخصائص القياسية للتقارير
+      rec.total = rec.totalTicketRev;
+      rec.totalSales = rec.totalTicketRev;
+      rec.cover = rec.totalTicketSold;
+      rec.creditLine = rec.cl;
+      rec.salesTax = rec.totalVat;
+      rec.serviceCharge = 0;
+      rec.totalVoids = 0;
+      rec.voidCount = 0;
+      rec.variance = 0;
+      rec.marketShare = 100;
+      rec.avgTicket = rec.totalTicketSold > 0 ? Math.round((rec.totalTicketRev / rec.totalTicketSold) * 100) / 100 : 0;
+      rec.name = `بوابات ${rec.period || rec.date}`;
+      rec.branchCode = 'gates';
+
+      // تقريب الحقول إلى منزلتين عشريتين
+      for (const [k, v] of Object.entries(rec)) {
+        if (typeof v === 'number') {
+          rec[k] = Math.round(v * 100) / 100;
+        }
+      }
+
+      records.push(rec);
+    }
+
+    // ترتيب السجلات
+    if (sortBy === 'date_desc') {
+      records.sort((a, b) => b.period.localeCompare(a.period));
+    } else {
+      records.sort((a, b) => a.period.localeCompare(b.period));
+    }
+
+    // 9. حساب ملخص الفترة الشامل (Overall Summary)
+    const summary = records.reduce((acc, r) => {
+      acc.totalSales += r.totalTicketRev;
+      acc.totalTicketRev += r.totalTicketRev;
+      acc.totalTicketSold += r.totalTicketSold;
+      acc.totalFree += r.totalFree;
+      acc.grr += r.grr;
+      acc.totalCash += r.cash;
+      acc.totalVisa += r.visa;
+      acc.totalCL += r.cl;
+      acc.totalVat += r.totalVat;
+      acc.netRevenue += r.netRevenue;
+      acc.silverRev += r.silverRev;
+      acc.silverSold += r.silverSold;
+      acc.goldenRev += r.goldenRev;
+      acc.goldenSold += r.goldenSold;
+      acc.silverComboRev += r.silverComboRev;
+      acc.silverComboSold += r.silverComboSold;
+      acc.familyRev += r.familyRev;
+      acc.familySold += r.familySold;
+      acc.smRev += r.smRev;
+      acc.smSold += r.smSold;
+      acc.smFree += r.smFree;
+      acc.promoRev += r.promoRev;
+      acc.promoSold += r.promoSold;
+      acc.bgRev += r.bgRev;
+      acc.bgVouchers += r.bgVouchers;
+      return acc;
+    }, {
+      totalSales: 0, totalTicketRev: 0, totalTicketSold: 0, totalFree: 0, grr: 0,
+      totalCash: 0, totalVisa: 0, totalCL: 0, totalVat: 0, netRevenue: 0,
+      silverRev: 0, silverSold: 0, goldenRev: 0, goldenSold: 0,
+      silverComboRev: 0, silverComboSold: 0, familyRev: 0, familySold: 0,
+      smRev: 0, smSold: 0, smFree: 0, promoRev: 0, promoSold: 0,
+      bgRev: 0, bgVouchers: 0, rowCount: records.length
+    });
+
+    summary.totalSales = summary.totalTicketRev;
+    summary.totalOrders = summary.totalTicketSold;
+    summary.totalCover = summary.totalTicketSold;
+    summary.totalUnits = summary.totalTicketSold;
+    summary.avgTicket = summary.totalTicketSold > 0 ? Math.round((summary.totalTicketRev / summary.totalTicketSold) * 100) / 100 : 0;
+    summary.revenueGrowthPct = 0;
+    summary.marketShare = 100;
+
+    for (const [k, v] of Object.entries(summary)) {
+      if (typeof v === 'number') {
+        summary[k] = Math.round(v * 100) / 100;
+      }
+    }
+
+    // تعريف أعمدة التذاكر للبوابات (Type = 5)
+    const gateColumns = [
+      { branchCode: 'silver', name: 'Silver', group: 'silver', unitPrice: 300 },
+      { branchCode: 'golden', name: 'Golden', group: 'golden', unitPrice: 270 },
+      { branchCode: 'silver_combo', name: 'Silver Combo', group: 'silver_combo', unitPrice: 290 },
+      { branchCode: 'diamond', name: 'Diamond', group: 'diamond', unitPrice: 0 },
+      { branchCode: 'vip', name: 'VIP', group: 'vip', unitPrice: 0 },
+      { branchCode: 'family', name: 'Family', group: 'family', unitPrice: 275 },
+      { branchCode: 'family_plus', name: 'Family Plus', group: 'family_plus', unitPrice: 0 },
+      { branchCode: 'family_plus_partner', name: 'Family Plus Partner', group: 'family_plus_partner', unitPrice: 0 },
+      { branchCode: 'sm', name: 'S&M', group: 'sm', unitPrice: 215 },
+      { branchCode: 'promotion', name: 'Promotion', group: 'promotion', unitPrice: 0 },
+      { branchCode: 'bg', name: 'B.G', group: 'bg', unitPrice: 0 },
+      { branchCode: 'venders', name: 'Venders', group: 'venders', unitPrice: 0 },
+    ];
+
+    return {
+      executionTimeMs: Date.now() - startTime,
+      sectorType: 5,
+      sectorLabel: "البوابات والتذاكر",
+      filters: {
+        startDate,
+        endDate,
+        granularity,
+        sectorType: 5,
+        includeAdjustments,
+      },
+      summary,
+      columns: gateColumns,
+      branches: gateColumns,
+      records,
+    };
+  }
+
+  /**
    * استعلام وتجميع بيانات إيرادات القطاع المالي مع دعم التصفية الزمنية وتعدد المنافذ والتجميع الديناميكي
    * @param {Object} params
    * @param {string} params.startDate 'YYYY-MM-DD'
@@ -650,8 +1089,22 @@ export class CaravanReportService {
     granularity = "summary",
     sortBy = "total_desc",
     sectorType = 4,
+    includeAdjustments = true,
   }) {
     const secType = Number(sectorType) || 4;
+
+    // قطاع البوابات والتذاكر (Type = 5)
+    if (secType === 5) {
+      return this.getGatesReportData({
+        startDate,
+        endDate,
+        branches,
+        granularity,
+        sortBy,
+        sectorType: 5,
+        includeAdjustments,
+      });
+    }
 
     // قطاعات الألعاب (Type = 2) والفيديو جيم (Type = 3) والأمانات والانتظار (Type = 6): تجميع على مستوى الأصناف
     if (secType === 2 || secType === 3 || secType === 6) {
