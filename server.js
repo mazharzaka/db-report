@@ -1,517 +1,69 @@
-function getYesterdayDateString() {
-  const d = new Date();
-  d.setDate(d.getDate() - 1);
-  return d.toISOString().split("T")[0];
-}
-
 /**
- * @file server.js
- * @description Decoupled Express Backend Microservice for Dream Park & Zoo Financial Reporting.
- * Listens on Port 5000 as a standalone Windows Service or behind IIS Reverse Proxy.
+ * دور الملف: نقطة التشغيل الرئيسية لخادم Express (أقل من 100 سطر) تربط الإعدادات والضغط والمسارات ومعالج الأخطاء.
+ * المدخلات: إعدادات البيئة (config/env.js)، الراوتس (routes/reportRoutes.js)، والـ Middlewares.
+ * المخرجات: خادم HTTP/IIS Named Pipe جاهز لاستقبال الطلبات مع تهيئة اتصال SQL Server عند البدء.
  */
 
-import "dotenv/config";
 import express from "express";
 import cors from "cors";
 import path from "path";
 import { fileURLToPath } from "url";
-import { getPool } from "./config/db.js";
-import { CaravanReportService } from "./services/caravanReportService.js";
-import { CaravanItemService } from "./services/caravanItemService.js";
-import { exportCaravanExcel } from "./controllers/exportController.js";
-import { GateAdjustmentsService } from "./services/gateAdjustmentsService.js";
+import { env } from "./config/env.js";
+import { getPool } from "./db/sqlPool.js";
+import { compressionMiddleware } from "./middlewares/compression.js";
+import { errorHandler } from "./middlewares/errorHandler.js";
+import reportRoutes from "./routes/reportRoutes.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
-const PORT = process.env.PORT || 5000;
 
-// Middleware
+// 1. Core Middlewares (CORS, Gzip Compression, Body Parsers, Static Assets)
 app.use(cors());
+app.use(compressionMiddleware());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-
-// خدمة الملفات السكونية (دعم تشغيل Express منفرداً أو في بيئات الاختبار)
 app.use(express.static(path.join(__dirname, "public")));
 
-// 1. Healthcheck & DB Diagnostics
-app.get("/api/health", async (req, res) => {
-  try {
-    const pool = await getPool();
-    const testRes = await pool
-      .request()
-      .query("SELECT @@VERSION AS [version], GETDATE() AS [serverTime];");
-    res.json({
-      status: "ok",
-      service: "Dream Park Caravan Revenues Reporting Service",
-      serverTime: testRes.recordset[0]?.serverTime,
-      uptimeSeconds: Math.floor(process.uptime()),
-      timestamp: new Date().toISOString(),
-    });
-  } catch (err) {
-    res.status(503).json({
-      status: "error",
-      service: "Dream Park Caravan Revenues Reporting Service",
-      databaseConnected: false,
-      error: err.message,
-    });
-  }
-});
+// 2. Modular API Routes
+app.use(reportRoutes);
 
-// 2. Metadata Endpoint: استرجاع منافذ القطاع المحدد (افتراضياً Type = 4 الكرفانات)
-async function handleSectorBranches(req, res) {
-  try {
-    const sectorType = Number(req.query.sectorType || req.query.type) || 4;
-    const { startDate, endDate } = req.query;
-    const branches = await CaravanReportService.getCaravanBranches(sectorType, startDate, endDate);
-    res.json({
-      status: "success",
-      sectorType,
-      count: branches.length,
-      branches: branches.map((b) => ({
-        Code: b.Code,
-        Name: b.Name,
-      })),
-    });
-  } catch (err) {
-    console.error("[API Error] /api/sectors/branches:", err);
-    res.status(500).json({ status: "error", message: err.message });
-  }
-}
-
-app.get("/api/caravans/branches", handleSectorBranches);
-app.get("/api/sectors/branches", handleSectorBranches);
-app.get("/api/reports/sectors/branches", handleSectorBranches);
-
-// 3. Controller Handler للتقرير التحليلي لقطاعات دريم بارك
-async function handleCaravanReport(req, res) {
-  try {
-    const queryParams = { ...req.query, ...req.body };
-    const { startDate, endDate, granularity, sort, sectorType, type } = queryParams;
-    const secType = Number(sectorType || type) || 4;
-
-    let branches = [];
-    if (queryParams.branches) {
-      if (Array.isArray(queryParams.branches)) {
-        branches = queryParams.branches.flatMap((b) => String(b).split(","));
-      } else {
-        branches = String(queryParams.branches).split(",");
-      }
-    }
-    branches = branches.map((b) => b.trim()).filter(Boolean);
-
-    const bypassCache =
-      queryParams.refresh === "1" ||
-      queryParams.refresh === "true" ||
-      queryParams.bypassCache === "1" ||
-      queryParams.bypassCache === "true" ||
-      queryParams.bypassCache === true;
-
-    const report = await CaravanReportService.getReportData({
-      startDate: startDate ? String(startDate).trim() : getYesterdayDateString(),
-      endDate: endDate
-        ? String(endDate).trim()
-        : new Date().toISOString().split("T")[0],
-      branches,
-      granularity: (granularity || "summary").toLowerCase(),
-      sortBy: (sort || "total_desc").toLowerCase(),
-      sectorType: secType,
-      includeAdjustments: queryParams.includeAdjustments !== 'false' && queryParams.includeAdjustments !== false,
-    });
-
-    res.json({
-      status: "success",
-      ...report,
-    });
-  } catch (err) {
-    console.error("[API Error] handleCaravanReport:", err);
-    res.status(500).json({
-      status: "error",
-      message: err.message,
-      timestamp: new Date().toISOString(),
-    });
-  }
-}
-
-// مسارات استعلام تقارير القطاعات والكرفانات
-app.get("/api/caravans/report", handleCaravanReport);
-app.post("/api/caravans/report", handleCaravanReport);
-app.get("/api/caravans-2026", handleCaravanReport);
-app.post("/api/caravans-2026", handleCaravanReport);
-app.get("/api/reports/caravans-2026", handleCaravanReport);
-app.get("/api/reports/caravans", handleCaravanReport);
-app.get("/api/sectors/report", handleCaravanReport);
-app.post("/api/sectors/report", handleCaravanReport);
-app.get("/api/reports/sectors", handleCaravanReport);
-
-// 4. مسار تصدير إكسيل المحاسبي المعتمد (ExcelJS RTL)
-app.get("/api/caravans/export", exportCaravanExcel);
-app.get("/api/sectors/export", exportCaravanExcel);
-
-// مسارات إدارة تسويات مبيعات البوابات والتسويق الخارجية (SectorType = 5)
-app.get("/api/gate-adjustments", (req, res) => {
-  try {
-    const { startDate, endDate } = req.query;
-    const data = GateAdjustmentsService.getAdjustments(startDate, endDate);
-    res.json({ status: "success", data });
-  } catch (err) {
-    console.error("[API Error] GET /api/gate-adjustments:", err);
-    res.status(500).json({ status: "error", message: err.message });
-  }
-});
-
-app.post("/api/gate-adjustments", (req, res) => {
-  try {
-    const { date, adjustments } = req.body;
-    if (adjustments && typeof adjustments === 'object' && !date) {
-      for (const [d, val] of Object.entries(adjustments)) {
-        GateAdjustmentsService.saveAdjustment(d, val);
-      }
-      return res.json({ status: "success", message: "Adjustments saved successfully" });
-    }
-    if (!date) {
-      return res.status(400).json({ status: "error", message: "Date is required" });
-    }
-    GateAdjustmentsService.saveAdjustment(date, req.body);
-    res.json({ status: "success", message: `Adjustment for ${date} saved successfully` });
-  } catch (err) {
-    console.error("[API Error] POST /api/gate-adjustments:", err);
-    res.status(500).json({ status: "error", message: err.message });
-  }
-});
-
-app.delete("/api/gate-adjustments/:date", (req, res) => {
-  try {
-    const { date } = req.params;
-    GateAdjustmentsService.deleteAdjustment(date);
-    res.json({ status: "success", message: `Adjustment for ${date} deleted successfully` });
-  } catch (err) {
-    console.error("[API Error] DELETE /api/gate-adjustments:", err);
-    res.status(500).json({ status: "error", message: err.message });
-  }
-});
-
-// 5. التحليلات التشغيلية على مستوى الأصناف (Pos_item_post)
-// params: startDate, endDate, branchCode (واحد أو عدة أكواد مفصولة بفاصلة), metricType = revenue | quantity, mode = best | slow
-app.get("/api/reports/caravans/items-summary", async (req, res) => {
-  const { startDate, endDate, branchCode, metricType, mode } = req.query;
-  console.log("[DIAGNOSTIC API: items-summary] Incoming Request:", {
-    startDate,
-    endDate,
-    branchCode,
-    metricType,
-    mode,
-    timestamp: new Date().toISOString()
-  });
-
-  try {
-    const branchCodes = branchCode
-      ? String(branchCode)
-        .split(",")
-        .map((b) => b.trim())
-        .filter(Boolean)
-      : [];
-
-    const data = await CaravanItemService.getItemsSummary({
-      startDate: startDate ? String(startDate).trim() : "",
-      endDate: endDate ? String(endDate).trim() : "",
-      branchCodes,
-      metricType: metricType ? String(metricType).toLowerCase() : "revenue",
-      mode: mode ? String(mode).toLowerCase() : "best",
-    });
-
-    console.log("[DIAGNOSTIC API: items-summary] Result Stats:", {
-      topItemsCount: data.topItems?.length ?? 0,
-      slowItemsCount: data.slowItems?.length ?? 0,
-      outletsCount: data.outlets?.length ?? 0,
-      hasDuel: !!data.duel,
-      guests: data.capture?.guests ?? 0,
-      spendPerGuest: data.capture?.spendPerGuest ?? 0,
-      degraded: data.degraded,
-      errors: data.errors
-    });
-
-    res.json({ status: "success", ...data });
-  } catch (err) {
-    console.error("[DIAGNOSTIC API: items-summary] FATAL EXCEPTION CAUGHT:");
-    console.error("  Error Message:", err.message);
-    console.error("  Error Stack:", err.stack);
-
-    res.status(err.statusCode || 500).json({
-      status: "error",
-      error: err.message,
-      message: err.message,
-      stack: process.env.NODE_ENV !== 'production' ? err.stack : undefined,
-      timestamp: new Date().toISOString(),
-    });
-  }
-});
-
-// 5b. مسار تحليل أداء ومبيعات الأصناف التفصيلي مع البحث الحي وترقيم الصفحات ومقارنة الفترات
-// GET /api/reports/caravans/items-performance
-app.get("/api/reports/caravans/items-performance", async (req, res) => {
-  try {
-    const {
-      startDate,
-      endDate,
-      prevStartDate,
-      prevEndDate,
-      branchCode,
-      branches,
-      search,
-      page,
-      limit,
-      sortBy,
-      sortOrder,
-      abcCategory,
-    } = req.query;
-
-    const rawBranches = branchCode || branches;
-    const branchCodes = rawBranches
-      ? String(rawBranches)
-        .split(",")
-        .map((b) => b.trim())
-        .filter(Boolean)
-      : [];
-
-    const data = await CaravanItemService.getItemsPerformance({
-      startDate: String(startDate || getYesterdayDateString()).trim(),
-      endDate: String(endDate || new Date().toISOString().split("T")[0]).trim(),
-      prevStartDate: prevStartDate ? String(prevStartDate).trim() : undefined,
-      prevEndDate: prevEndDate ? String(prevEndDate).trim() : undefined,
-      branchCodes,
-      search: search ? String(search).trim() : "",
-      page: parseInt(page, 10) || 1,
-      limit: parseInt(limit, 10) || 10,
-      sortBy: sortBy ? String(sortBy).trim() : "revenue",
-      sortOrder: sortOrder ? String(sortOrder).trim() : "desc",
-      abcCategory: abcCategory ? String(abcCategory).trim() : undefined,
-    });
-
-    res.json(data);
-  } catch (err) {
-    console.error("[API Error] items-performance:", err);
-    res.status(err.statusCode || 500).json({
-      status: "error",
-      message: err.message,
-      timestamp: new Date().toISOString(),
-    });
-  }
-});
-
-// 6. مسار المؤشرات المالية والتنفيذية السريعة (Single-Trip Parallel Conditional Aggregation)
-app.get("/api/reports/caravans/executive-kpis", async (req, res) => {
-  try {
-    const { startDate, endDate, prevStartDate, prevEndDate, branchCode } =
-      req.query;
-    const branchCodes = branchCode
-      ? String(branchCode)
-        .split(",")
-        .map((b) => b.trim())
-        .filter(Boolean)
-      : [];
-
-    const data = await CaravanItemService.getExecutiveKpis({
-      startDate: String(startDate || "").trim(),
-      endDate: String(endDate || "").trim(),
-      prevStartDate: prevStartDate ? String(prevStartDate).trim() : undefined,
-      prevEndDate: prevEndDate ? String(prevEndDate).trim() : undefined,
-      branchCodes,
-    });
-
-    res.json(data);
-  } catch (err) {
-    console.error("[API Error] executive-kpis:", err);
-    res.status(err.statusCode || 500).json({
-      status: "error",
-      message: err.message,
-      timestamp: new Date().toISOString(),
-    });
-  }
-});
-
-// 7. مسار مقارنة الفترات الزمنية (Period-over-Period Comparison)
-app.get("/api/reports/caravans/comparison", async (req, res) => {
-  try {
-    const { periodAStart, periodAEnd, periodBStart, periodBEnd, branchCode } =
-      req.query;
-    const branchCodes = branchCode
-      ? String(branchCode)
-        .split(",")
-        .map((b) => b.trim())
-        .filter(Boolean)
-      : [];
-
-    const comparison = await CaravanItemService.getPeriodComparison({
-      periodA: {
-        startDate: String(periodAStart || "").trim(),
-        endDate: String(periodAEnd || "").trim(),
-      },
-      periodB: {
-        startDate: String(periodBStart || "").trim(),
-        endDate: String(periodBEnd || "").trim(),
-      },
-      branchCodes,
-    });
-
-    res.json({ status: "success", ...comparison });
-  } catch (err) {
-    console.error("[API Error] comparison:", err);
-    res.status(err.statusCode || 500).json({
-      status: "error",
-      message: err.message,
-      timestamp: new Date().toISOString(),
-    });
-  }
-});
-
-// 8. مسار فحص وتدقيق المعيار المالي الذهبي (Golden Benchmark Audit & Reconciliation)
-app.get(
-  ["/api/reports/caravans/audit-benchmark", "/api/caravans/audit-benchmark"],
-  async (req, res) => {
-    try {
-      const audit = await CaravanItemService.getGoldenBenchmarkAudit();
-      res.json(audit);
-    } catch (err) {
-      console.error("[API Error] audit-benchmark:", err);
-      res.status(500).json({
-        status: "error",
-        message: err.message,
-        timestamp: new Date().toISOString(),
-      });
-    }
-  },
-);
-
-// Fallback to index.html for Root and Next.js static pages
-app.get("/", (req, res) => {
+// 3. Static SPA Fallbacks
+app.get("/", (_req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
-app.get("/login", (req, res) => {
+app.get("/login", (_req, res) => {
   res.sendFile(path.join(__dirname, "public", "login", "index.html"));
 });
 
-app.get(["/reports/*", "/reports", "/reports/caravans"], (req, res) => {
+app.get(["/reports/*", "/reports", "/reports/caravans"], (_req, res) => {
   res.redirect("/");
 });
 
-// Global Error Handler
-app.use((err, req, res, next) => {
-  console.error("[Server Unhandled Error]:", err);
-  res.status(500).json({
-    status: "error",
-    message: "حدث خطأ داخلي في خادم التقارير",
-    detail: process.env.NODE_ENV === "development" ? err.message : undefined,
-  });
-});
+// 4. Centralized Error Handler
+app.use(errorHandler);
 
-// Start Server (Supports both Standalone TCP socket and IIS Named Pipe)
+// 5. Start Server (Supports Standalone TCP & Windows IIS / iisnode Named Pipe)
+const PORT = env.port;
 const isNamedPipe =
   typeof PORT === "string" &&
-  (PORT.startsWith("\\\\.\\pipe\\") || isNaN(Number(PORT)));
+  (PORT.startsWith("\\\\.\\pipe\\") || Number.isNaN(Number(PORT)));
+
+async function onServerListening(modeLabel) {
+  console.log(`\n🚀 Dream Park Financial Reporting Service (${modeLabel})`);
+  console.log(`📍 Listening on: ${PORT}`);
+  try {
+    await getPool();
+  } catch (err) {
+    console.warn(`[Startup Warning] Initial DB connection check: ${err.message}`);
+  }
+}
 
 if (isNamedPipe) {
-  app.listen(PORT, async () => {
-    console.log(
-      `\n===============================================================`,
-    );
-    console.log(`🚀 Dream Park Reporting Service (IIS Named Pipe Mode)`);
-    console.log(`📍 Named Pipe:      ${PORT}`);
-    console.log(`⚡ API Endpoint:    /api/caravans/report`);
-    console.log(
-      `===============================================================\n`,
-    );
-    try {
-      await getPool();
-      // تشغيل فحص المطابقة المالي الذهبي عند بدء التشغيل
-      const audit = await CaravanItemService.getGoldenBenchmarkAudit().catch(
-        () => null,
-      );
-      if (audit) {
-        console.log(
-          `🎯 [Golden Financial Benchmark] Range: 2026-01-01 to 2026-10-25`,
-        );
-        console.log(
-          `   - Checks:         ${audit.actual.totalChecks} [${audit.checks.totalInvoices} ✅]`,
-        );
-        console.log(
-          `   - Caravans Tax:   ${audit.actual.caravansSpecificTax.toLocaleString("en-US", { minimumFractionDigits: 2 })} EGP [${audit.checks.caravansSpecific} ✅]`,
-        );
-        console.log(
-          `   - Net / Subtotal: ${audit.actual.netSubtotal.toLocaleString("en-US", { minimumFractionDigits: 2 })} EGP [${audit.checks.netSubtotal} ✅]`,
-        );
-        console.log(
-          `   - Taxes & Serv.:  ${audit.actual.taxesServices.toLocaleString("en-US", { minimumFractionDigits: 2 })} EGP [${audit.checks.taxesServices} ✅]`,
-        );
-        console.log(
-          `   - Grand Total:    ${audit.actual.grandTotal.toLocaleString("en-US", { minimumFractionDigits: 2 })} EGP [${audit.checks.grandTotal} ✅]`,
-        );
-        console.log(
-          `   ⚡ Status:        ${audit.passed ? "ALL BENCHMARK METRICS PASS 100%" : "DISCREPANCY DETECTED"}\n`,
-        );
-      }
-    } catch (err) {
-      console.warn(
-        `[Startup Warning] Initial database connection check: ${err.message}`,
-      );
-    }
-  });
+  app.listen(PORT, () => onServerListening("IIS Named Pipe Mode"));
 } else {
   const numericPort = parseInt(PORT, 10);
-  app.listen(numericPort, "0.0.0.0", async () => {
-    console.log(
-      `\n===============================================================`,
-    );
-    console.log(`🚀 Dream Park Financial Reporting Microservice`);
-    console.log(`📍 Service Port:    ${numericPort}`);
-    console.log(`📍 Network Address: http://0.0.0.0:${numericPort}`);
-    console.log(
-      `⚡ API Health:      http://127.0.0.1:${numericPort}/api/health`,
-    );
-    console.log(
-      `⚡ Caravan Report:  http://127.0.0.1:${numericPort}/api/caravans/report`,
-    );
-    console.log(
-      `⚡ Excel Export:    http://127.0.0.1:${numericPort}/api/caravans/export`,
-    );
-    console.log(
-      `===============================================================\n`,
-    );
-    try {
-      await getPool();
-      // تشغيل فحص المطابقة المالي الذهبي عند بدء التشغيل
-      const audit = await CaravanItemService.getGoldenBenchmarkAudit().catch(
-        () => null,
-      );
-      if (audit) {
-        console.log(
-          `🎯 [Golden Financial Benchmark] Range: 2026-01-01 to 2026-10-25`,
-        );
-        console.log(
-          `   - Checks:         ${audit.actual.totalChecks} [${audit.checks.totalInvoices} ✅]`,
-        );
-        console.log(
-          `   - Caravans Tax:   ${audit.actual.caravansSpecificTax.toLocaleString("en-US", { minimumFractionDigits: 2 })} EGP [${audit.checks.caravansSpecific} ✅]`,
-        );
-        console.log(
-          `   - Net / Subtotal: ${audit.actual.netSubtotal.toLocaleString("en-US", { minimumFractionDigits: 2 })} EGP [${audit.checks.netSubtotal} ✅]`,
-        );
-        console.log(
-          `   - Taxes & Serv.:  ${audit.actual.taxesServices.toLocaleString("en-US", { minimumFractionDigits: 2 })} EGP [${audit.checks.taxesServices} ✅]`,
-        );
-        console.log(
-          `   - Grand Total:    ${audit.actual.grandTotal.toLocaleString("en-US", { minimumFractionDigits: 2 })} EGP [${audit.checks.grandTotal} ✅]`,
-        );
-        console.log(
-          `   ⚡ Status:        ${audit.passed ? "ALL BENCHMARK METRICS PASS 100%" : "DISCREPANCY DETECTED"}\n`,
-        );
-      }
-    } catch (err) {
-      console.warn(
-        `[Startup Warning] Initial database connection check: ${err.message}`,
-      );
-    }
-  });
+  app.listen(numericPort, "0.0.0.0", () => onServerListening(`TCP Port ${numericPort}`));
 }

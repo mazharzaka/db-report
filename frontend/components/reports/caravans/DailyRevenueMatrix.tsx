@@ -1035,28 +1035,26 @@ export const DailyRevenueMatrix = React.memo(function DailyRevenueMatrix({
       if (sectorType === 6) {
         const bCode = branchKey.toLowerCase();
         const bName = String(r.name || '').trim().toLowerCase();
+        const normAr = bName.replace(/[أإآ]/g, 'ا').replace(/ة/g, 'ه');
 
-        if (bCode === '120' || bCode === 'parking_private' || bName.includes('ملاكي') || (bName.includes('parking') && !bName.includes('bus') && !bName.includes('باص'))) {
+        if (OTH_SECTOR_COLUMNS.some((c) => c.id === bCode) || bCode === 'unmapped') {
+          branchKey = bCode;
+        } else if (bCode === '120' || normAr.includes('ملاكي') || normAr.includes('تاكس') || (bName.includes('parking') && !bName.includes('bus') && !normAr.includes('باص'))) {
           branchKey = 'parking_private';
-        } else if (bCode === 'parking_buses' || bName.includes('buses') || bName.includes('باص') || bName.includes('اتوبيس') || bName.includes('ميكروباص')) {
+        } else if (bName.includes('buses') || normAr.includes('باص') || normAr.includes('اتوبيس') || normAr.includes('ميكروباص')) {
           branchKey = 'parking_buses';
-        } else if (bCode === 'mask' || bCode.includes('mask') || bName.includes('ماسك')) {
+        } else if (bCode.includes('mask') || bName.includes('mask') || normAr.includes('ماسك') || normAr.includes('محمود')) {
           branchKey = 'mask';
-        } else if (bCode === '118' || bCode === 'locker' || bName.includes('deposit') || bName.includes('أمانات') || bName.includes('امانات') || bName.includes('خازين') || bName.includes('lock')) {
+        } else if (bCode === '118' || normAr.includes('امانات') || normAr.includes('امانه') || normAr.includes('خزنه') || normAr.includes('خازين') || normAr.includes('لوكر') || bName.includes('lock')) {
           branchKey = 'locker';
-        } else if (bCode === 'g_and_r' || bCode.includes('g_and_r') || bName.includes('g&r') || bName.includes('car ')) {
+        } else if (bName.includes('g.deposit') || normAr.includes('تامين')) {
+          branchKey = 'g_deposit';
+        } else if (bCode.includes('g_and_r') || bName.includes('g&r') || bName.includes('car ')) {
           branchKey = 'g_and_r';
-        } else if (bCode === 'taftaf' || bName.includes('طفطف') || bName.includes('taftaf')) {
-          branchKey = 'taftaf';
-        } else if (bCode === 'metro' || bCode.startsWith('metro_') || bName.includes('مترو') || bName.includes('metro')) {
-          branchKey = bCode.startsWith('metro_') ? bCode : 'metro_cash';
-        } else if (bCode === 'telephon' || bName.includes('تليفون') || bName.includes('telephon')) {
+        } else if (bCode.includes('telephon') || normAr.includes('تليفون') || bName.includes('telephon')) {
           branchKey = 'telephon';
-        } else {
-          const matchedOth = OTH_SECTOR_COLUMNS.find((c) => c.id === bCode);
-          if (matchedOth) {
-            branchKey = matchedOth.id;
-          }
+        } else if (bName.includes('net coffee') || normAr.includes('نت كافيه')) {
+          branchKey = 'net_coffee';
         }
         const othCol = OTH_SECTOR_COLUMNS.find((c) => c.id === branchKey);
         branchName = othCol ? othCol.header : (r.name || branchKey);
@@ -1115,31 +1113,12 @@ export const DailyRevenueMatrix = React.memo(function DailyRevenueMatrix({
       }
 
       const branchValues = dateMap.get(dateKey)!;
-      const currentVal = branchValues.get(branchKey) || {
-        cash: 0,
-        visa: 0,
-        cl: 0,
-        rawTotal: 0,
-      };
-      branchValues.set(branchKey, {
-        cash: currentVal.cash + cash,
-        visa: currentVal.visa + visa,
-        cl: currentVal.cl + cl,
-        rawTotal: currentVal.rawTotal + rawTotal,
-      });
 
-      // Track OTH metrics when sectorType === 6 (single-pass mapping — NEVER double-add with branchKey)
-      if (sectorType === 6) {
-        let mappedAny = false;
+      // Single-pass accumulation (EXACTLY 1x per record across ALL sectors 1–6)
+      if (sectorType === 6 && (r as any).values && typeof (r as any).values === 'object') {
         OTH_SECTOR_COLUMNS.forEach((col) => {
-          let colVal = 0;
-          if ((r as any).values && typeof (r as any).values[col.id] === 'number') {
-            colVal = (r as any).values[col.id];
-          } else if (typeof (r as any)[col.id] === 'number') {
-            colVal = (r as any)[col.id];
-          }
-          if (colVal > 0) {
-            mappedAny = true;
+          const colVal = Number((r as any).values[col.id]) || 0;
+          if (Math.abs(colVal) > 0.0001) {
             const cur = branchValues.get(col.id) || { cash: 0, visa: 0, cl: 0, rawTotal: 0 };
             branchValues.set(col.id, {
               cash: cur.cash + colVal,
@@ -1147,42 +1126,11 @@ export const DailyRevenueMatrix = React.memo(function DailyRevenueMatrix({
               cl: cur.cl,
               rawTotal: cur.rawTotal + colVal,
             });
-            branchTotals.set(col.id, (branchTotals.get(col.id) || 0) + colVal);
+            if (col.id !== branchKey) {
+              branchTotals.set(col.id, (branchTotals.get(col.id) || 0) + colVal);
+            }
           }
         });
-
-        if (!mappedAny) {
-          const bCode = String(r.branchCode || '').trim().toLowerCase();
-          const bName = String(r.name || '').trim().toLowerCase();
-
-          let targetColId = '';
-          if (bCode === '120' || bName.includes('parking') || bName.includes('بارك') || bCode === 'parking_private') {
-            targetColId = 'parking_private';
-          } else if (bCode === 'parking_buses' || bName.includes('buses') || bName.includes('باص')) {
-            targetColId = 'parking_buses';
-          } else if (bCode.includes('mask') || bName.includes('ماسك') || bName.includes('mask')) {
-            targetColId = 'mask';
-          } else if (bCode === '118' || bName.includes('deposit') || bName.includes('أمانات') || bName.includes('امانات') || bCode === 'locker') {
-            targetColId = 'locker';
-          } else if (bCode.includes('telephon') || bName.includes('تليفون')) {
-            targetColId = 'telephon';
-          } else if (bCode === 'g_and_r' || bName.includes('g&r')) {
-            targetColId = 'g_and_r';
-          } else if (OTH_SECTOR_COLUMNS.some((c) => c.id === bCode)) {
-            targetColId = bCode;
-          }
-
-          if (targetColId) {
-            const cur = branchValues.get(targetColId) || { cash: 0, visa: 0, cl: 0, rawTotal: 0 };
-            branchValues.set(targetColId, {
-              cash: cur.cash + cash,
-              visa: cur.visa + visa,
-              cl: cur.cl + cl,
-              rawTotal: cur.rawTotal + itemBaseTotal,
-            });
-            branchTotals.set(targetColId, (branchTotals.get(targetColId) || 0) + itemBaseTotal);
-          }
-        }
       } else {
         const currentVal = branchValues.get(branchKey) || {
           cash: 0,
