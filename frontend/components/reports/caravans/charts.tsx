@@ -467,4 +467,8 @@ export function PaymentDonut({
               )}
             </div>
           </li>
-        )
+        ))}
+      </ul>
+    </div>
+  );
+}
