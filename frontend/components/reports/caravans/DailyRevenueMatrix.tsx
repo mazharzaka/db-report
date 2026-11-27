@@ -10,28 +10,28 @@ import {
   Coffee,
   ShoppingBag,
   Receipt,
-} from 'lucide-react';
-import { fmtMoney } from './charts';
-import { getSectorTheme } from '@/config/sectorsConfig';
+} from "lucide-react";
+import { fmtMoney } from "./charts";
+import { getSectorTheme } from "@/config/sectorsConfig";
 import {
   type DailyRevenueMatrixProps,
   type CalcMode,
   type RideStatusFilter,
   formatDateAr,
   MONEY_FORMATTER,
-} from './matrix/matrixConstants';
-import { useMatrixAggregation } from './matrix/useMatrixAggregation';
-import { exportMatrixToExcel } from './matrix/matrixExcelExport';
-import { MatrixTableSkeleton } from './matrix/MatrixTableSkeleton';
-import { MatrixTableRow } from './matrix/MatrixTableRow';
-import { MatrixTableHeaders } from './matrix/MatrixTableHeaders';
-import { RestaurantMatrixRows } from './matrix/RestaurantMatrixRows';
-import { MatrixTableFooter } from './matrix/MatrixTableFooter';
-import { MatrixToolbar } from './matrix/MatrixToolbar';
+} from "./matrix/matrixConstants";
+import { useMatrixAggregation } from "./matrix/useMatrixAggregation";
+import { exportMatrixToExcel } from "./matrix/matrixExcelExport";
+import { MatrixTableSkeleton } from "./matrix/MatrixTableSkeleton";
+import { MatrixTableRow } from "./matrix/MatrixTableRow";
+import { MatrixTableHeaders } from "./matrix/MatrixTableHeaders";
+import { RestaurantMatrixRows } from "./matrix/RestaurantMatrixRows";
+import { MatrixTableFooter } from "./matrix/MatrixTableFooter";
+import { MatrixToolbar } from "./matrix/MatrixToolbar";
 
 // Re-export constants & types for backward compatibility across the frontend
-export * from './matrix/matrixConstants';
-export { MatrixTableRow } from './matrix/MatrixTableRow';
+export * from "./matrix/matrixConstants";
+export { MatrixTableRow } from "./matrix/MatrixTableRow";
 
 /* -------------------------------------------------------------------------- */
 /* Main DailyRevenueMatrix Component Implementation                           */
@@ -307,9 +307,11 @@ export const DailyRevenueMatrix = React.memo(function DailyRevenueMatrix({
     }
   };
 
-  const hoverRowClass = 'hover:bg-slate-100/70 dark:hover:bg-zinc-800/50';
-  const hoverCellClass = 'group-hover:bg-slate-100/70 dark:group-hover:bg-zinc-800/50';
-  const totalRevColClass = 'bg-slate-100/80 font-black text-slate-900 dark:bg-zinc-800/70 dark:text-white';
+  const hoverRowClass = "hover:bg-slate-100/70 dark:hover:bg-zinc-800/50";
+  const hoverCellClass =
+    "group-hover:bg-slate-100/70 dark:group-hover:bg-zinc-800/50";
+  const totalRevColClass =
+    "bg-slate-100/80 font-black text-slate-900 dark:bg-zinc-800/70 dark:text-white";
 
   return (
     <div
@@ -448,10 +450,16 @@ export const DailyRevenueMatrix = React.memo(function DailyRevenueMatrix({
       {/* Table Area (Skeleton Shimmer during Loading, otherwise Real Matrix)   */}
       {/* --------------------------------------------------------------------- */}
       {loading ? (
-        <MatrixTableSkeleton columnsCount={Math.min(totalTableCols, 12)} rowsCount={8} />
+        <MatrixTableSkeleton
+          columnsCount={Math.min(totalTableCols, 12)}
+          rowsCount={8}
+        />
       ) : (
         <div className="relative overflow-x-auto rounded-lg border border-slate-300 dark:border-zinc-800 max-h-[700px] shadow-2xs">
-          <table className="w-full text-right text-sm border-collapse" dir="rtl">
+          <table
+            className="w-full text-right text-sm border-collapse"
+            dir="rtl"
+          >
             <MatrixTableHeaders
               isRestaurants={isRestaurants}
               sectorType={sectorType}
@@ -480,7 +488,10 @@ export const DailyRevenueMatrix = React.memo(function DailyRevenueMatrix({
                 />
               ) : matrixRows.length === 0 ? (
                 <tr>
-                  <td colSpan={totalTableCols} className="py-12 text-center text-slate-500 text-sm font-sans font-medium">
+                  <td
+                    colSpan={totalTableCols}
+                    className="py-12 text-center text-slate-500 text-sm font-sans font-medium"
+                  >
                     لا توجد بيانات متاحة في هذا القطاع للفترة المحددة
                   </td>
                 </tr>
