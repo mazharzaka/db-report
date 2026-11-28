@@ -136,13 +136,14 @@ export function handleDeleteGateAdjustments(req, res, next) {
 
 export async function handleItemsSummary(req, res, next) {
   try {
-    const { startDate, endDate, branchCode, metricType, mode } = req.query;
+    const { startDate, endDate, branchCode, metricType, mode, sectorType } = req.query;
     const data = await CaravanItemService.getItemsSummary({
       startDate: startDate ? String(startDate).trim() : "",
       endDate: endDate ? String(endDate).trim() : "",
       branchCodes: parseBranchesList(branchCode),
       metricType: metricType ? String(metricType).toLowerCase() : "revenue",
       mode: mode ? String(mode).toLowerCase() : "best",
+      sectorType: sectorType ? parseInt(sectorType, 10) : 4,
     });
     res.json({ status: "success", ...data });
   } catch (err) {
@@ -154,7 +155,7 @@ export async function handleItemsPerformance(req, res, next) {
   try {
     const {
       startDate, endDate, prevStartDate, prevEndDate, branchCode, branches,
-      search, page, limit, sortBy, sortOrder, abcCategory,
+      search, page, limit, sortBy, sortOrder, abcCategory, sectorType,
     } = req.query;
 
     const data = await CaravanItemService.getItemsPerformance({
@@ -169,6 +170,7 @@ export async function handleItemsPerformance(req, res, next) {
       sortBy: sortBy ? String(sortBy).trim() : "revenue",
       sortOrder: sortOrder ? String(sortOrder).trim() : "desc",
       abcCategory: abcCategory ? String(abcCategory).trim() : undefined,
+      sectorType: sectorType ? parseInt(sectorType, 10) : 4,
     });
     res.json(data);
   } catch (err) {
@@ -178,13 +180,14 @@ export async function handleItemsPerformance(req, res, next) {
 
 export async function handleExecutiveKpis(req, res, next) {
   try {
-    const { startDate, endDate, prevStartDate, prevEndDate, branchCode } = req.query;
+    const { startDate, endDate, prevStartDate, prevEndDate, branchCode, sectorType } = req.query;
     const data = await CaravanItemService.getExecutiveKpis({
       startDate: String(startDate || "").trim(),
       endDate: String(endDate || "").trim(),
       prevStartDate: prevStartDate ? String(prevStartDate).trim() : undefined,
       prevEndDate: prevEndDate ? String(prevEndDate).trim() : undefined,
       branchCodes: parseBranchesList(branchCode),
+      sectorType: sectorType ? parseInt(sectorType, 10) : 4,
     });
     res.json(data);
   } catch (err) {

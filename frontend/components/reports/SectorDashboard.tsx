@@ -6,14 +6,13 @@ import {
   BarChart3,
   ChevronLeft,
   ChevronDown,
-  DollarSign,
+  Banknote,
   Receipt,
   Percent,
   FileSpreadsheet,
   Printer,
   RefreshCw,
   Scale,
-  Sparkles,
   LogOut,
 } from "lucide-react";
 import { ThemeToggle } from "@/components/dashboard/ThemeToggle";
@@ -81,6 +80,68 @@ export function SectorDashboard({ sector }: SectorDashboardProps) {
 
     return { total: rawTotal, net, retail: net, vat };
   }, [dash.records, dash.summary, sector.type]);
+
+  // Memoized fallback for top items & duel from branch records when item-level POS data is absent
+  const effectiveTopItems = React.useMemo(() => {
+    const list =
+      dash.topItems.length > 0 ? dash.topItems : (dash.itemsData?.topItems ?? []);
+    if (list.length > 0) return list;
+    if (!dash.records || dash.records.length === 0) return [];
+    const branchMap = new Map<string, { name: string; revenue: number; qty: number }>();
+    for (const r of dash.records) {
+      const code = String(r.branchCode || r.name || "");
+      if (!code) continue;
+      const existing = branchMap.get(code) || {
+        name: r.name || code,
+        revenue: 0,
+        qty: 0,
+      };
+      existing.revenue += Number(r.total) || 0;
+      existing.qty += Number(r.cover || 1) || 0;
+      branchMap.set(code, existing);
+    }
+    const totalRev =
+      Array.from(branchMap.values()).reduce((sum, b) => sum + b.revenue, 0) || 1;
+    return Array.from(branchMap.entries())
+      .map(([code, b]) => ({
+        itemCode: code,
+        itemName: b.name,
+        revenue: b.revenue,
+        qty: b.qty,
+        share: Math.round((b.revenue / totalRev) * 1000) / 10,
+        category: "BRANCH",
+        unitPrice: b.qty > 0 ? Math.round(b.revenue / b.qty) : b.revenue,
+      }))
+      .sort((a, b) => b.revenue - a.revenue)
+      .slice(0, 5);
+  }, [dash.topItems, dash.itemsData?.topItems, dash.records]);
+
+  const effectiveDuel = React.useMemo(() => {
+    if (dash.itemsData?.duel) return dash.itemsData.duel;
+    if (!effectiveTopItems || effectiveTopItems.length < 2) return null;
+    const [first, second] = effectiveTopItems;
+    const pairRev = first.revenue + second.revenue || 1;
+    return {
+      a: {
+        branchCode: first.itemCode,
+        name: first.itemName,
+        revenue: first.revenue,
+        orders: first.qty,
+        avgTicket: first.qty > 0 ? Math.round(first.revenue / first.qty) : first.revenue,
+        signature: null,
+        share: Math.round((first.revenue / pairRev) * 1000) / 10,
+      },
+      b: {
+        branchCode: second.itemCode,
+        name: second.itemName,
+        revenue: second.revenue,
+        orders: second.qty,
+        avgTicket: second.qty > 0 ? Math.round(second.revenue / second.qty) : second.revenue,
+        signature: null,
+        share: Math.round((second.revenue / pairRev) * 1000) / 10,
+      },
+    };
+  }, [dash.itemsData?.duel, effectiveTopItems]);
 
   // Unauthenticated screen guard
   if (dash.isAuthorized === null || !dash.isAuthorized) {
@@ -228,48 +289,6 @@ export function SectorDashboard({ sector }: SectorDashboardProps) {
                   </div>
                 </div>
 
-                <span className="inline-flex items-center gap-2 rounded-full border border-slate-200/80 bg-white/80 px-3 py-1 text-xs font-medium text-slate-700 shadow-sm dark:border-white/10 dark:bg-zinc-900/60 dark:text-zinc-300 backdrop-blur-xs">
-                  <span className="relative flex h-2 w-2">
-                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-500 opacity-60" />
-                    <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
-                  </span>
-                  محدث لحظياً
-                  {dash.updatedAt && (
-                    <span className="tabular-nums opacity-80" dir="ltr">
-                      {dash.updatedAt.toLocaleTimeString("en-GB")}
-                    </span>
-                  )}
-                </span>
-
-                {dash.responseTimeMs !== null && (
-                  <button
-                    type="button"
-                    onClick={() => dash.triggerRefresh(true)}
-                    disabled={dash.loading || dash.comparisonLoading}
-                    title="اضغط لإعادة التحميل الإجباري وتجاوز الكاش (Bypass Cache)"
-                    className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium shadow-sm transition hover:scale-105 active:scale-95 disabled:opacity-50 cursor-pointer ${dash.fromCache
-                        ? "border-emerald-500/30 bg-emerald-50/90 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-950/40 dark:text-emerald-300"
-                        : "border-sky-500/30 bg-sky-50/90 text-sky-700 dark:border-sky-500/30 dark:bg-sky-950/40 dark:text-sky-300"
-                      }`}
-                  >
-                    {dash.fromCache ? (
-                      <>
-                        <span className="text-amber-500 dark:text-amber-400">⚡</span>
-                        <span className="font-semibold">من الكاش</span>
-                      </>
-                    ) : (
-                      <>
-                        <RefreshCw
-                          className={`h-3 w-3 text-sky-500 ${dash.loading ? "animate-spin" : ""}`}
-                        />
-                        <span className="font-semibold">بيانات مباشرة</span>
-                      </>
-                    )}
-                    <span className="tabular-nums font-mono text-[11px] opacity-80" dir="ltr">
-                      ({(dash.responseTimeMs / 1000).toFixed(2)}s)
-                    </span>
-                  </button>
-                )}
               </div>
 
               {/* Actions & Mode Switcher */}
@@ -303,13 +322,14 @@ export function SectorDashboard({ sector }: SectorDashboardProps) {
                   type="button"
                   onClick={() => dash.triggerRefresh(true)}
                   disabled={dash.loading || dash.comparisonLoading}
-                  title="تحديث إجباري وتجاوز الكاش (Bypass Cache)"
+                  title="تحديث البيانات"
                   aria-label="تحديث"
-                  className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200/80 bg-white/80 text-slate-700 shadow-sm ring-1 ring-slate-900/5 transition hover:text-slate-900 hover:bg-slate-50 dark:border-zinc-800/80 dark:bg-zinc-900/60 dark:ring-white/10 dark:text-zinc-300 dark:hover:text-white dark:hover:bg-zinc-800 disabled:opacity-50 backdrop-blur-xs"
+                  className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-slate-200/80 bg-white/80 px-3 text-xs font-semibold text-slate-700 shadow-sm ring-1 ring-slate-900/5 transition hover:bg-slate-50 hover:text-slate-900 dark:border-zinc-800/80 dark:bg-zinc-900/60 dark:ring-white/10 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-white disabled:opacity-50 active:scale-95 backdrop-blur-xs"
                 >
                   <RefreshCw
-                    className={`h-4 w-4 ${dash.loading || dash.comparisonLoading ? "animate-spin" : ""}`}
+                    className={`h-3.5 w-3.5 ${dash.loading || dash.comparisonLoading ? "animate-spin" : ""}`}
                   />
+                  <span>تحديث</span>
                 </button>
                 <button
                   type="button"
@@ -465,7 +485,7 @@ export function SectorDashboard({ sector }: SectorDashboardProps) {
                   <div
                     className={`flex h-11 w-11 items-center justify-center rounded-xl shadow-2xs ${sector.theme.iconBox}`}
                   >
-                    <DollarSign className="h-5 w-5" />
+                    <Banknote className="h-5 w-5" />
                   </div>
                 </div>
 
@@ -707,15 +727,14 @@ export function SectorDashboard({ sector }: SectorDashboardProps) {
                   <div
                     className={`flex h-9 w-9 items-center justify-center rounded-lg ${sector.theme.iconBox}`}
                   >
-                    <Sparkles className="h-4 w-4" />
+                    <BarChart3 className="h-4 w-4" />
                   </div>
                   <div>
                     <span className="text-base font-bold text-slate-900 dark:text-white">
-                      تحليلات إضافية وتركيبية
+                      تحليلات تشغيلية متقدمة
                     </span>
                     <p className="text-xs font-normal text-slate-500 dark:text-zinc-400 mt-0.5">
-                      تتضمن: سلوك الإنفاق، كفاءة التشغيل، الأفضل مبيعاً والراكد،
-                      تحليل مبيعات الأصناف، والمزيد
+                      مؤشرات حجم النشاط، كفاءة تشغيل المنافذ، والأداء التفصيلي
                     </p>
                   </div>
                 </div>
@@ -729,7 +748,7 @@ export function SectorDashboard({ sector }: SectorDashboardProps) {
 
               {drawerOpen && (
                 <div className="mt-6 space-y-6 border-t border-slate-100 pt-6 dark:border-zinc-800/80">
-                  {/* 1. Top Macro KPIs (إجمالي الإيرادات، الكميات، الزوار، والمرتجعات) */}
+                  {/* 1. Top Macro KPIs (الكميات، الزوار/المنافذ، والمرتجعات) */}
                   <div className="break-inside-avoid">
                     <Suspense fallback={<KPIsSkeleton />}>
                       <ExecutiveKpisSection
@@ -741,6 +760,7 @@ export function SectorDashboard({ sector }: SectorDashboardProps) {
                         records={dash.records}
                         guests={dash.guests}
                         refreshTick={dash.refreshTick}
+                        sectorType={sector.type}
                       />
                     </Suspense>
                   </div>
@@ -754,6 +774,7 @@ export function SectorDashboard({ sector }: SectorDashboardProps) {
                       spendPerGuest={dash.spendPerGuest}
                       summary={dash.summary}
                       loading={dash.loading}
+                      sectorType={sector.type}
                     />
                   </div>
 
@@ -770,11 +791,7 @@ export function SectorDashboard({ sector }: SectorDashboardProps) {
                   {/* 2. Best & Worst Sellers (الأفضل مبيعاً والراكد) */}
                   <div className="break-inside-avoid">
                     <TopItemsWidget
-                      items={
-                        dash.topItems.length > 0
-                          ? dash.topItems
-                          : (dash.itemsData?.topItems ?? [])
-                      }
+                      items={effectiveTopItems}
                       slowItems={
                         dash.slowItems.length > 0
                           ? dash.slowItems
@@ -786,6 +803,7 @@ export function SectorDashboard({ sector }: SectorDashboardProps) {
                       onMetricChange={dash.setItemMetric}
                       scopeLabel={dash.topScopeLabel}
                       loading={dash.itemsLoading}
+                      sectorType={sector.type}
                     />
                   </div>
 
@@ -795,6 +813,7 @@ export function SectorDashboard({ sector }: SectorDashboardProps) {
                       startDate={dash.start}
                       endDate={dash.end}
                       selectedBranches={dash.effectiveBranches}
+                      sectorType={sector.type}
                     />
                   </div>
 
@@ -802,8 +821,9 @@ export function SectorDashboard({ sector }: SectorDashboardProps) {
                   <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
                     <div className="lg:col-span-12 xl:col-span-5">
                       <DuelCard
-                        duel={dash.itemsData?.duel ?? null}
+                        duel={effectiveDuel}
                         loading={dash.itemsLoading}
+                        sectorType={sector.type}
                       />
                     </div>
                     <div className="lg:col-span-12 xl:col-span-7">

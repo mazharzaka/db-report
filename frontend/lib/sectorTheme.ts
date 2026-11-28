@@ -34,6 +34,8 @@ export interface SectorTheme {
   badgeSolid: string;
   checkboxActive: string;
   chartHex: string;
+  progressBar: string;
+  tableRowHover: string;
 
   // Unified Interactive Slots
   primaryBtn: string;
@@ -111,6 +113,8 @@ export const SECTOR_THEMES: Record<number, SectorTheme> = {
     badgeSolid: 'bg-rose-600 text-white',
     checkboxActive: 'border-rose-600 bg-rose-600 text-white dark:border-rose-700 dark:bg-rose-700',
     chartHex: '#E11D48',
+    progressBar: 'bg-rose-600 dark:bg-rose-500',
+    tableRowHover: 'hover:bg-rose-50/70 dark:hover:bg-rose-950/30',
 
     // Unified Slots
     primaryBtn: 'bg-rose-600 hover:bg-rose-700 text-white shadow-sm font-semibold active:scale-95',
@@ -192,6 +196,8 @@ export const SECTOR_THEMES: Record<number, SectorTheme> = {
     badgeSolid: 'bg-orange-600 text-white',
     checkboxActive: 'border-orange-600 bg-orange-600 text-white dark:border-orange-500 dark:bg-orange-500',
     chartHex: '#EA580C',
+    progressBar: 'bg-orange-600 dark:bg-orange-500',
+    tableRowHover: 'hover:bg-orange-50/70 dark:hover:bg-orange-950/30',
 
     // Unified Slots
     primaryBtn: 'bg-orange-600 hover:bg-orange-700 text-white shadow-sm font-semibold active:scale-95',
@@ -273,6 +279,8 @@ export const SECTOR_THEMES: Record<number, SectorTheme> = {
     badgeSolid: 'bg-purple-600 text-white',
     checkboxActive: 'border-purple-600 bg-purple-600 text-white dark:border-purple-500 dark:bg-purple-500',
     chartHex: '#9333EA',
+    progressBar: 'bg-purple-600 dark:bg-purple-500',
+    tableRowHover: 'hover:bg-purple-50/70 dark:hover:bg-purple-950/30',
 
     // Unified Slots
     primaryBtn: 'bg-purple-600 hover:bg-purple-700 text-white shadow-sm font-semibold active:scale-95',
@@ -354,6 +362,8 @@ export const SECTOR_THEMES: Record<number, SectorTheme> = {
     badgeSolid: 'bg-blue-600 text-white',
     checkboxActive: 'border-blue-600 bg-blue-600 text-white dark:border-blue-500 dark:bg-blue-500',
     chartHex: '#2563EB',
+    progressBar: 'bg-blue-600 dark:bg-blue-500',
+    tableRowHover: 'hover:bg-blue-50/70 dark:hover:bg-blue-950/30',
 
     // Unified Slots
     primaryBtn: 'bg-blue-600 hover:bg-blue-700 text-white shadow-sm font-semibold active:scale-95',
@@ -435,6 +445,8 @@ export const SECTOR_THEMES: Record<number, SectorTheme> = {
     badgeSolid: 'bg-emerald-600 text-white',
     checkboxActive: 'border-emerald-600 bg-emerald-600 text-white dark:border-emerald-500 dark:bg-emerald-500',
     chartHex: '#059669',
+    progressBar: 'bg-emerald-600 dark:bg-emerald-500',
+    tableRowHover: 'hover:bg-emerald-50/70 dark:hover:bg-emerald-950/30',
 
     // Unified Slots
     primaryBtn: 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm font-semibold active:scale-95',
@@ -516,6 +528,8 @@ export const SECTOR_THEMES: Record<number, SectorTheme> = {
     badgeSolid: 'bg-yellow-500 text-slate-950 font-bold',
     checkboxActive: 'border-yellow-500 bg-yellow-500 text-slate-950 dark:border-yellow-400 dark:bg-yellow-400',
     chartHex: '#CA8A04',
+    progressBar: 'bg-amber-500 dark:bg-amber-400',
+    tableRowHover: 'hover:bg-amber-50/70 dark:hover:bg-amber-950/30',
 
     // Unified Slots (High-contrast text-slate-950 on bright yellow)
     primaryBtn: 'bg-yellow-500 hover:bg-yellow-600 text-slate-950 shadow-sm font-bold active:scale-95',
@@ -584,4 +598,125 @@ export const SECTOR_THEMES: Record<number, SectorTheme> = {
 export function getSectorTheme(sectorType?: number): SectorTheme {
   const type = Number(sectorType) || 4;
   return SECTOR_THEMES[type] || SECTOR_THEMES[4];
+}
+
+export interface SectorAnalyticsCopy {
+  rankingsTitle: string;
+  rankingsSubtitle: string;
+  topSellersTitle: string;
+  slowMovingTitle: string;
+  duelTitle: string;
+  duelSubtitle: string;
+  duelShareFootnote: string;
+  distributionTitle: string;
+  outletEfficiencyTitle: string;
+  outletEfficiencySubtitle: string;
+  netOutletRevLabel: string;
+  unitLabel: string;
+  volumeUnit: string;
+  entityLabel: string;
+}
+
+export const SECTOR_ANALYTICS_COPY: Record<number, SectorAnalyticsCopy> = {
+  1: {
+    rankingsTitle: 'ترتيب المطاعم',
+    rankingsSubtitle: 'أعلى المطاعم إيراداً خلال الفترة',
+    topSellersTitle: 'الأصناف الأكثر مبيعاً في المطاعم',
+    slowMovingTitle: 'الأصناف الأقل حركة',
+    duelTitle: 'مواجهة المطعمين المتصدرين',
+    duelSubtitle: 'أعلى مطعمين إيراداً خلال الفترة',
+    duelShareFootnote: 'حصة كل مطعم من إجمالي الاثنين',
+    distributionTitle: 'توزيع المأكولات والمشروبات',
+    outletEfficiencyTitle: 'كفاءة تشغيل المطاعم',
+    outletEfficiencySubtitle: 'معدل المبيعات لكل مطعم نشط',
+    netOutletRevLabel: 'صافي إيراد المطاعم',
+    unitLabel: 'طلب / وجبة',
+    volumeUnit: 'وجبة',
+    entityLabel: 'مطعم',
+  },
+  2: {
+    rankingsTitle: 'ترتيب الألعاب الكبرى',
+    rankingsSubtitle: 'أعلى الألعاب تحقيقاً للإيراد',
+    topSellersTitle: 'التذاكر والألعاب الأكثر إقبالاً',
+    slowMovingTitle: 'الألعاب الأقل حركة',
+    duelTitle: 'مواجهة اللعبتين الأكثر طلباً',
+    duelSubtitle: 'أعلى لعبتين إيراداً خلال الفترة',
+    duelShareFootnote: 'حصة كل لعبة من إجمالي اللعبتين',
+    distributionTitle: 'توزيع إيرادات الألعاب الكبرى',
+    outletEfficiencyTitle: 'كفاءة تشغيل نقاط الألعاب',
+    outletEfficiencySubtitle: 'معدل الإيراد لكل نقطة تشغيل نشطة',
+    netOutletRevLabel: 'صافي إيراد الألعاب الكبرى',
+    unitLabel: 'تذكرة / راكب',
+    volumeUnit: 'تذكرة',
+    entityLabel: 'لعبة',
+  },
+  3: {
+    rankingsTitle: 'ترتيب ألعاب الفيديو جيم والـ VR',
+    rankingsSubtitle: 'أعلى ألعاب الـ VR والأركيد إيراداً',
+    topSellersTitle: 'التذاكر والكوبونات الأكثر مبيعاً',
+    slowMovingTitle: 'الألعاب الأقل تشغيلاً',
+    duelTitle: 'مواجهة الصالتين / النقطتين المتصدرتين',
+    duelSubtitle: 'أعلى نقطتي تشغيل إيراداً خلال الفترة',
+    duelShareFootnote: 'حصة كل طرف من إجمالي المتصدرين',
+    distributionTitle: 'توزيع إيرادات صالات الألعاب والـ VR',
+    outletEfficiencyTitle: 'كفاءة تشغيل نقاط الألعاب والمحاكيات',
+    outletEfficiencySubtitle: 'معدل الإيراد لكل نقطة تشغيل نشطة',
+    netOutletRevLabel: 'صافي إيراد صالات الألعاب والـ VR',
+    unitLabel: 'كوبون / لعبة',
+    volumeUnit: 'تذكرة',
+    entityLabel: 'صالة / نقطة',
+  },
+  4: {
+    rankingsTitle: 'ترتيب الكرافانات والمحلات',
+    rankingsSubtitle: 'أعلى المنافذ مبيعاً خلال الفترة',
+    topSellersTitle: 'الأصناف الأكثر مبيعاً في الكرافانات',
+    slowMovingTitle: 'الأصناف الراكدة',
+    duelTitle: 'مواجهة المنفذين المتصدرين',
+    duelSubtitle: 'أعلى منفذين إيراداً خلال الفترة',
+    duelShareFootnote: 'حصة كل منفذ من إجمالي المنفذين',
+    distributionTitle: 'توزيع مبيعات الكرافانات والمحلات',
+    outletEfficiencyTitle: 'كفاءة تشغيل المنافذ',
+    outletEfficiencySubtitle: 'معدل المبيعات لكل منفذ نشط',
+    netOutletRevLabel: 'صافي إيراد الكرافانات والمحلات',
+    unitLabel: 'قطعة / وحدة',
+    volumeUnit: 'قطعة',
+    entityLabel: 'منفذ / محل',
+  },
+  5: {
+    rankingsTitle: 'ترتيب فئات التذاكر وقنوات البيع',
+    rankingsSubtitle: 'التذاكر الأكثر مبيعاً وإقبالاً',
+    topSellersTitle: 'فئات التذاكر الأكثر مبيعاً',
+    slowMovingTitle: 'فئات التذاكر الأقل طلباً',
+    duelTitle: 'مقارنة القناتين / الفئتين المتصدرتين',
+    duelSubtitle: 'أعلى بوابتين / فئتين إيراداً خلال الفترة',
+    duelShareFootnote: 'حصة كل بوابة / فئة من الإجمالي',
+    distributionTitle: 'حركة الزوار والبوابات',
+    outletEfficiencyTitle: 'كفاءة بوابات الدخول',
+    outletEfficiencySubtitle: 'معدل الإيراد لكل بوابة نشطة',
+    netOutletRevLabel: 'صافي إيراد التذاكر والبوابات',
+    unitLabel: 'تذكرة',
+    volumeUnit: 'تذكرة',
+    entityLabel: 'بوابة / قناة',
+  },
+  6: {
+    rankingsTitle: 'توزيع خدمات الانتظار والأمانات',
+    rankingsSubtitle: 'الأكثر استخداماً (ملاكي / باصات / ماسك / أمانات)',
+    topSellersTitle: 'خدمات الانتظار والأمانات الأكثر إيراداً',
+    slowMovingTitle: 'الخدمات الأقل استخداماً',
+    duelTitle: 'مقارنة الخدمتين الأكثر استخداماً',
+    duelSubtitle: 'أعلى خدمتين إيراداً خلال الفترة',
+    duelShareFootnote: 'حصة كل خدمة من الإجمالي',
+    distributionTitle: 'توزيع خدمات الانتظار وصناديق الأمانات',
+    outletEfficiencyTitle: 'كفاءة تشغيل خدمات البارك والأمانات',
+    outletEfficiencySubtitle: 'معدل الإيراد لكل منفذ خدمة نشط',
+    netOutletRevLabel: 'صافي إيراد البارك والأمانات',
+    unitLabel: 'سيارة / خدمة',
+    volumeUnit: 'حركة',
+    entityLabel: 'منفذ خدمة',
+  },
+};
+
+export function getSectorAnalyticsCopy(sectorType?: number): SectorAnalyticsCopy {
+  const type = Number(sectorType) || 4;
+  return SECTOR_ANALYTICS_COPY[type] || SECTOR_ANALYTICS_COPY[4];
 }

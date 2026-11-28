@@ -8,7 +8,7 @@ import {
   ChevronUp,
   RotateCcw,
   CheckCircle2,
-  Sparkles,
+  Receipt,
 } from 'lucide-react';
 import type { InvoiceRecord, VoidDetailItem } from '@/types/reports';
 import { fmtMoney } from './charts';
@@ -266,13 +266,12 @@ export function InvoicesTable({
                     {/* Parent Invoice Row - Trigger: Clicking ANYWHERE on this row expands/collapses */}
                     <tr
                       onClick={() => toggleRow(inv.id)}
-                      className={`cursor-pointer transition-colors duration-150 select-none ${
-                        isExpanded
+                      className={`cursor-pointer transition-colors duration-150 select-none ${isExpanded
                           ? 'bg-slate-100/90 dark:bg-zinc-800/60'
                           : isEven
-                          ? 'bg-white hover:bg-slate-50/80 dark:bg-zinc-950/40 dark:hover:bg-white/5'
-                          : 'bg-slate-50/50 hover:bg-slate-100/70 dark:bg-zinc-950/70 dark:hover:bg-white/5'
-                      }`}
+                            ? 'bg-white hover:bg-slate-50/80 dark:bg-zinc-950/40 dark:hover:bg-white/5'
+                            : 'bg-slate-50/50 hover:bg-slate-100/70 dark:bg-zinc-950/70 dark:hover:bg-white/5'
+                        }`}
                     >
                       <td className="px-4 py-3 font-mono font-bold text-slate-900 dark:text-white print:text-black">
                         #{inv.docNo}
@@ -309,9 +308,8 @@ export function InvoicesTable({
                     {/* Nested Void Details Sub-Table */}
                     {isExpanded && (
                       <tr
-                        className={`void-details-subtable-row border-b border-slate-200 dark:border-white/10 ${
-                          showVoidsInPrint ? 'print:table-row print:bg-white print:border-black' : 'print:hidden'
-                        }`}
+                        className={`void-details-subtable-row border-b border-slate-200 dark:border-white/10 ${showVoidsInPrint ? 'print:table-row print:bg-white print:border-black' : 'print:hidden'
+                          }`}
                       >
                         <td colSpan={7} className="p-0">
                           {/* Accent Right Border & Subtle Transparent Tint */}
@@ -440,7 +438,7 @@ export function InvoicesTable({
       {/* Footer Info */}
       <div className="flex flex-col gap-2 border-t border-slate-200 dark:border-white/5 p-3 text-xs text-slate-500 dark:text-zinc-400 sm:flex-row sm:items-center sm:justify-between print:hidden">
         <span className="flex items-center gap-1.5">
-          <Sparkles className="h-3.5 w-3.5 text-rose-600 dark:text-rose-400" />
+          <Receipt className="h-3.5 w-3.5 text-slate-400" />
           <span>الضغط على أي سطر فاتورة يفتح/يغلق تفاصيل الأصناف الملغاة مباشرة.</span>
         </span>
         <span className="text-[11px] text-slate-400 font-mono">

@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import {
   Users,
-  DollarSign,
+  Banknote,
   Clock,
   AlertTriangle,
   ArrowUpRight,
@@ -496,7 +496,7 @@ export function OperationsDashboard() {
                 <div className="h-[280px] w-full">
                   <ResponsiveContainer width="100%" height="100%">
                     <AreaChart data={visitorHistoryData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                      
+
                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
                       <XAxis
                         dataKey="date"

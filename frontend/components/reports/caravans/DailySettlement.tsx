@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { FileSpreadsheet, Loader2, DollarSign, Receipt, Sparkles } from 'lucide-react';
+import { FileSpreadsheet, Loader2, Banknote, Receipt } from 'lucide-react';
 import type { CaravanRecord } from '@/types/reports';
 import { fmtInt, fmtMoney, Money } from './charts';
 
@@ -272,7 +272,7 @@ export function DailySettlement({
         <div>
           <div className="flex items-center gap-2">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400">
-              <DollarSign className="h-4 w-4" />
+              <Banknote className="h-4 w-4" />
             </div>
             <h3 className="text-base font-bold text-slate-900 dark:text-white">
               التسوية النقدية اليومية (Daily Cash Settlement)

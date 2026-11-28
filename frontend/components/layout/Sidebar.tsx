@@ -15,7 +15,6 @@ import {
   Menu,
   X,
   Layers,
-  Sparkles,
   ShieldCheck,
 } from 'lucide-react';
 import { SECTORS_LIST, SectorConfig, SECTOR_ICONS } from '@/config/sectorsConfig';
@@ -175,20 +174,17 @@ export function Sidebar() {
                 key={sector.id}
                 href={sector.path}
                 title={`${sector.label} (${sector.badge})`}
-                className={`group relative flex items-center rounded-xl transition-all duration-200 ${
-                  isCollapsed ? 'justify-center h-11 w-11 mx-auto' : 'gap-3 px-3 py-2.5 text-sm'
-                } ${
-                  isActive
+                className={`group relative flex items-center rounded-xl transition-all duration-200 ${isCollapsed ? 'justify-center h-11 w-11 mx-auto' : 'gap-3 px-3 py-2.5 text-sm'
+                  } ${isActive
                     ? activeStyle.activeContainer
                     : 'font-semibold text-slate-600 hover:bg-slate-100/80 hover:text-slate-900 dark:text-zinc-400 dark:hover:bg-zinc-900/60 dark:hover:text-zinc-100'
-                }`}
+                  }`}
               >
                 <div
-                  className={`flex ${isCollapsed ? 'h-full w-full' : 'h-9 w-9'} shrink-0 items-center justify-center rounded-lg transition-colors ${
-                    isActive
+                  className={`flex ${isCollapsed ? 'h-full w-full' : 'h-9 w-9'} shrink-0 items-center justify-center rounded-lg transition-colors ${isActive
                       ? isCollapsed ? 'bg-transparent text-inherit' : activeStyle.activeIcon
                       : 'bg-slate-100 text-slate-500 group-hover:bg-slate-200/80 group-hover:text-slate-800 dark:bg-zinc-800/80 dark:text-zinc-400 dark:group-hover:bg-zinc-800 dark:group-hover:text-zinc-200'
-                  }`}
+                    }`}
                 >
                   <Icon className="h-5 w-5" />
                 </div>
@@ -197,11 +193,10 @@ export function Sidebar() {
                   <div className="flex flex-1 items-center justify-between overflow-hidden">
                     <span className="truncate text-sm font-bold">{sector.label}</span>
                     <span
-                      className={`font-mono text-[10px] font-semibold rounded-md px-1.5 py-0.5 tracking-tight ${
-                        isActive
+                      className={`font-mono text-[10px] font-semibold rounded-md px-1.5 py-0.5 tracking-tight ${isActive
                           ? activeStyle.activeBadge
                           : 'bg-slate-100 text-slate-500 dark:bg-zinc-800/80 dark:text-zinc-400'
-                      }`}
+                        }`}
                     >
                       {sector.badge}
                     </span>

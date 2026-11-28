@@ -24,215 +24,315 @@ import { Sparkline, fmtInt, fmtMoney, Money, type TrendPoint } from './charts';
 
 export function KPIsSkeleton() {
   return (
-    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
-      {Array.from({ length: 4 }).map((_, i) => (
-        <div
-          key={i}
-          className="flex flex-col justify-between rounded-xl border border-slate-200/80 bg-white p-5 shadow-sm ring-1 ring-slate-900/5 backdrop-blur-md dark:border-zinc-800/80 dark:bg-zinc-900/60 dark:ring-white/10 animate-pulse"
-        >
-          <div className="flex items-start justify-between">
-            <div className="h-4 w-32 rounded bg-slate-200 dark:bg-zinc-800" />
-            <div className="h-10 w-10 rounded-lg bg-slate-200 dark:bg-zinc-800" />
-          </div>
-          <div className="mt-4 flex items-baseline justify-between">
-            <div className="h-8 w-28 rounded-lg bg-slate-200 dark:bg-zinc-800" />
-            <div className="h-5 w-14 rounded-full bg-slate-200 dark:bg-zinc-800" />
-          </div>
-          <div className="mt-4 h-10 w-full rounded bg-slate-200 dark:bg-zinc-800" />
-          <div className="mt-3 h-3.5 w-40 rounded bg-slate-200 dark:bg-zinc-800" />
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div
+              key={i}
+              className="flex flex-col justify-between rounded-xl border border-slate-200/80 bg-white p-5 shadow-sm ring-1 ring-slate-900/5 backdrop-blur-md dark:border-zinc-800/80 dark:bg-zinc-900/60 dark:ring-white/10 animate-pulse"
+            >
+              <div className="flex items-start justify-between">
+                <div className="h-4 w-32 rounded bg-slate-200 dark:bg-zinc-800" />
+                <div className="h-10 w-10 rounded-lg bg-slate-200 dark:bg-zinc-800" />
+              </div>
+              <div className="mt-4 flex items-baseline justify-between">
+                <div className="h-8 w-28 rounded-lg bg-slate-200 dark:bg-zinc-800" />
+                <div className="h-5 w-14 rounded-full bg-slate-200 dark:bg-zinc-800" />
+              </div>
+              <div className="mt-4 h-10 w-full rounded bg-slate-200 dark:bg-zinc-800" />
+              <div className="mt-3 h-3.5 w-40 rounded bg-slate-200 dark:bg-zinc-800" />
+            </div>
+          ))}
         </div>
-      ))}
-    </div>
-  );
+      );
 }
 
-/* ------------------------------ Single KPI Card ------------------------------ */
+      /* ------------------------------ Single KPI Card ------------------------------ */
 
-interface KpiCardProps {
-  title: string;
-  value: React.ReactNode;
-  icon: LucideIcon;
-  spark: number[];
-  sparkColor: 'emerald' | 'cyan' | 'violet';
-  delta: number | null;
-  badge?: string;
-  badgeTone?: 'neutral' | 'success' | 'warning' | 'danger';
-  footnote: string;
-  loading?: boolean;
-  cssSparkline?: boolean;
-  isAuditTone?: boolean;
+      interface KpiCardProps {
+        title: string;
+      value: React.ReactNode;
+      icon: LucideIcon;
+      spark: number[];
+      sparkColor: 'emerald' | 'cyan' | 'violet';
+      delta: number | null;
+      badge?: string;
+      badgeTone?: 'neutral' | 'success' | 'warning' | 'danger';
+      footnote: string;
+      loading?: boolean;
+      cssSparkline?: boolean;
+      isAuditTone?: boolean;
 }
 
-function KpiCard({
-  title,
-  value,
-  icon: Icon,
-  spark,
-  sparkColor,
-  delta,
-  badge,
-  badgeTone = 'neutral',
-  footnote,
-  loading = false,
-  cssSparkline = false,
-  isAuditTone = false,
+      function KpiCard({
+        title,
+        value,
+        icon: Icon,
+      spark,
+      sparkColor,
+      delta,
+      badge,
+      badgeTone = 'neutral',
+      footnote,
+      loading = false,
+      cssSparkline = false,
+      isAuditTone = false,
 }: KpiCardProps) {
   const isPositive = delta !== null && delta >= 0;
 
-  let badgeClasses =
-    'text-slate-700 bg-slate-100 border border-slate-200 dark:text-zinc-200 dark:bg-zinc-800/80 dark:border-zinc-700';
-  if (badgeTone === 'success') {
-    badgeClasses =
-      'bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20 shadow-xs font-mono tracking-tight';
+      let badgeClasses =
+      'text-slate-700 bg-slate-100 border border-slate-200 dark:text-zinc-200 dark:bg-zinc-800/80 dark:border-zinc-700';
+      if (badgeTone === 'success') {
+        badgeClasses =
+        'bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20 shadow-xs font-mono tracking-tight';
   } else if (badgeTone === 'warning') {
-    badgeClasses =
-      'bg-amber-50 text-amber-800 border border-amber-200 dark:bg-amber-500/10 dark:text-amber-400 dark:border-amber-500/30 shadow-xs font-mono tracking-tight';
+        badgeClasses =
+        'bg-amber-50 text-amber-800 border border-amber-200 dark:bg-amber-500/10 dark:text-amber-400 dark:border-amber-500/30 shadow-xs font-mono tracking-tight';
   } else if (badgeTone === 'danger') {
-    badgeClasses =
-      'bg-amber-950/80 text-amber-300 border border-amber-500/40 shadow-xs font-mono tracking-tight';
+        badgeClasses =
+        'bg-amber-950/80 text-amber-300 border border-amber-500/40 shadow-xs font-mono tracking-tight';
   }
 
-  return (
-    < div
-      className={`flex flex-col justify-between rounded-xl border p-5 shadow-sm backdrop-blur-md transition ${isAuditTone
-        ? 'border-amber-500/30 bg-amber-500/5 ring-1 ring-amber-500/20 dark:border-amber-500/30 dark:bg-amber-950/20 dark:ring-amber-500/20'
-        : 'border-slate-200/80 bg-white ring-1 ring-slate-900/5 hover:border-slate-300 dark:border-zinc-800/80 dark:bg-zinc-900/60 dark:ring-white/10 dark:hover:border-zinc-700'
-        }`}
-    >
-      <div className="flex items-start justify-between">
-        <span className="text-sm font-bold text-slate-700 dark:text-zinc-200">{title}</span>
-        <div
-          className={`flex h-10 w-10 items-center justify-center rounded-lg border ${isAuditTone
-            ? 'border-amber-500/30 bg-amber-500/10 text-amber-600 dark:border-amber-500/30 dark:bg-amber-950/40 dark:text-amber-400'
-            : 'border-slate-200/80 bg-slate-100 text-slate-700 dark:border-zinc-700/60 dark:bg-zinc-800/80 dark:text-zinc-300'
-            }`}
-        >
-          <Icon className="h-5 w-5" />
+      return (
+      < div
+        className={`flex flex-col justify-between rounded-xl border p-5 shadow-sm backdrop-blur-md transition ${isAuditTone
+          ? 'border-amber-500/30 bg-amber-500/5 ring-1 ring-amber-500/20 dark:border-amber-500/30 dark:bg-amber-950/20 dark:ring-amber-500/20'
+          : 'border-slate-200/80 bg-white ring-1 ring-slate-900/5 hover:border-slate-300 dark:border-zinc-800/80 dark:bg-zinc-900/60 dark:ring-white/10 dark:hover:border-zinc-700'
+          }`}
+      >
+        <div className="flex items-start justify-between">
+          <span className="text-sm font-bold text-slate-700 dark:text-zinc-200">{title}</span>
+          <div
+            className={`flex h-10 w-10 items-center justify-center rounded-lg border ${isAuditTone
+              ? 'border-amber-500/30 bg-amber-500/10 text-amber-600 dark:border-amber-500/30 dark:bg-amber-950/40 dark:text-amber-400'
+              : 'border-slate-200/80 bg-slate-100 text-slate-700 dark:border-zinc-700/60 dark:bg-zinc-800/80 dark:text-zinc-300'
+              }`}
+          >
+            <Icon className="h-5 w-5" />
+          </div>
         </div>
-      </div>
 
-      <div className="mt-3 flex items-baseline justify-between gap-2">
-        {loading ? (
-          <div className="h-9 w-36 animate-pulse rounded-lg bg-slate-200 dark:bg-zinc-800" />
-        ) : (
-          <div className="flex items-end gap-2">
-            <div
-              className={`text-3xl sm:text-4xl font-extrabold tracking-tight font-mono tabular-nums ${isAuditTone ? 'text-amber-600 dark:text-amber-400' : 'text-zinc-900 dark:text-white'
+        <div className="mt-3 flex items-baseline justify-between gap-2">
+          {loading ? (
+            <div className="h-9 w-36 animate-pulse rounded-lg bg-slate-200 dark:bg-zinc-800" />
+          ) : (
+            <div className="flex items-end gap-2">
+              <div
+                className={`text-3xl sm:text-4xl font-extrabold tracking-tight font-mono tabular-nums ${isAuditTone ? 'text-amber-600 dark:text-amber-400' : 'text-zinc-900 dark:text-white'
+                  }`}
+                dir="ltr"
+              >
+                {value}
+              </div>
+              {cssSparkline && (
+                <div className="flex items-end gap-1 pb-1" title="نشاط المؤشر" aria-hidden="true">
+                  <span className="w-1.5 h-3 bg-emerald-500/30 rounded-t-sm" />
+                  <span className="w-1.5 h-5 bg-emerald-500/50 rounded-t-sm" />
+                  <span className="w-1.5 h-4 bg-emerald-500/40 rounded-t-sm" />
+                  <span className="w-1.5 h-7 bg-emerald-500/70 rounded-t-sm" />
+                  <span className="w-1.5 h-6 bg-emerald-500 rounded-t-sm" />
+                </div>
+              )}
+            </div>
+          )}
+
+          {loading ? (
+            <div className="h-5 w-12 animate-pulse rounded-full bg-slate-200 dark:bg-zinc-800" />
+          ) : badge ? (
+            <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-bold ${badgeClasses}`}>
+              {badge}
+            </span>
+          ) : delta != null ? (
+            <span
+              className={`inline-flex items-center gap-0.5 rounded-full px-2.5 py-1 text-xs font-semibold tabular-nums tracking-tight border ${isPositive
+                ? 'text-emerald-700 bg-emerald-50 border-emerald-200/80 dark:text-emerald-400 dark:bg-emerald-500/10 dark:border-emerald-500/20'
+                : 'text-amber-700 bg-amber-50 border-amber-200/80 dark:text-amber-300 dark:bg-amber-500/10 dark:border-amber-500/20'
                 }`}
               dir="ltr"
             >
-              {value}
-            </div>
-            {cssSparkline && (
-              <div className="flex items-end gap-1 pb-1" title="نشاط المؤشر" aria-hidden="true">
-                <span className="w-1.5 h-3 bg-emerald-500/30 rounded-t-sm" />
-                <span className="w-1.5 h-5 bg-emerald-500/50 rounded-t-sm" />
-                <span className="w-1.5 h-4 bg-emerald-500/40 rounded-t-sm" />
-                <span className="w-1.5 h-7 bg-emerald-500/70 rounded-t-sm" />
-                <span className="w-1.5 h-6 bg-emerald-500 rounded-t-sm" />
-              </div>
-            )}
-          </div>
-        )}
+              {isPositive ? <ArrowUpRight className="h-3.5 w-3.5" /> : <ArrowDownRight className="h-3.5 w-3.5" />}
+              {(Number(Math.abs(delta)) || 0).toFixed(1)}%
+            </span>
+          ) : null}
+        </div>
 
-        {loading ? (
-          <div className="h-5 w-12 animate-pulse rounded-full bg-slate-200 dark:bg-zinc-800" />
-        ) : badge ? (
-          <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-bold ${badgeClasses}`}>
-            {badge}
-          </span>
-        ) : delta != null ? (
-          <span
-            className={`inline-flex items-center gap-0.5 rounded-full px-2.5 py-1 text-xs font-semibold tabular-nums tracking-tight border ${isPositive
-              ? 'text-emerald-700 bg-emerald-50 border-emerald-200/80 dark:text-emerald-400 dark:bg-emerald-500/10 dark:border-emerald-500/20'
-              : 'text-amber-700 bg-amber-50 border-amber-200/80 dark:text-amber-300 dark:bg-amber-500/10 dark:border-amber-500/20'
-              }`}
-            dir="ltr"
-          >
-            {isPositive ? <ArrowUpRight className="h-3.5 w-3.5" /> : <ArrowDownRight className="h-3.5 w-3.5" />}
-            {(Number(Math.abs(delta)) || 0).toFixed(1)}%
-          </span>
-        ) : null}
+        <div className="mt-3 h-12">
+          <Sparkline data={spark.length > 1 ? spark : [0, 0]} color={sparkColor} />
+        </div>
+        <p className="mt-2 text-xs font-medium tabular-nums tracking-tight text-slate-600 dark:text-zinc-400">
+          {footnote}
+        </p>
       </div>
-
-      <div className="mt-3 h-12">
-        <Sparkline data={spark.length > 1 ? spark : [0, 0]} color={sparkColor} />
-      </div>
-      <p className="mt-2 text-xs font-medium tabular-nums tracking-tight text-slate-600 dark:text-zinc-400">
-        {footnote}
-      </p>
-    </div>
-  );
+      );
 }
 
-/* ------------------------------ Executive KPIs Section ------------------------------ */
+      /* ------------------------------ Executive KPIs Section ------------------------------ */
 
-interface ExecutiveKpisSectionProps {
-  startDate: string;
-  endDate: string;
-  selectedBranches: string[];
-  summary?: ReportSummary | null;
-  trend?: TrendPoint[];
-  records?: CaravanRecord[];
-  guests?: number;
-  refreshTick?: number;
+      interface ExecutiveKpisSectionProps {
+        startDate: string;
+      endDate: string;
+      selectedBranches: string[];
+      summary?: ReportSummary | null;
+      trend?: TrendPoint[];
+      records?: CaravanRecord[];
+      guests?: number;
+      refreshTick?: number;
+      sectorType?: number;
 }
 
-export function ExecutiveKpisSection({
-  startDate,
-  endDate,
-  selectedBranches,
-  summary,
-  trend = [],
-  records = [],
-  guests = 0,
-  refreshTick = 0,
+      function getVolumeConfig(sectorType: number = 4) {
+  switch (sectorType) {
+    case 1:
+      return {
+        title: 'إجمالي الوحدات والوجبات المباعة',
+      unit: 'وجبة',
+      badge: 'حجم المبيعات',
+      footnote: 'إجمالي الوجبات والوحدات المباعة بكافة المطاعم',
+      };
+      case 2:
+      return {
+        title: 'إجمالي التذاكر والرحلات المباعة',
+      unit: 'تذكرة',
+      badge: 'حجم الإقبال',
+      footnote: 'إجمالي التذاكر والرحلات للألعاب الكبرى',
+      };
+      case 3:
+      return {
+        title: 'إجمالي التذاكر والكوبونات المباعة',
+      unit: 'تذكرة',
+      badge: 'حجم التشغيل',
+      footnote: 'إجمالي الكوبونات والتذاكر المباعة لصالات الفيديو',
+      };
+      case 5:
+      return {
+        title: 'إجمالي تذاكر الدخول المباعة',
+      unit: 'تذكرة',
+      badge: 'حركة البوابات',
+      footnote: 'إجمالي تذاكر الدخول المصدرة عبر البوابات',
+      };
+      case 6:
+      return {
+        title: 'إجمالي المركبات والخدمات المسجلة',
+      unit: 'حركة',
+      badge: 'حجم الاستخدام',
+      footnote: 'إجمالي حركات الانتظار وحفظ الأمانات',
+      };
+      case 4:
+      default:
+      return {
+        title: 'إجمالي الكميات المباعة',
+      unit: 'قطعة',
+      badge: 'الكمية الإجمالية',
+      footnote: 'إجمالي الوحدات والأصناف المباعة عبر كافة المنافذ',
+      };
+  }
+}
+
+      function getOutletConfig(sectorType: number = 4) {
+  switch (sectorType) {
+    case 1:
+      return {
+        title: 'المطاعم النشطة بالتشغيل',
+      unit: 'مطعم',
+      badge: 'تشغيل المطاعم',
+      footnoteSuffix: 'مطعم مسجل بالنظام',
+      };
+      case 2:
+      return {
+        title: 'الألعاب الكبرى بالتشغيل',
+      unit: 'لعبة',
+      badge: 'ألعاب قيد التشغيل',
+      footnoteSuffix: 'لعبة مسجلة بالنظام',
+      };
+      case 3:
+      return {
+        title: 'ألعاب وصناديق التشغيل النشطة',
+      unit: 'لعبة / صندوق',
+      badge: 'تشغيل نشط',
+      footnoteSuffix: 'لعبة مسجلة بالنظام',
+      };
+      case 5:
+      return {
+        title: 'بوابات الدخول النشطة',
+      unit: 'بوابة',
+      badge: 'بوابات قيد العمل',
+      footnoteSuffix: 'بوابة مسجلة بالنظام',
+      };
+      case 6:
+      return {
+        title: 'منافذ الخدمة النشطة',
+      unit: 'منفذ',
+      badge: 'تشغيل الخدمات',
+      footnoteSuffix: 'منفذ مسجل بالنظام',
+      };
+      case 4:
+      default:
+      return {
+        title: 'المنافذ النشطة بالتشغيل',
+      unit: 'منفذ',
+      badge: 'تشغيل فعلي',
+      footnoteSuffix: 'منفذ مسجل بالنظام',
+      };
+  }
+}
+
+      export function ExecutiveKpisSection({
+        startDate,
+        endDate,
+        selectedBranches,
+        summary,
+        trend = [],
+        records = [],
+        guests = 0,
+        refreshTick = 0,
+        sectorType = 4,
 }: ExecutiveKpisSectionProps) {
   const [kpisData, setKpisData] = useState<ExecutiveKpis | null>(null);
-  const [totalUnits, setTotalUnits] = useState<number>(0);
-  const [unitsGrowthPct, setUnitsGrowthPct] = useState<number | null>(null);
-  const [loading, setLoading] = useState(false);
+      const [totalUnits, setTotalUnits] = useState<number>(0);
+        const [unitsGrowthPct, setUnitsGrowthPct] = useState<number | null>(null);
+        const [loading, setLoading] = useState(false);
 
-  const selectedKey = selectedBranches.join(',');
+        const selectedKey = selectedBranches.join(',');
 
   useEffect(() => {
     const ctrl = new AbortController();
-    setLoading(true);
+        setLoading(true);
 
-    const kpiParams = new URLSearchParams({
-      startDate,
-      endDate,
+        const kpiParams = new URLSearchParams({
+          startDate,
+          endDate,
+          sectorType: String(sectorType || 4),
     });
-    if (selectedKey) kpiParams.set('branchCode', selectedKey);
+        if (selectedKey) kpiParams.set('branchCode', selectedKey);
 
-    const itemsParams = new URLSearchParams({
-      startDate,
-      endDate,
-      limit: '1',
+        const itemsParams = new URLSearchParams({
+          startDate,
+          endDate,
+          limit: '1',
+        sectorType: String(sectorType || 4),
     });
-    if (selectedKey) itemsParams.set('branchCode', selectedKey);
+        if (selectedKey) itemsParams.set('branchCode', selectedKey);
 
-    // Fetch Executive KPIs and Units sold in parallel without blocking main page
-    Promise.all([
-      fetch(`/api/reports/caravans/executive-kpis?${kpiParams.toString()}`, { signal: ctrl.signal })
+        // Fetch Executive KPIs and Units sold in parallel without blocking main page
+        Promise.all([
+        fetch(`/api/reports/caravans/executive-kpis?${kpiParams.toString()}`, {signal: ctrl.signal })
         .then((res) => (res.ok ? res.json() : null))
         .catch(() => null),
-      fetch(`/api/reports/caravans/items-performance?${itemsParams.toString()}`, { signal: ctrl.signal })
+        fetch(`/api/reports/caravans/items-performance?${itemsParams.toString()}`, {signal: ctrl.signal })
         .then((res) => (res.ok ? res.json() : null))
         .catch(() => null),
-    ])
+        ])
       .then(([kpiRes, itemsRes]) => {
         if (kpiRes && kpiRes.status === 'success' && kpiRes.kpis) {
           setKpisData(kpiRes.kpis);
         }
         if (itemsRes && itemsRes.summary) {
           const currQty = Number(itemsRes.summary.totalQuantity) || 0;
-          const prevQty = Number(itemsRes.summary.prevQuantity) || 0;
-          setTotalUnits(currQty);
+        const prevQty = Number(itemsRes.summary.prevQuantity) || 0;
+        setTotalUnits(currQty);
           if (prevQty > 0) {
-            setUnitsGrowthPct(Math.round(((currQty - prevQty) / prevQty) * 1000) / 10);
+          setUnitsGrowthPct(Math.round(((currQty - prevQty) / prevQty) * 1000) / 10);
           } else {
-            setUnitsGrowthPct(null);
+          setUnitsGrowthPct(null);
           }
         }
       })
@@ -241,107 +341,94 @@ export function ExecutiveKpisSection({
       });
 
     return () => ctrl.abort();
-  }, [startDate, endDate, selectedKey, refreshTick]);
+  }, [startDate, endDate, selectedKey, refreshTick, sectorType]);
 
-  const totalRev = kpisData ? kpisData.revenue.current : (summary?.totalSales ?? 0);
-  const revGrowth = kpisData ? kpisData.revenue.growthPct : null;
-
-  // Active Outlets count: distinct outlets with sales > 0
-  const activeOutletsCount =
+        // Active Outlets count: distinct outlets with sales > 0
+        const activeOutletsCount =
     records && records.length > 0
       ? records.filter((r) => (Number(r.total) || 0) > 0).length
-      : 0;
+        : 0;
 
-  // 4th Card: Total Voids (إجمالي المرتجعات)
-  const totalVoids =
-    summary?.totalVoids !== undefined
-      ? Number(summary.totalVoids)
+        // 3rd Card: Total Voids (إجمالي المرتجعات)
+        const totalVoids =
+        summary?.totalVoids !== undefined
+        ? Number(summary.totalVoids)
       : records && records.length > 0
         ? records.reduce((acc, r) => acc + (Number(r.totalVoids) || 0), 0)
         : 0;
   const hasVoids = totalVoids > 0;
 
-  return (
-    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
-      {/* 1. Total Revenue (Inclusive of Tax) */}
+        const volCfg = getVolumeConfig(sectorType);
+        const outletCfg = getOutletConfig(sectorType);
+
+        return (
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+            {/* 1. Units / Volume Sold (Volume & Velocity) */}
+            <KpiCard
+        title={volCfg.title}
+              value={
+                totalUnits > 0
+                  ? `${fmtInt(totalUnits)} ${volCfg.unit}`
+                  : `${fmtInt(summary?.totalQuantity || summary?.totalCover || 0)} ${volCfg.unit}`
+              }
+              icon={Boxes}
+              sparkColor="violet"
+              spark={trend.map((p) => p.total)}
+              delta={unitsGrowthPct}
+              badge={volCfg.badge}
+              footnote={volCfg.footnote}
+              loading={loading}
+            />
+
+            {/* 2. Total Visitors or Operational Outlets (إجمالي الزوار / المنافذ النشطة) */}
+            {guests > 0 ? (
+              <KpiCard
+                title="إجمالي الزوار (Dream Park)"
+                value={`${fmtInt(guests)} زائر`}
+                icon={Users}
+                sparkColor="violet"
+                spark={trend.map((p) => p.total)}
+                delta={null}
+                badge="بوابات الحديقة"
+                badgeTone="success"
+                footnote="العدد الفعلي لرواد الحديقة وفقاً لتذاكر الدخول"
+                loading={loading}
+              />
+            ) : (
+              <KpiCard
+                title={outletCfg.title}
+                value={`${fmtInt(activeOutletsCount)} ${outletCfg.unit}`}
+                icon={Store}
+                sparkColor="violet"
+                spark={trend.map((p) => p.total)}
+                delta={null}
+                badge={outletCfg.badge}
+                badgeTone="neutral"
+                footnote={`من أصل ${records.length} ${outletCfg.footnoteSuffix}`}
+                loading={loading}
+              />
+            )}
+
+              {/* 3. Total Voids (إجمالي المرتجعات) - Strict Financial Audit Aesthetic */}
       <KpiCard
-        title="إجمالي الإيرادات (شامل الضريبة)"
-        value={<Money value={totalRev} symbolClassName="text-xs opacity-60 font-normal mr-1 select-none" />}
-        icon={TrendingUp}
-        sparkColor="violet"
-        spark={trend.map((p) => p.total)}
-        delta={revGrowth}
-        badge="شامل الضريبة"
-        footnote={
-          kpisData?.selsTax?.current !== undefined && kpisData.selsTax.current > 0
-            ? `ضريبة المبيعات: ${fmtMoney(kpisData.selsTax.current)} | السابقة: ${fmtMoney(kpisData.revenue.previous)}`
-            : `الفترة السابقة: ${fmtMoney(kpisData?.revenue.previous ?? 0)}`
-        }
-        loading={loading}
-      />
-
-      {/* 2. Units Sold (Volume & Velocity) */}
-      <KpiCard
-        title="إجمالي الكميات المباعة"
-        value={totalUnits > 0 ? `${fmtInt(totalUnits)} قطعة` : `${fmtInt(summary?.totalQuantity || summary?.totalCover || 0)} قطعة`}
-        icon={Boxes}
-        sparkColor="violet"
-        spark={trend.map((p) => p.total)}
-        delta={unitsGrowthPct}
-        badge="الكمية الإجمالية"
-        footnote="إجمالي الوحدات والأصناف المباعة عبر كافة المنافذ"
-        loading={loading}
-      />
-
-      {/* 3. Total Visitors or Operational Outlets (إجمالي الزوار / المنافذ النشطة) */}
-      {guests > 0 ? (
-        <KpiCard
-          title="إجمالي الزوار (Dream Park)"
-          value={`${fmtInt(guests)} زائر`}
-          icon={Users}
-          sparkColor="violet"
-          spark={trend.map((p) => p.total)}
-          delta={null}
-          badge="بوابات الحديقة"
-          badgeTone="success"
-          footnote="العدد الفعلي لرواد الحديقة وفقاً لتذاكر الدخول"
-          loading={loading}
-        />
-      ) : (
-        <KpiCard
-          title="المنافذ النشطة بالتشغيل"
-          value={`${fmtInt(activeOutletsCount)} منفذ`}
-          icon={Store}
-          sparkColor="violet"
-          spark={trend.map((p) => p.total)}
-          delta={null}
-          badge="تشغيل فعلي"
-          badgeTone="neutral"
-          footnote={`من أصل ${records.length} منفذ مسجل بالنظام`}
-          loading={loading}
-        />
-      )}
-
-      {/* 4. Total Voids (إجمالي المرتجعات) - Strict Financial Audit Aesthetic */}
-      < KpiCard
-        title="إجمالي المرتجعات"
-        value={<Money value={totalVoids} symbolClassName="text-xs opacity-60 font-normal mr-1 select-none" />}
-        icon={RotateCcw}
-        sparkColor="violet"
-        spark={trend.map((p) => p.total)}
-        delta={null}
-        badge={hasVoids ? 'رصد مرتجعات' : 'سليم 100%'}
-        badgeTone={hasVoids ? 'danger' : 'success'}
-        footnote={
-          hasVoids
-            ? 'إجمالي مبالغ الإلغاءات المسترجعة من المبيعات'
-            : 'كافة الفواتير والعمليات معتمدة بدون إلغاءات'
-        }
-        loading={loading}
-        isAuditTone={hasVoids}
-      />
-    </div>
-  );
+              title="إجمالي المرتجعات"
+              value={<Money value={totalVoids} symbolClassName="text-xs opacity-60 font-normal mr-1 select-none" />}
+              icon={RotateCcw}
+              sparkColor="violet"
+              spark={trend.map((p) => p.total)}
+              delta={null}
+              badge={hasVoids ? 'رصد مرتجعات' : 'لا توجد مرتجعات'}
+              badgeTone={hasVoids ? 'danger' : 'success'}
+              footnote={
+                hasVoids
+                  ? 'إجمالي مبالغ الإلغاءات المسترجعة من المبيعات'
+                  : 'كافة الفواتير والعمليات معتمدة بدون إلغاءات'
+              }
+              loading={loading}
+              isAuditTone={hasVoids}
+            />
+          </div>
+          );
 }
 
-export default ExecutiveKpisSection;
+          export default ExecutiveKpisSection;

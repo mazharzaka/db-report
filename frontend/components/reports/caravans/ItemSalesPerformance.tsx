@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import type { ItemPerformanceRecord, ItemsPerformanceResponse } from '@/types/reports';
 import { fmtInt, fmtMoney } from './charts';
+import { getSectorTheme } from '@/lib/sectorTheme';
 
 interface Props {
   startDate: string;
@@ -29,6 +30,7 @@ interface Props {
   prevEndDate?: string;
   selectedBranches: string[];
   className?: string;
+  sectorType?: number;
 }
 
 export function ItemSalesPerformance({
@@ -38,7 +40,9 @@ export function ItemSalesPerformance({
   prevEndDate,
   selectedBranches,
   className = '',
+  sectorType = 4,
 }: Props) {
+  const theme = getSectorTheme(sectorType);
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [page, setPage] = useState(1);
@@ -84,6 +88,7 @@ export function ItemSalesPerformance({
       if (branchesKey) params.set('branchCode', branchesKey);
       if (debouncedSearch) params.set('search', debouncedSearch);
       if (abcFilter && abcFilter !== 'ALL') params.set('abcCategory', abcFilter);
+      params.set('sectorType', String(sectorType));
 
       const res = await fetch(`/api/reports/caravans/items-performance?${params.toString()}`);
       if (!res.ok) {
@@ -100,7 +105,7 @@ export function ItemSalesPerformance({
     } finally {
       setLoading(false);
     }
-  }, [startDate, endDate, prevStartDate, prevEndDate, branchesKey, debouncedSearch, page, limit, sortBy, sortOrder, abcFilter]);
+  }, [startDate, endDate, prevStartDate, prevEndDate, branchesKey, debouncedSearch, page, limit, sortBy, sortOrder, abcFilter, sectorType]);
 
   useEffect(() => {
     void loadData();
@@ -144,7 +149,7 @@ export function ItemSalesPerformance({
       <div className="flex flex-col gap-4 border-b border-slate-200 dark:border-white/5 pb-4">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-50 border border-orange-200 text-orange-600 dark:bg-violet-500/10 dark:border-violet-500/20 dark:text-violet-300">
+            <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${theme.iconBox}`}>
               <Package className="h-5 w-5" />
             </div>
             <div>
@@ -182,7 +187,7 @@ export function ItemSalesPerformance({
 
           <div className="rounded-xl border border-slate-200/80 bg-slate-50/50 p-4 shadow-2xs ring-1 ring-slate-900/5 dark:border-zinc-800/80 dark:bg-zinc-900/40 dark:ring-white/10">
             <span className="text-[11px] font-medium text-slate-500 dark:text-zinc-400 flex items-center gap-1.5">
-              <Package className="h-3.5 w-3.5 text-orange-600 dark:text-violet-300" />
+              <Package className={`h-3.5 w-3.5 ${theme.accentText}`} />
               إجمالي الكميات المباعة
             </span>
             <span className="mt-1 block text-lg font-extrabold text-slate-900 dark:text-white tabular-nums tracking-tight">
@@ -192,10 +197,10 @@ export function ItemSalesPerformance({
 
           <div className="rounded-xl border border-slate-200/80 bg-slate-50/50 p-4 shadow-2xs ring-1 ring-slate-900/5 dark:border-zinc-800/80 dark:bg-zinc-900/40 dark:ring-white/10">
             <span className="text-[11px] font-medium text-slate-500 dark:text-zinc-400 flex items-center gap-1.5">
-              <Coins className="h-3.5 w-3.5 text-orange-600 dark:text-violet-300" />
+              <Coins className={`h-3.5 w-3.5 ${theme.accentText}`} />
               إجمالي صافي الإيرادات
             </span>
-            <span className="mt-1 block text-lg font-extrabold text-orange-600 dark:text-[#c4b5fd] tabular-nums tracking-tight font-mono" dir="ltr">
+            <span className={`mt-1 block text-lg font-extrabold ${theme.accentText} tabular-nums tracking-tight font-mono`} dir="ltr">
               {fmtMoney(summary.totalRevenue)}
             </span>
           </div>
@@ -208,11 +213,11 @@ export function ItemSalesPerformance({
             <span
               className={`mt-1 block text-lg font-extrabold tabular-nums tracking-tight font-mono ${
                 summary.revenueGrowthPct != null && summary.revenueGrowthPct >= 0
-                  ? 'text-orange-600 dark:text-[#c4b5fd]'
+                  ? theme.accentText
                   : summary.revenueGrowthPct != null
                   ? 'text-amber-600 dark:text-yellow-300'
                   : 'text-slate-400 dark:text-zinc-400'
-              }`}
+                }`}
               dir="ltr"
             >
               {summary.revenueGrowthPct != null
@@ -226,9 +231,9 @@ export function ItemSalesPerformance({
         {summary.abcSummary && summary.abcSummary.categoryACount > 0 && (
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-700 dark:border-white/5/60 dark:bg-zinc-950 dark:text-zinc-300">
             <div className="flex items-center gap-2.5">
-              <span className="flex h-2 w-2 rounded-full bg-orange-500 dark:bg-emerald-400 shrink-0" />
+              <span className={`flex h-2 w-2 rounded-full ${theme.progressBar} shrink-0`} />
               <span>
-                أصناف الفئة <strong className="text-orange-600 dark:text-violet-300 font-bold">(A)</strong> تمثل <strong className="text-slate-900 dark:text-white font-bold">80%</strong> من إجمالي مبيعات الفترة بواقع <strong className="font-mono text-orange-600 dark:text-emerald-300 font-bold">{summary.abcSummary.categoryACount}</strong> {summary.abcSummary.categoryACount === 1 ? 'منتج رئيسي' : summary.abcSummary.categoryACount <= 10 ? 'منتجات رئيسية' : 'منتجاً رئيسياً'} بقيمة <span className="font-mono font-bold text-slate-900 dark:text-white" dir="ltr">{fmtMoney(summary.abcSummary.categoryARevenue)}</span>.
+                أصناف الفئة <strong className={`${theme.accentText} font-bold`}>(A)</strong> تمثل <strong className="text-slate-900 dark:text-white font-bold">80%</strong> من إجمالي مبيعات الفترة بواقع <strong className={`font-mono ${theme.accentText} font-bold`}>{summary.abcSummary.categoryACount}</strong> {summary.abcSummary.categoryACount === 1 ? 'منتج رئيسي' : summary.abcSummary.categoryACount <= 10 ? 'منتجات رئيسية' : 'منتجاً رئيسياً'} بقيمة <span className="font-mono font-bold text-slate-900 dark:text-white" dir="ltr">{fmtMoney(summary.abcSummary.categoryARevenue)}</span>.
               </span>
             </div>
             <div className="flex items-center gap-3 text-[11px] text-slate-500 dark:text-zinc-400 font-mono">
@@ -245,11 +250,10 @@ export function ItemSalesPerformance({
           <div className="flex flex-wrap items-center gap-1 p-1 rounded-full border border-slate-200 bg-slate-100 text-xs dark:border-white/5 dark:bg-zinc-950">
             <button
               onClick={() => { setAbcFilter('ALL'); setPage(1); }}
-              className={`rounded-lg px-3 py-1.5 font-semibold transition ${
-                abcFilter === 'ALL'
-                  ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-800 dark:text-white'
-                  : 'text-slate-600 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-slate-200'
-              }`}
+              className={`rounded-lg px-3 py-1.5 font-semibold transition ${abcFilter === 'ALL'
+                ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-800 dark:text-white'
+                : 'text-slate-600 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-slate-200'
+                }`}
             >
               الكل
             </button>
@@ -257,31 +261,29 @@ export function ItemSalesPerformance({
               onClick={() => { setAbcFilter('A'); setPage(1); }}
               className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 font-semibold transition ${
                 abcFilter === 'A'
-                  ? 'bg-orange-600 text-white shadow-sm dark:bg-emerald-950/70 dark:text-emerald-300 dark:border dark:border-white/5/80'
-                  : 'text-slate-600 hover:text-orange-600 dark:text-zinc-400 dark:hover:text-emerald-300'
+                  ? `${theme.btnPrimary} text-white shadow-sm`
+                  : 'text-slate-600 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-slate-200'
               }`}
             >
-              <span className="h-1.5 w-1.5 rounded-full bg-orange-400 dark:bg-emerald-400" />
+              <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
               فئة A فقط (أعلى مبيعاً) {summary.abcSummary?.categoryACount ? `(${summary.abcSummary.categoryACount})` : ''}
             </button>
             <button
               onClick={() => { setAbcFilter('B'); setPage(1); }}
-              className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 font-semibold transition ${
-                abcFilter === 'B'
-                  ? 'bg-blue-600 text-white shadow-sm dark:bg-white dark:text-black'
-                  : 'text-slate-600 hover:text-blue-600 dark:text-zinc-400 dark:hover:text-amber-300'
-              }`}
+              className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 font-semibold transition ${abcFilter === 'B'
+                ? 'bg-blue-600 text-white shadow-sm dark:bg-white dark:text-black'
+                : 'text-slate-600 hover:text-blue-600 dark:text-zinc-400 dark:hover:text-amber-300'
+                }`}
             >
               <span className="h-1.5 w-1.5 rounded-full bg-blue-400 dark:bg-amber-400" />
               فئة B فقط (متوسط) {summary.abcSummary?.categoryBCount ? `(${summary.abcSummary.categoryBCount})` : ''}
             </button>
             <button
               onClick={() => { setAbcFilter('C'); setPage(1); }}
-              className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 font-semibold transition ${
-                abcFilter === 'C'
-                  ? 'bg-slate-700 text-white shadow-sm dark:bg-slate-800 dark:text-slate-200 dark:border dark:border-white/5'
-                  : 'text-slate-600 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-zinc-300'
-              }`}
+              className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 font-semibold transition ${abcFilter === 'C'
+                ? 'bg-slate-700 text-white shadow-sm dark:bg-slate-800 dark:text-slate-200 dark:border dark:border-white/5'
+                : 'text-slate-600 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-zinc-300'
+                }`}
             >
               <span className="h-1.5 w-1.5 rounded-full bg-slate-400" />
               أصناف راكدة C (منخفض) {summary.abcSummary?.categoryCCount ? `(${summary.abcSummary.categoryCCount})` : ''}
@@ -297,7 +299,7 @@ export function ItemSalesPerformance({
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="ابحث بكود الصنف أو اسم المنتج (مثال: مياه، كانز، 111069)..."
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2 pl-9 pr-9 text-xs text-slate-900 outline-none transition focus:border-orange-500 focus:ring-1 focus:ring-orange-500 placeholder:text-slate-400 dark:border-white/5 dark:bg-zinc-950 dark:text-slate-100 dark:focus:border-violet-400 dark:focus:ring-violet-400 dark:placeholder:text-slate-500"
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2 pl-9 pr-9 text-xs text-slate-900 outline-none transition focus:border-slate-400 focus:ring-1 focus:ring-slate-400 placeholder:text-slate-400 dark:border-white/5 dark:bg-zinc-950 dark:text-slate-100 dark:focus:border-zinc-500 dark:focus:ring-zinc-500 dark:placeholder:text-slate-500"
               />
               {search && (
                 <button
@@ -322,7 +324,7 @@ export function ItemSalesPerformance({
                     }}
                     className={`rounded-md px-2.5 py-1 text-xs font-semibold transition ${
                       limit === size
-                        ? 'bg-orange-600 text-white dark:bg-[#c4b5fd] dark:text-black font-bold'
+                        ? `${theme.btnPrimary} text-white font-bold`
                         : 'text-slate-600 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-slate-200'
                     }`}
                   >
@@ -354,7 +356,7 @@ export function ItemSalesPerformance({
                 <span className="inline-flex items-center gap-1">
                   كود وتصنيف الصنف
                   {sortBy === 'code' ? (
-                    sortOrder === 'asc' ? <ArrowUp className="h-3.5 w-3.5 text-orange-600 dark:text-violet-300" /> : <ArrowDown className="h-3.5 w-3.5 text-orange-600 dark:text-violet-300" />
+                    sortOrder === 'asc' ? <ArrowUp className={`h-3.5 w-3.5 ${theme.accentText}`} /> : <ArrowDown className={`h-3.5 w-3.5 ${theme.accentText}`} />
                   ) : (
                     <ArrowUpDown className="h-3 w-3 opacity-30" />
                   )}
@@ -367,7 +369,7 @@ export function ItemSalesPerformance({
                 <span className="inline-flex items-center gap-1">
                   اسم الصنف / المنتج
                   {sortBy === 'name' ? (
-                    sortOrder === 'asc' ? <ArrowUp className="h-3.5 w-3.5 text-orange-600 dark:text-violet-300" /> : <ArrowDown className="h-3.5 w-3.5 text-orange-600 dark:text-violet-300" />
+                    sortOrder === 'asc' ? <ArrowUp className={`h-3.5 w-3.5 ${theme.accentText}`} /> : <ArrowDown className={`h-3.5 w-3.5 ${theme.accentText}`} />
                   ) : (
                     <ArrowUpDown className="h-3 w-3 opacity-30" />
                   )}
@@ -381,7 +383,7 @@ export function ItemSalesPerformance({
                 <span className="inline-flex items-center gap-1 flex-row-reverse">
                   الكمية المباعة الإجمالية
                   {sortBy === 'quantity' ? (
-                    sortOrder === 'asc' ? <ArrowUp className="h-3.5 w-3.5 text-orange-600 dark:text-violet-300" /> : <ArrowDown className="h-3.5 w-3.5 text-orange-600 dark:text-violet-300" />
+                    sortOrder === 'asc' ? <ArrowUp className={`h-3.5 w-3.5 ${theme.accentText}`} /> : <ArrowDown className={`h-3.5 w-3.5 ${theme.accentText}`} />
                   ) : (
                     <ArrowUpDown className="h-3 w-3 opacity-30" />
                   )}
@@ -401,7 +403,7 @@ export function ItemSalesPerformance({
                 <span className="inline-flex items-center gap-1 flex-row-reverse">
                   صافي الإيراد المحقق
                   {sortBy === 'revenue' ? (
-                    sortOrder === 'asc' ? <ArrowUp className="h-3.5 w-3.5 text-orange-600 dark:text-violet-300" /> : <ArrowDown className="h-3.5 w-3.5 text-orange-600 dark:text-violet-300" />
+                    sortOrder === 'asc' ? <ArrowUp className={`h-3.5 w-3.5 ${theme.accentText}`} /> : <ArrowDown className={`h-3.5 w-3.5 ${theme.accentText}`} />
                   ) : (
                     <ArrowUpDown className="h-3 w-3 opacity-30" />
                   )}
@@ -418,7 +420,7 @@ export function ItemSalesPerformance({
                 <span className="inline-flex items-center gap-1 flex-row-reverse">
                   معدل النمو (PoP)
                   {sortBy === 'growth' ? (
-                    sortOrder === 'asc' ? <ArrowUp className="h-3.5 w-3.5 text-orange-600 dark:text-violet-300" /> : <ArrowDown className="h-3.5 w-3.5 text-orange-600 dark:text-violet-300" />
+                    sortOrder === 'asc' ? <ArrowUp className={`h-3.5 w-3.5 ${theme.accentText}`} /> : <ArrowDown className={`h-3.5 w-3.5 ${theme.accentText}`} />
                   ) : (
                     <ArrowUpDown className="h-3 w-3 opacity-30" />
                   )}
@@ -448,7 +450,7 @@ export function ItemSalesPerformance({
                 return (
                   <tr
                     key={item.itemCode}
-                    className={`group transition-colors duration-150 hover:bg-orange-50/40 dark:hover:bg-slate-800/50 ${
+                    className={`group transition-colors duration-150 ${theme.tableRowHover} ${
                       isEven ? 'bg-white dark:bg-zinc-950/40' : 'bg-slate-50/50 dark:bg-zinc-950/70'
                     }`}
                   >
@@ -460,7 +462,7 @@ export function ItemSalesPerformance({
                         {item.abcCategory === 'A' ? (
                           <span
                             title="الفئة (A): أعلى مبيعاً (أول 80% من الإيرادات)"
-                            className="inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-bold font-mono bg-orange-100 text-orange-800 border border-orange-200 dark:bg-emerald-950/80 dark:text-emerald-300 dark:border-white/5/80"
+                            className={`inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-bold font-mono ${theme.iconBox}`}
                           >
                             A
                           </span>
@@ -518,7 +520,7 @@ export function ItemSalesPerformance({
                         <span className="text-slate-400 dark:text-slate-600 font-bold select-none">—</span>
                       )}
                     </td>
-                    <td className="px-4 py-3.5 text-left font-extrabold text-orange-600 dark:text-[#c4b5fd] tabular-nums" dir="ltr">
+                    <td className={`px-4 py-3.5 text-left font-extrabold ${theme.accentText} tabular-nums`} dir="ltr">
                       {fmtMoney(totalRev)}
                     </td>
                     <td className="px-4 py-3.5 text-left text-slate-500 dark:text-zinc-400 tabular-nums" dir="ltr">
@@ -529,8 +531,8 @@ export function ItemSalesPerformance({
                         <span
                           className={`inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 text-xs font-semibold ${
                             isPositive
-                              ? 'bg-orange-50 text-orange-700 border border-orange-200 dark:bg-violet-500/10 dark:text-violet-300 dark:border-violet-500/20'
-                              : 'bg-amber-50 text-amber-700 border border-amber-200 dark:text-yellow-300 dark:bg-yellow-500/10 dark:border-yellow-500/20'
+                              ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:border-emerald-500/20'
+                              : 'bg-amber-50 text-amber-700 border border-amber-200 dark:text-amber-300 dark:bg-amber-500/10 dark:border-amber-500/20'
                           }`}
                         >
                           {isPositive ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
@@ -605,7 +607,7 @@ export function ItemSalesPerformance({
                   onClick={() => setPage(pageNum)}
                   className={`min-w-[28px] rounded-lg px-2 py-1 text-xs font-bold transition tabular-nums ${
                     isActive
-                      ? 'bg-orange-600 text-white dark:bg-[#c4b5fd] dark:text-black'
+                      ? `${theme.btnPrimary} text-white`
                       : 'border border-slate-200 bg-slate-100 text-slate-700 hover:bg-slate-200 dark:border-white/5 dark:bg-slate-800 dark:text-zinc-300 dark:hover:bg-slate-700'
                   }`}
                 >

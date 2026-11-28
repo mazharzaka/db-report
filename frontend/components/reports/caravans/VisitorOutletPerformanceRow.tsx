@@ -1,9 +1,10 @@
 'use client';
 
 import React from 'react';
-import { Users, Store, TrendingUp, Sparkles } from 'lucide-react';
+import { Users, Store, TrendingUp } from 'lucide-react';
 import type { CaravanRecord, ReportSummary } from '@/types/reports';
 import { fmtInt, fmtMoney, Money } from './charts';
+import { getSectorTheme } from '@/lib/sectorTheme';
 
 interface VisitorOutletPerformanceRowProps {
   totalRevenue: number;
@@ -12,6 +13,7 @@ interface VisitorOutletPerformanceRowProps {
   spendPerGuest?: number;
   summary?: ReportSummary | null;
   loading?: boolean;
+  sectorType?: number;
 }
 
 export function VisitorOutletPerformanceRow({
@@ -21,7 +23,9 @@ export function VisitorOutletPerformanceRow({
   spendPerGuest = 0,
   summary,
   loading = false,
+  sectorType = 4,
 }: VisitorOutletPerformanceRowProps) {
+  const theme = getSectorTheme(sectorType);
   // 1. Calculate Active Outlets: Distinct branches with sales > 0
   const activeRecords = records.filter((r) => (Number(r.total) || 0) > 0);
   const activeCount = activeRecords.length;
@@ -60,7 +64,7 @@ export function VisitorOutletPerformanceRow({
           <div className="flex items-start justify-between border-b border-slate-100 pb-3 dark:border-zinc-800/80">
             <div>
               <div className="flex items-center gap-2">
-                <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-orange-500/10 text-orange-600 dark:bg-orange-500/20 dark:text-orange-400">
+                <span className={`flex h-7 w-7 items-center justify-center rounded-lg ${theme.iconBox}`}>
                   <Users className="h-4 w-4" />
                 </span>
                 <h3 className="text-sm font-bold text-slate-800 dark:text-zinc-100">
@@ -128,7 +132,7 @@ export function VisitorOutletPerformanceRow({
         {/* Footer */}
         <div className="flex items-center justify-between border-t border-slate-100 pt-3 text-[11px] text-slate-500 dark:border-zinc-800/80 dark:text-zinc-400">
           <span>مؤشر القوة الشرائية المباشرة داخل المتنزه</span>
-          <span className="font-mono tabular-nums text-orange-600 dark:text-orange-400 font-semibold">
+          <span className={`font-mono tabular-nums ${theme.accentText} font-semibold`}>
             {guests > 0 ? `تغطية ${fmtInt(guests)} زائر` : 'بيانات الزوار المركزية'}
           </span>
         </div>
@@ -143,7 +147,7 @@ export function VisitorOutletPerformanceRow({
           <div className="flex items-start justify-between border-b border-slate-100 pb-3 dark:border-zinc-800/80">
             <div>
               <div className="flex items-center gap-2">
-                <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-500/10 text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-400">
+                <span className={`flex h-7 w-7 items-center justify-center rounded-lg ${theme.iconBox}`}>
                   <Store className="h-4 w-4" />
                 </span>
                 <h3 className="text-sm font-bold text-slate-800 dark:text-zinc-100">
@@ -166,7 +170,7 @@ export function VisitorOutletPerformanceRow({
                 <span className="text-xs font-bold text-slate-700 dark:text-zinc-300">
                   متوسط إيراد المنفذ النشط (Avg Revenue / Active Outlet)
                 </span>
-                <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-indigo-600 dark:text-indigo-400 font-mono">
+                <span className={`inline-flex items-center gap-1 text-[11px] font-semibold ${theme.accentText} font-mono`}>
                   <TrendingUp className="h-3.5 w-3.5" />
                   مؤشر الكفاءة
                 </span>

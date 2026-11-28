@@ -17,12 +17,15 @@ import {
 import {
   type SectorExcelTheme,
   type SectorTheme,
+  type SectorAnalyticsCopy,
   SECTOR_THEMES,
+  SECTOR_ANALYTICS_COPY,
   getSectorTheme,
+  getSectorAnalyticsCopy,
 } from '@/lib/sectorTheme';
 
-export type { SectorExcelTheme, SectorTheme };
-export { getSectorTheme, SECTOR_THEMES };
+export type { SectorExcelTheme, SectorTheme, SectorAnalyticsCopy };
+export { getSectorTheme, getSectorAnalyticsCopy, SECTOR_THEMES, SECTOR_ANALYTICS_COPY };
 
 export interface SectorConfig {
   id: 'caravans' | 'restaurants' | 'rides' | 'vr' | 'gates' | 'parking';
