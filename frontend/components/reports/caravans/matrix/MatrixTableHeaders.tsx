@@ -6,6 +6,7 @@ import {
   type MatrixColumn,
   type CalcMode,
   type OthColumnDef,
+  type RestaurantBranchRow,
 } from './matrixConstants';
 
 interface MatrixTableHeadersProps {
@@ -14,6 +15,7 @@ interface MatrixTableHeadersProps {
   effectiveGranularity: 'summary' | 'month' | 'day';
   calcMode: CalcMode;
   columns: MatrixColumn[];
+  restaurantColumns?: RestaurantBranchRow[];
   othHeaderGroups: {
     parentHeader: string | null;
     colSpan: number;
@@ -29,6 +31,7 @@ export const MatrixTableHeaders = React.memo(function MatrixTableHeaders({
   effectiveGranularity,
   calcMode,
   columns,
+  restaurantColumns = [],
   othHeaderGroups,
   isTwoRowHeader,
   theme,
@@ -39,44 +42,91 @@ export const MatrixTableHeaders = React.memo(function MatrixTableHeaders({
         <tr className="bg-[#881337] text-white border-b border-[#70102e] sticky top-0 z-20 shadow-xs">
           <th
             rowSpan={2}
-            className="sticky right-0 z-30 px-4 py-4 font-black text-center border-l border-[#70102e] min-w-[170px] bg-[#881337] text-white"
+            className="sticky right-0 z-30 px-4 py-3.5 font-bold text-base text-center min-w-[135px] bg-[#881337] text-white border-e-2 border-rose-400/60 shadow-[1px_0_0_0_rgba(0,0,0,0.1)] whitespace-nowrap"
           >
             <div className="flex items-center justify-center gap-2">
-              <Store className="h-4 w-4 text-white/80" />
-              <span className="font-bold text-sm text-white">
+              <Calendar className="h-4 w-4 text-white/80" />
+              <span>
                 {effectiveGranularity === 'summary'
-                  ? 'الفرع / المطعم'
+                  ? 'الفترة'
                   : effectiveGranularity === 'month'
-                    ? 'الشهر / الفرع'
-                    : 'التاريخ / الفرع'}
+                    ? 'الشهر'
+                    : 'التاريخ'}
               </span>
             </div>
           </th>
+
+          {restaurantColumns.map((rCol, rIdx) => {
+            const isEven = rIdx % 2 === 0;
+            return (
+              <th
+                key={rCol.branchCode}
+                colSpan={4}
+                className={`px-4 py-3.5 text-center font-bold text-base tracking-wide border-e-2 border-rose-300 dark:border-rose-700 whitespace-nowrap ${
+                  isEven ? 'bg-rose-600 text-white' : 'bg-rose-800 text-white'
+                }`}
+              >
+                {rCol.displayName || rCol.name}
+              </th>
+            );
+          })}
+
           <th
-            colSpan={4}
-            className="px-3 py-2.5 text-center border-l border-[#70102e] font-black text-sm tracking-wide bg-[#881337] text-white"
+            rowSpan={2}
+            className="px-4 py-3.5 text-center font-extrabold text-base min-w-[145px] text-white bg-[#4c0519] border-e-2 border-rose-900 whitespace-nowrap"
           >
-            مبيعات الأغذية والمشروبات (F&amp;B Sales Breakdown)
+            Grand Total
           </th>
+
           {calcMode !== 'vat' && (
             <th
               colSpan={3}
-              className="px-3 py-2.5 text-center font-black text-sm tracking-wide bg-[#881337] text-white"
+              className="px-4 py-3.5 text-center font-bold text-base tracking-wide bg-[#70102e] text-white whitespace-nowrap border-e border-[#580c24]"
             >
-              طرق التحصيل والسداد (Payment Breakdown)
+              Payment Methods
             </th>
           )}
         </tr>
-        <tr className="bg-[#70102e] text-white border-b border-[#580c24] sticky top-[48px] z-20 shadow-xs text-xs font-bold">
-          <th className="px-4 py-2.5 text-center border-l border-[#580c24] min-w-[130px]">مأكولات (Food)</th>
-          <th className="px-4 py-2.5 text-center border-l border-[#580c24] min-w-[130px]">مشروبات (Beverage)</th>
-          <th className="px-4 py-2.5 text-center border-l border-[#580c24] min-w-[120px]">أخرى (Other)</th>
-          <th className="px-4 py-2.5 text-left border-l border-[#580c24] min-w-[150px] font-black text-sm">TOTAL REV</th>
+
+        <tr className="sticky top-[48px] z-20 shadow-xs text-sm font-bold border-b border-slate-300 dark:border-zinc-700 bg-white dark:bg-zinc-900">
+          {restaurantColumns.map((rCol, rIdx) => {
+            const isEven = rIdx % 2 === 0;
+            const subBg = isEven
+              ? 'bg-rose-50 text-rose-900 dark:bg-rose-950/35 dark:text-rose-200'
+              : 'bg-rose-100/90 text-rose-950 dark:bg-rose-900/50 dark:text-rose-100';
+            const totBg = isEven
+              ? 'bg-rose-200/75 text-rose-950 dark:bg-rose-500/25 dark:text-rose-100'
+              : 'bg-rose-200/90 text-rose-950 dark:bg-rose-500/35 dark:text-rose-100';
+
+            return (
+              <React.Fragment key={`sub_${rCol.branchCode}`}>
+                <th className={`px-3.5 py-3 text-center min-w-[115px] border-e border-slate-200/60 dark:border-zinc-800 ${subBg}`}>
+                  Food
+                </th>
+                <th className={`px-3.5 py-3 text-center min-w-[115px] border-e border-slate-200/60 dark:border-zinc-800 ${subBg}`}>
+                  Bev
+                </th>
+                <th className={`px-3.5 py-3 text-center min-w-[115px] border-e border-slate-200/60 dark:border-zinc-800 ${subBg}`}>
+                  Other
+                </th>
+                <th className={`px-3.5 py-3 text-center min-w-[130px] border-e-2 border-rose-300 dark:border-rose-700 font-extrabold ${totBg}`}>
+                  Total
+                </th>
+              </React.Fragment>
+            );
+          })}
+
           {calcMode !== 'vat' && (
             <>
-              <th className="px-4 py-2.5 text-left border-l border-[#580c24] min-w-[130px]">CASH</th>
-              <th className="px-4 py-2.5 text-left border-l border-[#580c24] min-w-[130px]">VISA</th>
-              <th className="px-4 py-2.5 text-left min-w-[140px]">COPON / C.L</th>
+              <th className="px-3.5 py-3 text-center min-w-[125px] text-emerald-900 dark:text-emerald-300 bg-emerald-50/90 dark:bg-emerald-950/50 border-e border-slate-200 dark:border-zinc-800">
+                Cash
+              </th>
+              <th className="px-3.5 py-3 text-center min-w-[125px] text-blue-900 dark:text-blue-300 bg-blue-50/90 dark:bg-blue-950/50 border-e border-slate-200 dark:border-zinc-800">
+                Visa
+              </th>
+              <th className="px-3.5 py-3 text-center min-w-[125px] text-amber-900 dark:text-amber-300 bg-amber-50/90 dark:bg-amber-950/50">
+                C.L
+              </th>
             </>
           )}
         </tr>

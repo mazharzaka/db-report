@@ -1,12 +1,18 @@
 'use client';
 
 import React from 'react';
-import { type MatrixColumn, type CalcMode, MONEY_FORMATTER } from './matrixConstants';
+import {
+  type MatrixColumn,
+  type CalcMode,
+  type RestaurantBranchRow,
+  MONEY_FORMATTER,
+} from './matrixConstants';
 
 interface MatrixTableFooterProps {
   isRestaurants: boolean;
   sectorType: number;
   columns: MatrixColumn[];
+  restaurantColumns?: RestaurantBranchRow[];
   columnTotals: Record<string, number>;
   calcMode: CalcMode;
   grandTotal: number;
@@ -24,6 +30,7 @@ export const MatrixTableFooter = React.memo(function MatrixTableFooter({
   isRestaurants,
   sectorType,
   columns,
+  restaurantColumns = [],
   columnTotals,
   calcMode,
   grandTotal,
@@ -40,30 +47,44 @@ export const MatrixTableFooter = React.memo(function MatrixTableFooter({
     <tfoot className={`sticky bottom-0 z-20 shadow-xl ${theme.solidBg} font-mono tabular-nums tracking-tight !text-white`}>
       {isRestaurants ? (
         <tr className="bg-[#4c0519] !text-white font-bold border-t-2 border-[#881337]">
-          <td className="sticky right-0 z-30 px-4 py-4 text-center font-sans text-sm lg:text-base font-black border-l border-white/20 bg-[#4c0519] !text-white">
+          {/* Date Cell */}
+          <td className="sticky right-0 z-30 px-4 py-4 text-center font-sans text-base font-black border-e border-white/20 bg-[#4c0519] !text-white min-w-[135px] shadow-[1px_0_0_0_rgba(0,0,0,0.2)] whitespace-nowrap">
             الإجمالي العام
           </td>
-          <td className="px-4 py-4 text-left font-black text-base lg:text-lg border-l border-white/20 !text-white bg-[#4c0519]">
-            {MONEY_FORMATTER.format(grandFood)}
-          </td>
-          <td className="px-4 py-4 text-left font-black text-base lg:text-lg border-l border-white/20 !text-white bg-[#4c0519]">
-            {MONEY_FORMATTER.format(grandBeverage)}
-          </td>
-          <td className="px-4 py-4 text-left font-black text-base lg:text-lg border-l border-white/20 !text-white bg-[#4c0519]">
-            {MONEY_FORMATTER.format(grandOther)}
-          </td>
-          <td className="px-4 py-4 text-left text-lg lg:text-xl font-black border-l border-white/20 !text-white bg-[#4c0519]">
+
+          {/* Per-Restaurant Totals (Food, Bev, Other, Total) */}
+          {restaurantColumns.map((rCol) => (
+            <React.Fragment key={`foot_${rCol.branchCode}`}>
+              <td className="px-4 py-4 text-left font-mono text-base font-bold min-w-[115px] border-e border-white/10 !text-white bg-[#5c0e24] tabular-nums whitespace-nowrap">
+                {MONEY_FORMATTER.format(rCol.food)}
+              </td>
+              <td className="px-4 py-4 text-left font-mono text-base font-bold min-w-[115px] border-e border-white/10 !text-white bg-[#5c0e24] tabular-nums whitespace-nowrap">
+                {MONEY_FORMATTER.format(rCol.beverage)}
+              </td>
+              <td className="px-4 py-4 text-left font-mono text-base font-bold min-w-[115px] border-e border-white/10 !text-white bg-[#5c0e24] tabular-nums whitespace-nowrap">
+                {MONEY_FORMATTER.format(rCol.other)}
+              </td>
+              <td className="px-4 py-4 text-left font-mono text-base font-black min-w-[130px] border-e-2 border-white/40 !text-white bg-[#881337] tabular-nums whitespace-nowrap">
+                {MONEY_FORMATTER.format(rCol.total)}
+              </td>
+            </React.Fragment>
+          ))}
+
+          {/* Grand Total */}
+          <td className="px-4 py-4 text-left font-mono text-[17px] font-black min-w-[145px] bg-[#881337] shadow-inner !text-white border-e-2 border-white/40 tabular-nums whitespace-nowrap">
             {MONEY_FORMATTER.format(grandTotal)}
           </td>
+
+          {/* Payments */}
           {calcMode !== 'vat' && (
             <>
-              <td className="px-4 py-4 text-left text-base lg:text-lg font-black border-l border-white/20 !text-white bg-[#4c0519]">
+              <td className="px-4 py-4 text-left font-mono text-base font-bold min-w-[125px] text-emerald-300 bg-[#4c0519] border-e border-white/10 tabular-nums whitespace-nowrap">
                 {MONEY_FORMATTER.format(grandCash)}
               </td>
-              <td className="px-4 py-4 text-left text-base lg:text-lg font-black border-l border-white/20 !text-white bg-[#4c0519]">
+              <td className="px-4 py-4 text-left font-mono text-base font-bold min-w-[125px] text-blue-300 bg-[#4c0519] border-e border-white/10 tabular-nums whitespace-nowrap">
                 {MONEY_FORMATTER.format(grandVisa)}
               </td>
-              <td className="px-4 py-4 text-left text-base lg:text-lg font-black !text-white bg-[#4c0519]">
+              <td className="px-4 py-4 text-left font-mono text-base font-bold min-w-[125px] text-amber-300 bg-[#4c0519] tabular-nums whitespace-nowrap">
                 {MONEY_FORMATTER.format(grandCoupons)}
               </td>
             </>

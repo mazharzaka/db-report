@@ -112,6 +112,11 @@ export function useMatrixAggregation({
       const rawPeriod = ('period' in r && r.period ? r.period : ('date' in r && r.date ? r.date : '')).trim();
       const branchCode = String(r.branchCode || '').trim();
       const branchName = r.name || `منفذ ${branchCode}`;
+
+      // Exclude Canteen (Branch 14) from Restaurants sector
+      if (branchCode === '14' || branchName.includes('كانتين') || branchName.toLowerCase().includes('canteen')) {
+        return;
+      }
       const food = Number((r as any).food) || 0;
       const beverage = Number((r as any).beverage) || 0;
       const other = Number((r as any).other) || 0;
@@ -850,9 +855,20 @@ export function useMatrixAggregation({
     sectorType === 5 ||
     (sectorType === 6 && othHeaderGroups.some((g) => g.parentHeader !== null));
 
+  const restaurantColumns = useMemo<RestaurantBranchRow[]>(() => {
+    if (!isRestaurants || !restaurantData) return [];
+    let list = restaurantData.summaryBranches.filter(
+      (b) => b.branchCode !== '14' && !b.displayName.includes('كانتين') && !b.displayName.toLowerCase().includes('canteen')
+    );
+    if (effectiveRideStatusFilter === 'active') {
+      list = list.filter((b) => Math.abs(b.total) > 0.0001);
+    }
+    return list;
+  }, [isRestaurants, restaurantData, effectiveRideStatusFilter]);
+
   const totalTableCols = useMemo(() => {
     if (isRestaurants) {
-      return calcMode === 'vat' ? 5 : 8;
+      return 1 + (restaurantColumns.length * 4) + 1 + (calcMode === 'vat' ? 0 : 3);
     }
     if (sectorType === 5) {
       return 29;
@@ -862,12 +878,13 @@ export function useMatrixAggregation({
     }
     const outletsCount = columns.length;
     return 1 + outletsCount + (calcMode === 'vat' ? 1 : 4);
-  }, [columns, calcMode, isRestaurants, sectorType]);
+  }, [columns, calcMode, isRestaurants, sectorType, restaurantColumns.length]);
 
   return {
     isRestaurants,
     effectiveGranularity,
     restaurantData,
+    restaurantColumns,
     columns,
     matrixRows,
     columnTotals,

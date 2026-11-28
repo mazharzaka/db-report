@@ -76,6 +76,7 @@ export const DailyRevenueMatrix = React.memo(function DailyRevenueMatrix({
     isRestaurants,
     effectiveGranularity,
     restaurantData,
+    restaurantColumns,
     columns,
     matrixRows,
     columnTotals,
@@ -297,6 +298,7 @@ export const DailyRevenueMatrix = React.memo(function DailyRevenueMatrix({
         grandOther,
         isRestaurants,
         restaurantData,
+        restaurantColumns,
         othHeaderGroups,
         isTwoRowHeader,
       });
@@ -466,6 +468,7 @@ export const DailyRevenueMatrix = React.memo(function DailyRevenueMatrix({
               effectiveGranularity={effectiveGranularity}
               calcMode={calcMode}
               columns={columns}
+              restaurantColumns={restaurantColumns}
               othHeaderGroups={othHeaderGroups}
               isTwoRowHeader={isTwoRowHeader}
               theme={theme}
@@ -477,6 +480,7 @@ export const DailyRevenueMatrix = React.memo(function DailyRevenueMatrix({
                 <RestaurantMatrixRows
                   effectiveGranularity={effectiveGranularity}
                   restaurantData={restaurantData}
+                  restaurantColumns={restaurantColumns}
                   paginatedDayGroups={paginatedDayGroups}
                   expandedMonths={expandedMonths}
                   expandedDays={expandedDays}
@@ -518,6 +522,7 @@ export const DailyRevenueMatrix = React.memo(function DailyRevenueMatrix({
                 isRestaurants={isRestaurants}
                 sectorType={sectorType}
                 columns={columns}
+                restaurantColumns={restaurantColumns}
                 columnTotals={columnTotals}
                 calcMode={calcMode}
                 grandTotal={grandTotal}

@@ -1,7 +1,6 @@
 'use client';
 
 import React from 'react';
-import { ChevronDown, ChevronLeft } from 'lucide-react';
 import { fmtMoney } from '../charts';
 import type { RestaurantBranchRow, CalcMode } from './matrixConstants';
 
@@ -12,73 +11,145 @@ interface RestaurantMatrixRowsProps {
     monthGroups: { monthKey: string; monthLabel: string; food: number; beverage: number; other: number; total: number; cash: number; visa: number; cl: number; branches: RestaurantBranchRow[] }[];
     dayGroups: { date: string; food: number; beverage: number; other: number; total: number; cash: number; visa: number; cl: number; branches: RestaurantBranchRow[] }[];
   } | null;
+  restaurantColumns?: RestaurantBranchRow[];
   paginatedDayGroups: { date: string; food: number; beverage: number; other: number; total: number; cash: number; visa: number; cl: number; branches: RestaurantBranchRow[] }[];
-  expandedMonths: Set<string>;
-  expandedDays: Set<string>;
-  allDaysExpanded: boolean;
-  handleToggleMonth: (monthKey: string) => void;
-  handleToggleDay: (date: string) => void;
   totalTableCols: number;
   calcMode: CalcMode;
+  // Backward compatibility optional props
+  expandedMonths?: Set<string>;
+  expandedDays?: Set<string>;
+  allDaysExpanded?: boolean;
+  handleToggleMonth?: (monthKey: string) => void;
+  handleToggleDay?: (date: string) => void;
 }
 
 export const RestaurantMatrixRows = React.memo(function RestaurantMatrixRows({
   effectiveGranularity,
   restaurantData,
+  restaurantColumns = [],
   paginatedDayGroups,
-  expandedMonths,
-  expandedDays,
-  allDaysExpanded,
-  handleToggleMonth,
-  handleToggleDay,
   totalTableCols,
   calcMode,
 }: RestaurantMatrixRowsProps) {
+  if (!restaurantData || restaurantColumns.length === 0) {
+    return (
+      <tr>
+        <td colSpan={totalTableCols} className="py-12 text-center text-slate-500 text-sm font-sans font-medium">
+          لا توجد بيانات مطاعم للفترة المحددة
+        </td>
+      </tr>
+    );
+  }
+
+  const fmt = (v: number) => fmtMoney(v);
+
+  const renderFlatRow = (
+    rowKey: string,
+    dateLabel: string,
+    branches: RestaurantBranchRow[],
+    rowTotal: number,
+    rowCash: number,
+    rowVisa: number,
+    rowCL: number,
+    isEvenRow: boolean
+  ) => {
+    const branchMap = new Map<string, RestaurantBranchRow>();
+    branches.forEach((b) => branchMap.set(String(b.branchCode), b));
+
+    return (
+      <tr
+        key={rowKey}
+        className={`border-b border-slate-200/80 dark:border-zinc-800/80 transition-colors ${
+          isEvenRow ? 'bg-white dark:bg-zinc-900' : 'bg-slate-50/70 dark:bg-zinc-800/30'
+        } hover:bg-rose-50/30 dark:hover:bg-rose-950/20`}
+      >
+        {/* Date Column (Sticky Right) */}
+        <td className="sticky right-0 z-10 px-4 py-3.5 text-center font-sans text-[15px] font-semibold text-slate-800 dark:text-zinc-200 min-w-[135px] whitespace-nowrap bg-white dark:bg-zinc-900 border-e border-slate-200 dark:border-zinc-800 shadow-[1px_0_0_0_rgba(0,0,0,0.05)]">
+          {dateLabel}
+        </td>
+
+        {/* Per-Restaurant 4 Columns */}
+        {restaurantColumns.map((rCol, rIdx) => {
+          const b = branchMap.get(String(rCol.branchCode));
+          const food = b ? b.food : 0;
+          const beverage = b ? b.beverage : 0;
+          const other = b ? b.other : 0;
+          const total = b ? b.total : 0;
+
+          const isEvenRest = rIdx % 2 === 0;
+          const subBg = isEvenRest
+            ? 'bg-rose-50/35 dark:bg-rose-950/15'
+            : 'bg-rose-100/55 dark:bg-rose-900/30';
+          const totBg = isEvenRest
+            ? 'bg-rose-200/75 dark:bg-rose-500/25'
+            : 'bg-rose-200/90 dark:bg-rose-500/35';
+
+          return (
+            <React.Fragment key={`cell_${rowKey}_${rCol.branchCode}`}>
+              <td className={`px-4 py-3.5 text-left font-mono text-[15px] font-semibold tabular-nums whitespace-nowrap min-w-[115px] border-e border-slate-200/50 dark:border-zinc-800/50 text-slate-700 dark:text-zinc-300 ${subBg}`}>
+                {fmt(food)}
+              </td>
+              <td className={`px-4 py-3.5 text-left font-mono text-[15px] font-semibold tabular-nums whitespace-nowrap min-w-[115px] border-e border-slate-200/50 dark:border-zinc-800/50 text-slate-700 dark:text-zinc-300 ${subBg}`}>
+                {fmt(beverage)}
+              </td>
+              <td className={`px-4 py-3.5 text-left font-mono text-[15px] font-semibold tabular-nums whitespace-nowrap min-w-[115px] border-e border-slate-200/50 dark:border-zinc-800/50 text-slate-700 dark:text-zinc-300 ${subBg}`}>
+                {fmt(other)}
+              </td>
+              <td className={`px-4 py-3.5 text-left font-mono text-base font-bold tabular-nums whitespace-nowrap min-w-[130px] border-e-2 border-rose-300 dark:border-rose-700 text-rose-950 dark:text-rose-100 ${totBg}`}>
+                {fmt(total)}
+              </td>
+            </React.Fragment>
+          );
+        })}
+
+        {/* Row Grand Total */}
+        <td className="px-4 py-3.5 text-left font-mono text-[17px] font-extrabold tabular-nums whitespace-nowrap min-w-[145px] bg-rose-600/20 text-rose-950 dark:text-white dark:bg-rose-500/35 border-e-2 border-rose-400/60 dark:border-rose-600/60">
+          {fmt(rowTotal)}
+        </td>
+
+        {/* Payment Methods */}
+        {calcMode !== 'vat' && (
+          <>
+            <td className="px-4 py-3.5 text-left font-mono text-base font-bold tabular-nums whitespace-nowrap min-w-[125px] bg-emerald-50/80 text-emerald-900 dark:bg-emerald-500/15 dark:text-emerald-300 border-e border-slate-200 dark:border-zinc-800">
+              {fmt(rowCash)}
+            </td>
+            <td className="px-4 py-3.5 text-left font-mono text-base font-bold tabular-nums whitespace-nowrap min-w-[125px] bg-blue-50/80 text-blue-900 dark:bg-blue-500/15 dark:text-blue-300 border-e border-slate-200 dark:border-zinc-800">
+              {fmt(rowVisa)}
+            </td>
+            <td className="px-4 py-3.5 text-left font-mono text-base font-bold tabular-nums whitespace-nowrap min-w-[125px] bg-amber-50/80 text-amber-900 dark:bg-amber-500/15 dark:text-amber-300">
+              {fmt(rowCL)}
+            </td>
+          </>
+        )}
+      </tr>
+    );
+  };
+
   if (effectiveGranularity === 'summary') {
-    if (!restaurantData || restaurantData.summaryBranches.length === 0) {
-      return (
-        <tr>
-          <td colSpan={totalTableCols} className="py-12 text-center text-slate-500 text-sm font-sans font-medium">
-            لا توجد بيانات مطاعم للفترة المحددة
-          </td>
-        </tr>
-      );
-    }
+    const sumBranches = restaurantData.summaryBranches;
+    const sumTot = sumBranches.reduce((s, b) => s + b.total, 0);
+    const sumCash = sumBranches.reduce((s, b) => s + b.cash, 0);
+    const sumVisa = sumBranches.reduce((s, b) => s + b.visa, 0);
+    const sumCL = sumBranches.reduce((s, b) => s + b.cl, 0);
 
     return (
       <>
-        {restaurantData.summaryBranches.map((b, idx) => (
-          <tr
-            key={b.branchCode}
-            className={`border-b border-slate-200/80 transition-colors ${idx % 2 === 1 ? 'bg-slate-50/70 dark:bg-zinc-800/40' : 'bg-white dark:bg-zinc-900'} hover:bg-rose-50/40 dark:hover:bg-rose-950/20`}
-          >
-            <td className="sticky right-0 z-10 px-4 py-3 font-sans text-sm font-bold text-slate-800 dark:text-zinc-200 border-l border-slate-200 dark:border-zinc-800 bg-inherit whitespace-nowrap">
-              <div className="flex items-center gap-2">
-                <span className="flex h-6 w-6 items-center justify-center rounded-md bg-slate-100 dark:bg-zinc-800 text-xs font-mono text-slate-600 dark:text-zinc-400">
-                  {b.branchCode}
-                </span>
-                <span>{b.displayName}</span>
-              </div>
-            </td>
-            <td className="px-4 py-3 text-left border-l border-slate-200/60 dark:border-zinc-800 text-slate-700 dark:text-zinc-300 font-mono">{fmtMoney(b.food)}</td>
-            <td className="px-4 py-3 text-left border-l border-slate-200/60 dark:border-zinc-800 text-slate-700 dark:text-zinc-300 font-mono">{fmtMoney(b.beverage)}</td>
-            <td className="px-4 py-3 text-left border-l border-slate-200/60 dark:border-zinc-800 text-slate-700 dark:text-zinc-300 font-mono">{fmtMoney(b.other)}</td>
-            <td className="px-4 py-3 text-left border-l border-slate-200/60 dark:border-zinc-800 font-black text-rose-700 dark:text-rose-400 font-mono">{fmtMoney(b.total)}</td>
-            {calcMode !== 'vat' && (
-              <>
-                <td className="px-4 py-3 text-left border-l border-slate-200/60 dark:border-zinc-800 text-slate-700 dark:text-zinc-300 font-mono">{fmtMoney(b.cash)}</td>
-                <td className="px-4 py-3 text-left border-l border-slate-200/60 dark:border-zinc-800 text-slate-700 dark:text-zinc-300 font-mono">{fmtMoney(b.visa)}</td>
-                <td className="px-4 py-3 text-left text-slate-700 dark:text-zinc-300 font-mono">{fmtMoney(b.cl)}</td>
-              </>
-            )}
-          </tr>
-        ))}
+        {renderFlatRow(
+          'summary_row',
+          'إجمالي الفترة',
+          sumBranches,
+          sumTot,
+          sumCash,
+          sumVisa,
+          sumCL,
+          true
+        )}
       </>
     );
   }
 
   if (effectiveGranularity === 'month') {
-    if (!restaurantData || restaurantData.monthGroups.length === 0) {
+    if (restaurantData.monthGroups.length === 0) {
       return (
         <tr>
           <td colSpan={totalTableCols} className="py-12 text-center text-slate-500 text-sm font-sans font-medium">
@@ -90,60 +161,24 @@ export const RestaurantMatrixRows = React.memo(function RestaurantMatrixRows({
 
     return (
       <>
-        {restaurantData.monthGroups.map((m) => {
-          const isExpanded = expandedMonths.has(m.monthKey);
-          return (
-            <React.Fragment key={m.monthKey}>
-              <tr
-                onClick={() => handleToggleMonth(m.monthKey)}
-                className="border-b border-rose-200 bg-rose-50/80 dark:bg-rose-950/40 dark:border-rose-900/40 cursor-pointer font-bold text-slate-900 dark:text-white hover:bg-rose-100/70"
-              >
-                <td className="sticky right-0 z-10 px-4 py-3 font-sans text-sm font-black border-l border-rose-200 dark:border-rose-900/40 bg-inherit whitespace-nowrap">
-                  <div className="flex items-center gap-2">
-                    {isExpanded ? <ChevronDown className="h-4 w-4 text-rose-700" /> : <ChevronLeft className="h-4 w-4 text-rose-700" />}
-                    <span>{m.monthLabel}</span>
-                  </div>
-                </td>
-                <td className="px-4 py-3 text-left border-l border-rose-200 dark:border-rose-900/40">{fmtMoney(m.food)}</td>
-                <td className="px-4 py-3 text-left border-l border-rose-200 dark:border-rose-900/40">{fmtMoney(m.beverage)}</td>
-                <td className="px-4 py-3 text-left border-l border-rose-200 dark:border-rose-900/40">{fmtMoney(m.other)}</td>
-                <td className="px-4 py-3 text-left border-l border-rose-200 dark:border-rose-900/40 font-black text-rose-700 dark:text-rose-400">{fmtMoney(m.total)}</td>
-                {calcMode !== 'vat' && (
-                  <>
-                    <td className="px-4 py-3 text-left border-l border-rose-200 dark:border-rose-900/40">{fmtMoney(m.cash)}</td>
-                    <td className="px-4 py-3 text-left border-l border-rose-200 dark:border-rose-900/40">{fmtMoney(m.visa)}</td>
-                    <td className="px-4 py-3 text-left">{fmtMoney(m.cl)}</td>
-                  </>
-                )}
-              </tr>
-              {isExpanded &&
-                m.branches.map((b) => (
-                  <tr key={`${m.monthKey}_${b.branchCode}`} className="border-b border-slate-100 bg-white dark:bg-zinc-900 hover:bg-slate-50 text-xs">
-                    <td className="sticky right-0 z-10 pr-9 pl-4 py-2 text-slate-700 dark:text-zinc-300 border-l border-slate-200 bg-inherit whitespace-nowrap">
-                      {b.displayName}
-                    </td>
-                    <td className="px-4 py-2 text-left border-l border-slate-100">{fmtMoney(b.food)}</td>
-                    <td className="px-4 py-2 text-left border-l border-slate-100">{fmtMoney(b.beverage)}</td>
-                    <td className="px-4 py-2 text-left border-l border-slate-100">{fmtMoney(b.other)}</td>
-                    <td className="px-4 py-2 text-left border-l border-slate-100 font-bold text-rose-700">{fmtMoney(b.total)}</td>
-                    {calcMode !== 'vat' && (
-                      <>
-                        <td className="px-4 py-2 text-left border-l border-slate-100">{fmtMoney(b.cash)}</td>
-                        <td className="px-4 py-2 text-left border-l border-slate-100">{fmtMoney(b.visa)}</td>
-                        <td className="px-4 py-2 text-left">{fmtMoney(b.cl)}</td>
-                      </>
-                    )}
-                  </tr>
-                ))}
-            </React.Fragment>
-          );
-        })}
+        {restaurantData.monthGroups.map((m, idx) =>
+          renderFlatRow(
+            m.monthKey,
+            m.monthLabel,
+            m.branches,
+            m.total,
+            m.cash,
+            m.visa,
+            m.cl,
+            idx % 2 === 0
+          )
+        )}
       </>
     );
   }
 
   // Day Granularity
-  if (!restaurantData || paginatedDayGroups.length === 0) {
+  if (paginatedDayGroups.length === 0) {
     return (
       <tr>
         <td colSpan={totalTableCols} className="py-12 text-center text-slate-500 text-sm font-sans font-medium">
@@ -155,54 +190,18 @@ export const RestaurantMatrixRows = React.memo(function RestaurantMatrixRows({
 
   return (
     <>
-      {paginatedDayGroups.map((d) => {
-        const isExpanded = expandedDays.has(d.date) || allDaysExpanded;
-        return (
-          <React.Fragment key={d.date}>
-            <tr
-              onClick={() => handleToggleDay(d.date)}
-              className="border-b border-rose-200 bg-rose-50/70 dark:bg-rose-950/30 cursor-pointer font-bold text-slate-900 dark:text-white hover:bg-rose-100/60"
-            >
-              <td className="sticky right-0 z-10 px-4 py-3 font-sans text-sm font-black border-l border-rose-200 dark:border-rose-900/40 bg-inherit whitespace-nowrap">
-                <div className="flex items-center gap-2">
-                  {isExpanded ? <ChevronDown className="h-4 w-4 text-rose-700" /> : <ChevronLeft className="h-4 w-4 text-rose-700" />}
-                  <span>{d.date}</span>
-                </div>
-              </td>
-              <td className="px-4 py-3 text-left border-l border-rose-200">{fmtMoney(d.food)}</td>
-              <td className="px-4 py-3 text-left border-l border-rose-200">{fmtMoney(d.beverage)}</td>
-              <td className="px-4 py-3 text-left border-l border-rose-200">{fmtMoney(d.other)}</td>
-              <td className="px-4 py-3 text-left border-l border-rose-200 font-black text-rose-700">{fmtMoney(d.total)}</td>
-              {calcMode !== 'vat' && (
-                <>
-                  <td className="px-4 py-3 text-left border-l border-rose-200">{fmtMoney(d.cash)}</td>
-                  <td className="px-4 py-3 text-left border-l border-rose-200">{fmtMoney(d.visa)}</td>
-                  <td className="px-4 py-3 text-left">{fmtMoney(d.cl)}</td>
-                </>
-              )}
-            </tr>
-            {isExpanded &&
-              d.branches.map((b) => (
-                <tr key={`${d.date}_${b.branchCode}`} className="border-b border-slate-100 bg-white dark:bg-zinc-900 hover:bg-slate-50 text-xs">
-                  <td className="sticky right-0 z-10 pr-9 pl-4 py-2 text-slate-700 dark:text-zinc-300 border-l border-slate-200 bg-inherit whitespace-nowrap">
-                    {b.displayName}
-                  </td>
-                  <td className="px-4 py-2 text-left border-l border-slate-100">{fmtMoney(b.food)}</td>
-                  <td className="px-4 py-2 text-left border-l border-slate-100">{fmtMoney(b.beverage)}</td>
-                  <td className="px-4 py-2 text-left border-l border-slate-100">{fmtMoney(b.other)}</td>
-                  <td className="px-4 py-2 text-left border-l border-slate-100 font-bold text-rose-700">{fmtMoney(b.total)}</td>
-                  {calcMode !== 'vat' && (
-                    <>
-                      <td className="px-4 py-2 text-left border-l border-slate-100">{fmtMoney(b.cash)}</td>
-                      <td className="px-4 py-2 text-left border-l border-slate-100">{fmtMoney(b.visa)}</td>
-                      <td className="px-4 py-2 text-left">{fmtMoney(b.cl)}</td>
-                    </>
-                  )}
-                </tr>
-              ))}
-          </React.Fragment>
-        );
-      })}
+      {paginatedDayGroups.map((d, idx) =>
+        renderFlatRow(
+          d.date,
+          d.date,
+          d.branches,
+          d.total,
+          d.cash,
+          d.visa,
+          d.cl,
+          idx % 2 === 0
+        )
+      )}
     </>
   );
 });

@@ -35,10 +35,32 @@ export interface ExportMatrixToExcelParams {
   grandBeverage?: number;
   grandOther?: number;
   isRestaurants: boolean;
+  restaurantColumns?: RestaurantBranchRow[];
   restaurantData?: {
     summaryBranches: RestaurantBranchRow[];
-    monthGroups: { monthKey: string; monthLabel: string; branches: RestaurantBranchRow[] }[];
-    dayGroups: { date: string; branches: RestaurantBranchRow[] }[];
+    monthGroups: {
+      monthKey: string;
+      monthLabel: string;
+      food?: number;
+      beverage?: number;
+      other?: number;
+      total?: number;
+      cash?: number;
+      visa?: number;
+      cl?: number;
+      branches: RestaurantBranchRow[];
+    }[];
+    dayGroups: {
+      date: string;
+      food?: number;
+      beverage?: number;
+      other?: number;
+      total?: number;
+      cash?: number;
+      visa?: number;
+      cl?: number;
+      branches: RestaurantBranchRow[];
+    }[];
   } | null;
   othHeaderGroups: {
     parentHeader: string | null;
@@ -70,6 +92,7 @@ export async function exportMatrixToExcel({
   grandBeverage = 0,
   grandOther = 0,
   isRestaurants,
+  restaurantColumns,
   restaurantData,
   othHeaderGroups,
   isTwoRowHeader,
@@ -258,24 +281,44 @@ export async function exportMatrixToExcel({
     }
   }
 
+  // Helper to get Excel column letter (A, B, ..., Z, AA, AB, ...)
+  function getExcelColName(colIdx: number): string {
+    let temp = colIdx;
+    let letter = '';
+    while (temp > 0) {
+      const mod = (temp - 1) % 26;
+      letter = String.fromCharCode(65 + mod) + letter;
+      temp = Math.floor((temp - mod) / 26);
+    }
+    return letter;
+  }
+
   // 2. Setup Export Columns & Worksheet Data
   if (isRestaurants) {
     const isVat = calcMode === 'vat';
-    const restCols = [
+    const activeRestColumns = (restaurantColumns && restaurantColumns.length > 0
+      ? restaurantColumns
+      : (restaurantData?.summaryBranches || []).filter(
+          (b) => b.branchCode !== '14' && !b.displayName.includes('كانتين') && !b.displayName.toLowerCase().includes('canteen')
+        )
+    ).filter((b) => effectiveRideStatusFilter !== 'active' || Math.abs(b.total) > 0.0001);
+
+    const restCols: { key: string; width: number }[] = [
       { key: 'period', width: 16 },
-      { key: 'branch', width: 26 },
-      { key: 'food', width: 16 },
-      { key: 'beverage', width: 16 },
-      { key: 'other', width: 14 },
-      { key: 'total', width: 18 },
-      ...(isVat
-        ? []
-        : [
-            { key: 'cash', width: 16 },
-            { key: 'visa', width: 16 },
-            { key: 'cl', width: 16 },
-          ]),
     ];
+    activeRestColumns.forEach((b) => {
+      restCols.push({ key: `food_${b.branchCode}`, width: 14 });
+      restCols.push({ key: `bev_${b.branchCode}`, width: 14 });
+      restCols.push({ key: `oth_${b.branchCode}`, width: 14 });
+      restCols.push({ key: `tot_${b.branchCode}`, width: 16 });
+    });
+    restCols.push({ key: 'grandTotal', width: 18 });
+    if (!isVat) {
+      restCols.push({ key: 'cash', width: 16 });
+      restCols.push({ key: 'visa', width: 16 });
+      restCols.push({ key: 'cl', width: 16 });
+    }
+
     worksheet.columns = restCols;
     const totalRestColsCount = restCols.length;
 
@@ -301,8 +344,8 @@ export async function exportMatrixToExcel({
       console.warn('Could not load logo for Excel export:', logoErr);
     }
 
-    worksheet.mergeCells(1, 3, 2, totalRestColsCount);
-    const titleCell = worksheet.getCell(1, 3);
+    worksheet.mergeCells(1, 2, 2, totalRestColsCount);
+    const titleCell = worksheet.getCell(1, 2);
     titleCell.value = excelTitle;
     titleCell.font = { name: 'Times New Roman', size: 15, bold: true, color: { argb: 'FF4C0519' } };
     titleCell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
@@ -312,153 +355,267 @@ export async function exportMatrixToExcel({
     const row4 = worksheet.getRow(4);
     row4.height = 26;
 
-    const restHeaderFill = {
-      type: 'pattern' as const,
-      pattern: 'solid' as const,
-      fgColor: { argb: 'FF881337' },
-    };
-    const restHeaderFontNormal = {
-      name: 'Times New Roman',
-      size: 13,
-      bold: true,
-      color: { argb: 'FFFFFFFF' },
-    };
-    const restHeaderFontSub = {
-      name: 'Times New Roman',
-      size: 11,
-      bold: true,
-      color: { argb: 'FFFFFFFF' },
-    };
-
+    // Col 1 (Date / Period) merged 3 to 4
     worksheet.mergeCells(3, 1, 4, 1);
     const col1Label =
-      effectiveGranularity === 'summary' ? 'Code' : effectiveGranularity === 'month' ? 'Month' : 'Date';
+      effectiveGranularity === 'summary' ? 'Period' : effectiveGranularity === 'month' ? 'Month' : 'Date';
     worksheet.getCell(3, 1).value = col1Label;
     styleRange(worksheet, 3, 1, 4, 1, {
-      font: restHeaderFontNormal,
-      fill: restHeaderFill,
+      font: { name: 'Times New Roman', size: 12, bold: true, color: { argb: 'FFFFFFFF' } },
+      fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF881337' } },
       alignment: centerMiddleAlign,
       border: thinBorder,
     });
 
-    worksheet.mergeCells(3, 2, 4, 2);
-    worksheet.getCell(3, 2).value = 'Restaurant Branch';
-    styleRange(worksheet, 3, 2, 4, 2, {
-      font: restHeaderFontNormal,
-      fill: restHeaderFill,
-      alignment: centerMiddleAlign,
-      border: thinBorder,
-    });
-
-    worksheet.mergeCells(3, 3, 3, 6);
-    worksheet.getCell(3, 3).value = 'Sales Breakdown';
-    styleRange(worksheet, 3, 3, 3, 6, {
-      font: restHeaderFontNormal,
-      fill: restHeaderFill,
-      alignment: centerMiddleAlign,
-      border: thinBorder,
-    });
-
-    const subHeaders = ['Food', 'Beverage', 'Other', 'TOTAL'];
-    subHeaders.forEach((sub, sIdx) => {
-      const cIdx = 3 + sIdx;
-      worksheet.getCell(4, cIdx).value = sub;
-      styleRange(worksheet, 4, cIdx, 4, cIdx, {
-        font: restHeaderFontSub,
-        fill: restHeaderFill,
-        alignment: centerMiddleAlign,
-        border: thinBorder,
-      });
-    });
-
-    if (!isVat) {
-      worksheet.mergeCells(3, 7, 3, 9);
-      worksheet.getCell(3, 7).value = 'Payment Breakdown';
-      styleRange(worksheet, 3, 7, 3, 9, {
-        font: restHeaderFontNormal,
-        fill: restHeaderFill,
+    // Row 3 Restaurant Headers
+    activeRestColumns.forEach((b, rIdx) => {
+      const startCol = 2 + rIdx * 4;
+      const endCol = startCol + 3;
+      worksheet.mergeCells(3, startCol, 3, endCol);
+      const cell = worksheet.getCell(3, startCol);
+      cell.value = b.displayName || b.name;
+      const headerColor = rIdx % 2 === 0 ? 'FFE11D48' : 'FF9F1239'; // Alternating light rose vs deeper rose
+      styleRange(worksheet, 3, startCol, 3, endCol, {
+        font: { name: 'Times New Roman', size: 12, bold: true, color: { argb: 'FFFFFFFF' } },
+        fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: headerColor } },
         alignment: centerMiddleAlign,
         border: thinBorder,
       });
 
-      const paySubs = ['Cash', 'Visa', 'C.L'];
-      paySubs.forEach((sub, sIdx) => {
-        const cIdx = 7 + sIdx;
+      // Row 4 Sub-headers
+      const subs = ['Food', 'Bev', 'Other', 'Total'];
+      const subBgColor = rIdx % 2 === 0 ? 'FFFFF1F2' : 'FFFFE4E6';
+      subs.forEach((sub, sIdx) => {
+        const cIdx = startCol + sIdx;
         worksheet.getCell(4, cIdx).value = sub;
+        const isTotCol = sIdx === 3;
         styleRange(worksheet, 4, cIdx, 4, cIdx, {
-          font: restHeaderFontSub,
-          fill: restHeaderFill,
+          font: { name: 'Times New Roman', size: 11, bold: true, color: { argb: isTotCol ? 'FF881337' : 'FF0F172A' } },
+          fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: isTotCol ? 'FFFECDD3' : subBgColor } },
+          alignment: centerMiddleAlign,
+          border: isTotCol
+            ? {
+                top: { style: 'thin', color: { argb: 'FF000000' } },
+                bottom: { style: 'thin', color: { argb: 'FF000000' } },
+                left: { style: 'thin', color: { argb: 'FF000000' } },
+                right: { style: 'medium', color: { argb: 'FF881337' } },
+              }
+            : thinBorder,
+        });
+      });
+    });
+
+    // Grand Total Column
+    const gtCol = 2 + activeRestColumns.length * 4;
+    worksheet.mergeCells(3, gtCol, 4, gtCol);
+    worksheet.getCell(3, gtCol).value = 'Grand Total';
+    styleRange(worksheet, 3, gtCol, 4, gtCol, {
+      font: { name: 'Times New Roman', size: 12, bold: true, color: { argb: 'FFFFFFFF' } },
+      fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF4C0519' } },
+      alignment: centerMiddleAlign,
+      border: {
+        top: { style: 'thin', color: { argb: 'FF000000' } },
+        bottom: { style: 'thin', color: { argb: 'FF000000' } },
+        left: { style: 'thin', color: { argb: 'FF000000' } },
+        right: { style: 'medium', color: { argb: 'FF881337' } },
+      },
+    });
+
+    // Payment Methods
+    if (!isVat) {
+      const payCol = gtCol + 1;
+      worksheet.mergeCells(3, payCol, 3, payCol + 2);
+      worksheet.getCell(3, payCol).value = 'Payment Methods';
+      styleRange(worksheet, 3, payCol, 3, payCol + 2, {
+        font: { name: 'Times New Roman', size: 12, bold: true, color: { argb: 'FFFFFFFF' } },
+        fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF70102E' } },
+        alignment: centerMiddleAlign,
+        border: thinBorder,
+      });
+
+      const paySubs = [
+        { label: 'Cash', color: 'FFD1FAE5', fontColor: 'FF065F46' },
+        { label: 'Visa', color: 'FFDBEAFE', fontColor: 'FF1E40AF' },
+        { label: 'C.L', color: 'FFFEF3C7', fontColor: 'FF92400E' },
+      ];
+      paySubs.forEach((ps, sIdx) => {
+        const cIdx = payCol + sIdx;
+        worksheet.getCell(4, cIdx).value = ps.label;
+        styleRange(worksheet, 4, cIdx, 4, cIdx, {
+          font: { name: 'Times New Roman', size: 11, bold: true, color: { argb: ps.fontColor } },
+          fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: ps.color } },
           alignment: centerMiddleAlign,
           border: thinBorder,
         });
       });
     }
 
-    const restDataRows: (string | number)[][] = [];
+    // Rows Data
+    type RestGroupItem = {
+      label: string;
+      branches: RestaurantBranchRow[];
+      total: number;
+      cash: number;
+      visa: number;
+      cl: number;
+    };
+    let dataGroups: RestGroupItem[] = [];
+
     if (effectiveGranularity === 'summary') {
-      (restaurantData?.summaryBranches || []).forEach((b) => {
-        const rowVals = [b.branchCode, b.displayName, b.food, b.beverage, b.other, b.total];
-        if (!isVat) rowVals.push(b.cash, b.visa, b.cl);
-        restDataRows.push(rowVals);
-      });
+      dataGroups = [
+        {
+          label: 'Total Period',
+          branches: restaurantData?.summaryBranches || [],
+          total: grandTotal,
+          cash: grandCash,
+          visa: grandVisa,
+          cl: grandCoupons,
+        },
+      ];
     } else if (effectiveGranularity === 'month') {
-      (restaurantData?.monthGroups || []).forEach((m) => {
-        m.branches.forEach((b) => {
-          const rowVals = [m.monthLabel, b.displayName, b.food, b.beverage, b.other, b.total];
-          if (!isVat) rowVals.push(b.cash, b.visa, b.cl);
-          restDataRows.push(rowVals);
-        });
-      });
+      dataGroups = (restaurantData?.monthGroups || []).map((m) => ({
+        label: m.monthLabel,
+        branches: m.branches,
+        total: m.total ?? m.branches.reduce((s, b) => s + b.total, 0),
+        cash: m.cash ?? m.branches.reduce((s, b) => s + b.cash, 0),
+        visa: m.visa ?? m.branches.reduce((s, b) => s + b.visa, 0),
+        cl: m.cl ?? m.branches.reduce((s, b) => s + b.cl, 0),
+      }));
     } else {
-      (restaurantData?.dayGroups || []).forEach((d) => {
-        d.branches.forEach((b) => {
-          const rowVals = [d.date, b.displayName, b.food, b.beverage, b.other, b.total];
-          if (!isVat) rowVals.push(b.cash, b.visa, b.cl);
-          restDataRows.push(rowVals);
-        });
-      });
+      dataGroups = (restaurantData?.dayGroups || []).map((d) => ({
+        label: d.date,
+        branches: d.branches,
+        total: d.total ?? d.branches.reduce((s, b) => s + b.total, 0),
+        cash: d.cash ?? d.branches.reduce((s, b) => s + b.cash, 0),
+        visa: d.visa ?? d.branches.reduce((s, b) => s + b.visa, 0),
+        cl: d.cl ?? d.branches.reduce((s, b) => s + b.cl, 0),
+      }));
     }
 
-    restDataRows.forEach((rVals) => {
-      const row = worksheet.addRow(rVals);
+    const startDataRow = 5;
+    dataGroups.forEach((item, rIdx) => {
+      const curRow = startDataRow + rIdx;
+      const branchMap = new Map<string, RestaurantBranchRow>();
+      item.branches.forEach((b) => branchMap.set(String(b.branchCode), b));
+
+      const rowVals: any[] = [item.label];
+      const totColLetters: string[] = [];
+
+      activeRestColumns.forEach((rCol, colIdx) => {
+        const b = branchMap.get(String(rCol.branchCode));
+        const food = b ? b.food : 0;
+        const bev = b ? b.beverage : 0;
+        const oth = b ? b.other : 0;
+        const startC = 2 + colIdx * 4;
+        const foodLetter = getExcelColName(startC);
+        const othLetter = getExcelColName(startC + 2);
+        const totLetter = getExcelColName(startC + 3);
+        totColLetters.push(totLetter + curRow);
+
+        rowVals.push(food, bev, oth);
+        rowVals.push({
+          formula: `SUM(${foodLetter}${curRow}:${othLetter}${curRow})`,
+          result: b ? b.total : 0,
+        });
+      });
+
+      // Grand Total formula summing each restaurant's Total column
+      const gtFormula = totColLetters.length > 0 ? totColLetters.join('+') : '0';
+      rowVals.push({ formula: gtFormula, result: item.total });
+
+      if (!isVat) {
+        rowVals.push(item.cash, item.visa, item.cl);
+      }
+
+      const row = worksheet.addRow(rowVals);
       row.height = 24;
 
+      // Styling
       const c1 = row.getCell(1);
-      c1.alignment = { vertical: 'middle', horizontal: 'center' };
+      c1.alignment = centerMiddleAlign;
       c1.font = { name: 'Times New Roman', size: 11, bold: true, color: { argb: 'FF0F172A' } };
       c1.border = thinBorder;
 
-      const c2 = row.getCell(2);
-      c2.alignment = { vertical: 'middle', horizontal: 'left' };
-      c2.font = { name: 'Times New Roman', size: 11, bold: true, color: { argb: 'FF0F172A' } };
-      c2.border = thinBorder;
+      activeRestColumns.forEach((_, colIdx) => {
+        const startC = 2 + colIdx * 4;
+        const subBg = colIdx % 2 === 0 ? 'FFFFF1F2' : 'FFFFE4E6';
 
-      for (let c = 3; c <= totalRestColsCount; c++) {
-        const cell = row.getCell(c);
-        cell.numFmt = '#,##0.00';
-        cell.alignment = { vertical: 'middle', horizontal: 'right' };
-        cell.font = { name: 'Times New Roman', size: 11, bold: c === 6, color: { argb: 'FF0F172A' } };
-        cell.border = thinBorder;
-        if (c === 6) {
-          cell.fill = {
-            type: 'pattern',
-            pattern: 'solid',
-            fgColor: { argb: 'FFF1F5F9' },
-          };
+        for (let c = startC; c <= startC + 2; c++) {
+          const cell = row.getCell(c);
+          cell.numFmt = '#,##0.00';
+          cell.alignment = { vertical: 'middle', horizontal: 'right' };
+          cell.font = { name: 'Times New Roman', size: 11, color: { argb: 'FF0F172A' } };
+          cell.border = thinBorder;
+          cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: subBg } };
         }
+
+        // Total Column
+        const totCell = row.getCell(startC + 3);
+        totCell.numFmt = '#,##0.00';
+        totCell.alignment = { vertical: 'middle', horizontal: 'right' };
+        totCell.font = { name: 'Times New Roman', size: 11, bold: true, color: { argb: 'FF881337' } };
+        totCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFEE2E2' } };
+        totCell.border = {
+          top: { style: 'thin', color: { argb: 'FF000000' } },
+          bottom: { style: 'thin', color: { argb: 'FF000000' } },
+          left: { style: 'thin', color: { argb: 'FF000000' } },
+          right: { style: 'medium', color: { argb: 'FF881337' } },
+        };
+      });
+
+      // Grand Total Cell
+      const gtCell = row.getCell(gtCol);
+      gtCell.numFmt = '#,##0.00';
+      gtCell.alignment = { vertical: 'middle', horizontal: 'right' };
+      gtCell.font = { name: 'Times New Roman', size: 11, bold: true, color: { argb: 'FF4C0519' } };
+      gtCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFE4E6' } };
+      gtCell.border = {
+        top: { style: 'thin', color: { argb: 'FF000000' } },
+        bottom: { style: 'thin', color: { argb: 'FF000000' } },
+        left: { style: 'thin', color: { argb: 'FF000000' } },
+        right: { style: 'medium', color: { argb: 'FF881337' } },
+      };
+
+      if (!isVat) {
+        const payCol = gtCol + 1;
+        const cashCell = row.getCell(payCol);
+        cashCell.numFmt = '#,##0.00';
+        cashCell.alignment = { vertical: 'middle', horizontal: 'right' };
+        cashCell.font = { name: 'Times New Roman', size: 11, bold: true, color: { argb: 'FF065F46' } };
+        cashCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFECFDF5' } };
+        cashCell.border = thinBorder;
+
+        const visaCell = row.getCell(payCol + 1);
+        visaCell.numFmt = '#,##0.00';
+        visaCell.alignment = { vertical: 'middle', horizontal: 'right' };
+        visaCell.font = { name: 'Times New Roman', size: 11, bold: true, color: { argb: 'FF1E40AF' } };
+        visaCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFEFF6FF' } };
+        visaCell.border = thinBorder;
+
+        const clCell = row.getCell(payCol + 2);
+        clCell.numFmt = '#,##0.00';
+        clCell.alignment = { vertical: 'middle', horizontal: 'right' };
+        clCell.font = { name: 'Times New Roman', size: 11, bold: true, color: { argb: 'FF92400E' } };
+        clCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFFBEB' } };
+        clCell.border = thinBorder;
       }
     });
 
-    const footerRowVals: (string | number)[] = [
-      'TOTAL',
-      'ALL BRANCHES',
-      grandFood,
-      grandBeverage,
-      grandOther,
-      grandTotal,
-    ];
-    if (!isVat) footerRowVals.push(grandCash, grandVisa, grandCoupons);
-    const totalRow = worksheet.addRow(footerRowVals);
+    // Bottom Totals Row
+    const endDataRow = startDataRow + dataGroups.length - 1;
+    const totalsRowVals: any[] = ['TOTAL'];
+    for (let c = 2; c <= totalRestColsCount; c++) {
+      const colLetter = getExcelColName(c);
+      if (endDataRow >= startDataRow) {
+        totalsRowVals.push({
+          formula: `SUM(${colLetter}${startDataRow}:${colLetter}${endDataRow})`,
+        });
+      } else {
+        totalsRowVals.push(0);
+      }
+    }
+
+    const totalRow = worksheet.addRow(totalsRowVals);
     totalRow.height = 32;
 
     const restFooterFill = {
@@ -468,7 +625,7 @@ export async function exportMatrixToExcel({
     };
     const restFooterFont = {
       name: 'Times New Roman',
-      size: 13,
+      size: 12,
       bold: true,
       color: { argb: 'FFFFFFFF' },
     };
@@ -478,11 +635,11 @@ export async function exportMatrixToExcel({
       cell.font = restFooterFont;
       cell.fill = restFooterFill;
       cell.border = doubleBottomBorder;
-      if (c >= 3) {
+      if (c >= 2) {
         cell.numFmt = '#,##0.00';
         cell.alignment = { vertical: 'middle', horizontal: 'right' };
       } else {
-        cell.alignment = { vertical: 'middle', horizontal: 'center' };
+        cell.alignment = centerMiddleAlign;
       }
     }
 
