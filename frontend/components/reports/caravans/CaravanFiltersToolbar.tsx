@@ -581,24 +581,21 @@ export function CaravanFiltersToolbar({
                 ].map(o => ({ id: o.id === 'غير النشطة' ? 'inactive' : o.id, label: o.label }))}
                 value={rideStatusFilter || 'active'}
                 onChange={(val) => onRideStatusFilterChange?.(val as 'active' | 'inactive' | 'all')}
+                activeClassName={theme.activeToggle}
               />
             )}
 
-              {(sectorType === 6 || sectorType === 1) && (
-                <Segmented
-                  options={[
-                    { id: 'all', label: 'الكل' },
-                    { id: 'active', label: 'النشطة' },
-                  ]}
-                  value={rideStatusFilter === 'active' ? 'active' : 'all'}
-                  onChange={(val) => onRideStatusFilterChange?.(val as 'active' | 'inactive' | 'all')}
-                  activeClassName={
-                    sectorType === 1
-                      ? 'bg-rose-600 text-white shadow-xs font-bold'
-                      : 'bg-yellow-600 dark:bg-yellow-500 text-white dark:text-slate-950 shadow-xs font-bold'
-                  }
-                />
-              )}
+            {(sectorType === 6 || sectorType === 1) && (
+              <Segmented
+                options={[
+                  { id: 'all', label: 'الكل' },
+                  { id: 'active', label: 'النشطة' },
+                ]}
+                value={rideStatusFilter === 'active' ? 'active' : 'all'}
+                onChange={(val) => onRideStatusFilterChange?.(val as 'active' | 'inactive' | 'all')}
+                activeClassName={theme.activeToggle}
+              />
+            )}
 
             {sectorType === 5 && (
               <button
@@ -618,7 +615,7 @@ export function CaravanFiltersToolbar({
             options={GRANULARITIES}
             value={granularity}
             onChange={onGranularityChange}
-            activeClassName={sectorType === 1 ? 'bg-[#881337] text-white shadow-xs font-bold' : undefined}
+            activeClassName={theme.activeToggle}
           />
         </div>
 
@@ -632,11 +629,10 @@ export function CaravanFiltersToolbar({
                   type="button"
                   disabled={isLoading}
                   onClick={() => onApplyPreset(p.id)}
-                  className={`rounded-lg px-3.5 py-1.5 text-xs font-semibold tabular-nums tracking-tight transition-all duration-200 ${
-                    isActive
+                  className={`rounded-lg px-3.5 py-1.5 text-xs font-semibold tabular-nums tracking-tight transition-all duration-200 ${isActive
                       ? `${theme.btnActive} shadow-sm font-bold`
                       : 'bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-zinc-800/80 dark:text-zinc-300 dark:hover:bg-zinc-700 dark:hover:text-white'
-                  }`}
+                    }`}
                 >
                   {p.label}
                 </button>
@@ -692,21 +688,17 @@ export function CaravanFiltersToolbar({
             onChange={onSelectedBranchesChange}
           />
 
-            {(sectorType === 6 || sectorType === 1) && (
-              <Segmented
-                options={[
-                  { id: 'all', label: 'الكل' },
-                  { id: 'active', label: 'النشطة' },
-                ]}
-                value={rideStatusFilter === 'active' ? 'active' : 'all'}
-                onChange={(val) => onRideStatusFilterChange?.(val as 'active' | 'inactive' | 'all')}
-                activeClassName={
-                  sectorType === 1
-                    ? 'bg-rose-600 text-white shadow-xs font-bold'
-                    : 'bg-yellow-600 dark:bg-yellow-500 text-white dark:text-slate-950 shadow-xs font-bold'
-                }
-              />
-            )}
+          {(sectorType === 6 || sectorType === 1) && (
+            <Segmented
+              options={[
+                { id: 'all', label: 'الكل' },
+                { id: 'active', label: 'النشطة' },
+              ]}
+              value={rideStatusFilter === 'active' ? 'active' : 'all'}
+              onChange={(val) => onRideStatusFilterChange?.(val as 'active' | 'inactive' | 'all')}
+              activeClassName={theme.activeToggle}
+            />
+          )}
         </div>
       </div>
 

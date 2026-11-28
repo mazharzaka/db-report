@@ -289,13 +289,13 @@ export const MatrixTableRow = React.memo(function MatrixTableRow({
             key={col.branchCode}
             className={`px-4 py-3.5 text-left font-bold text-base lg:text-lg tabular-nums border-l border-slate-200/60 dark:border-zinc-800/40 ${hoverCellClass} transition-colors ${hasValue
               ? val < 0 ? 'text-rose-600 dark:text-rose-400 font-bold' : 'text-slate-900 dark:text-white font-bold'
-              : 'text-slate-400 dark:text-zinc-600 font-normal opacity-40'
+              : 'text-slate-400 dark:text-slate-500 font-normal'
               }`}
           >
             {hasValue ? (
               MONEY_FORMATTER.format(val)
             ) : (
-              <span className="select-none font-normal opacity-40">—</span>
+              <span className="tabular-nums font-normal text-slate-400 dark:text-slate-500">0</span>
             )}
           </td>
         );
