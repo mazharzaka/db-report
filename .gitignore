@@ -48,6 +48,15 @@ Thumbs.db
 .vscode/
 .idea/
 *.swp
+
+# TypeScript build info cache
+*.tsbuildinfo
+tsconfig.tsbuildinfo
+frontend/tsconfig.tsbuildinfo
+
+# Local Gate Adjustments
+data/gate_adjustments.json
+
 *.swo
 
 data/gate_adjustments.json

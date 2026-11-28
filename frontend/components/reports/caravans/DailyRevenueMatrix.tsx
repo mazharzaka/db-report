@@ -3286,16 +3286,16 @@ export const DailyRevenueMatrix = React.memo(function DailyRevenueMatrix({
                 <tr className="bg-[#881337] text-white border-b border-[#70102e] sticky top-0 z-20 shadow-xs">
                   <th
                     rowSpan={2}
-                    className="sticky right-0 z-30 px-4 py-4 font-black text-center align-middle border-l-2 border-rose-400/50 min-w-[150px] bg-[#881337] text-white"
+                    className="sticky right-0 z-30 px-4 py-3.5 font-bold text-center align-middle border-l-2 border-rose-400/50 min-w-[130px] bg-[#881337] text-white text-base"
                   >
                     <div className="flex items-center justify-center gap-2">
                       <Calendar className="h-4 w-4 text-white/80" />
-                      <span className="font-bold text-sm text-white">
+                      <span className="font-bold text-base text-white">
                         {effectiveGranularity === 'summary'
-                          ? 'الفترة'
+                          ? 'Period'
                           : effectiveGranularity === 'month'
-                            ? 'الشهر'
-                            : 'التاريخ'}
+                            ? 'Month'
+                            : 'Date'}
                       </span>
                     </div>
                   </th>
@@ -3305,63 +3305,69 @@ export const DailyRevenueMatrix = React.memo(function DailyRevenueMatrix({
                       <th
                         key={col.code}
                         colSpan={4}
-                        className={`px-4 py-3.5 text-center font-black text-sm sm:text-base tracking-wide text-white border-l-2 border-rose-300 dark:border-rose-400/60 ${isOddRestaurant ? 'bg-[#780e2f]' : 'bg-[#881337]'
+                        className={`px-4 py-3.5 text-center font-bold text-base tracking-wide text-white border-l-2 border-rose-300 dark:border-rose-400/60 ${isOddRestaurant ? 'bg-[#780e2f]' : 'bg-[#881337]'
                           }`}
                       >
                         <div className="flex items-center justify-center gap-2">
                           <Store className="h-4 w-4 text-rose-200" />
-                          <span>{col.name}</span>
+                          <span className="text-base font-bold">{col.name}</span>
                         </div>
                       </th>
                     );
                   })}
                   <th
                     rowSpan={2}
-                    className="px-4 py-4 text-center font-black text-sm sm:text-base text-white bg-[#4c0519] border-l-2 border-rose-900 min-w-[145px] align-middle"
+                    className="px-4 py-3.5 text-center font-extrabold text-base text-white bg-[#4c0519] border-l-2 border-rose-900 min-w-[145px] align-middle"
                   >
-                    الإجمالي العام
+                    Grand Total
                   </th>
                   {calcMode !== 'vat' && (
                     <th
                       colSpan={3}
-                      className="px-3.5 py-3.5 text-center font-black text-sm sm:text-base tracking-wide bg-[#881337] text-white"
+                      className="px-4 py-3.5 text-center font-bold text-base tracking-wide bg-[#70102e] text-white border-l-2 border-rose-400/60"
                     >
-                      طرق التحصيل والسداد (Payment Breakdown)
+                      Payment Methods
                     </th>
                   )}
                 </tr>
                 {/* Row 2: Sub-headers */}
-                  <tr className="bg-[#70102e] text-white border-b border-[#580c24] sticky top-[48px] z-20 shadow-xs text-xs sm:text-sm font-semibold">
-                    {restaurantColumns.map((col, gIdx) => {
-                      const isOddRestaurant = gIdx % 2 === 1;
-                      const subBg = isOddRestaurant ? 'bg-[#600b25]' : 'bg-[#70102e]';
-                      const totBg = isOddRestaurant ? 'bg-[#48081c]' : 'bg-[#580c24]';
-                      return (
-                        <React.Fragment key={`sub-${col.code}`}>
-                          <th className={`px-3.5 py-2.5 text-center border-l border-white/10 min-w-[110px] text-xs sm:text-sm font-semibold text-white ${subBg}`}>
-                            مأكولات
-                          </th>
-                          <th className={`px-3.5 py-2.5 text-center border-l border-white/10 min-w-[110px] text-xs sm:text-sm font-semibold text-white ${subBg}`}>
-                            مشروبات
-                          </th>
-                          <th className={`px-3.5 py-2.5 text-center border-l border-white/10 min-w-[110px] text-xs sm:text-sm font-semibold text-white ${subBg}`}>
-                            أخرى
-                          </th>
-                          <th className={`px-3.5 py-2.5 text-center font-black border-l-2 border-rose-300 dark:border-rose-400/60 min-w-[125px] text-xs sm:text-sm text-white ${totBg}`}>
-                            الإجمالي
-                          </th>
-                        </React.Fragment>
-                      );
-                    })}
-                    {calcMode !== 'vat' && (
-                      <>
-                        <th className="px-3.5 py-2.5 text-center border-l border-white/10 min-w-[115px] text-xs sm:text-sm font-semibold bg-[#70102e] text-white">نقدي (Cash)</th>
-                        <th className="px-3.5 py-2.5 text-center border-l border-white/10 min-w-[115px] text-xs sm:text-sm font-semibold bg-[#70102e] text-white">فيزا (Visa)</th>
-                        <th className="px-3.5 py-2.5 text-center min-w-[115px] text-xs sm:text-sm font-semibold bg-[#70102e] text-white">كوبونات (C.L)</th>
-                      </>
-                    )}
-                  </tr>
-                </>
+                <tr className="bg-[#70102e] text-white border-b border-[#580c24] sticky top-[48px] z-20 shadow-xs text-sm font-bold">
+                  {restaurantColumns.map((col, gIdx) => {
+                    const isOddRestaurant = gIdx % 2 === 1;
+                    const subBg = isOddRestaurant ? 'bg-[#600b25]' : 'bg-[#70102e]';
+                    const totBg = isOddRestaurant ? 'bg-[#48081c]' : 'bg-[#580c24]';
+                    return (
+                      <React.Fragment key={`sub-${col.code}`}>
+                        <th className={`px-3.5 py-3 text-center border-l border-white/10 min-w-[115px] text-sm font-bold text-white ${subBg}`}>
+                          Food
+                        </th>
+                        <th className={`px-3.5 py-3 text-center border-l border-white/10 min-w-[115px] text-sm font-bold text-white ${subBg}`}>
+                          Bev
+                        </th>
+                        <th className={`px-3.5 py-3 text-center border-l border-white/10 min-w-[115px] text-sm font-bold text-white ${subBg}`}>
+                          Other
+                        </th>
+                        <th className={`px-4 py-3 text-center font-bold border-l-2 border-rose-300 dark:border-rose-400/60 min-w-[125px] text-sm text-white ${totBg}`}>
+                          Total
+                        </th>
+                      </React.Fragment>
+                    );
+                  })}
+                  {calcMode !== 'vat' && (
+                    <>
+                      <th className="px-3.5 py-3 text-center border-l border-white/10 min-w-[125px] text-sm font-bold bg-[#70102e] text-emerald-300 border-r-2 border-r-rose-400/60">
+                        Cash
+                      </th>
+                      <th className="px-3.5 py-3 text-center border-l border-white/10 min-w-[125px] text-sm font-bold bg-[#70102e] text-blue-300">
+                        Visa
+                      </th>
+                      <th className="px-3.5 py-3 text-center min-w-[125px] text-sm font-bold bg-[#70102e] text-amber-300">
+                        C.L
+                      </th>
+                    </>
+                  )}
+                </tr>
+              </>
                 ) : sectorType === 5 ? (
                 <>
                   {/* Row 1: Gate Headers */}
@@ -3655,8 +3661,8 @@ export const DailyRevenueMatrix = React.memo(function DailyRevenueMatrix({
                     </tr>
                   ) : (
                     <tr className="border-b border-slate-200 bg-white dark:bg-zinc-900 hover:bg-rose-50/40 dark:hover:bg-rose-950/20 transition-colors font-bold">
-                      <td className="sticky right-0 z-10 px-4 py-3.5 font-sans text-sm font-bold text-slate-800 dark:text-zinc-200 border-l-2 border-rose-300 dark:border-rose-900/60 bg-inherit whitespace-nowrap text-center">
-                        الفترة الإجمالية (Summary)
+                      <td className="sticky right-0 z-10 px-4 py-3.5 font-sans text-[15px] font-semibold text-slate-800 dark:text-zinc-200 border-l-2 border-rose-300 dark:border-rose-900/60 bg-inherit whitespace-nowrap text-center min-w-[130px]">
+                        Period Summary
                       </td>
                       {restaurantColumns.map((col, gIdx) => {
                         const isOddRestaurant = gIdx % 2 === 1;
@@ -3671,38 +3677,38 @@ export const DailyRevenueMatrix = React.memo(function DailyRevenueMatrix({
 
                         return (
                           <React.Fragment key={`sum-${col.code}`}>
-                              <td className={`px-3.5 py-3 text-left border-l border-slate-200/50 dark:border-zinc-800/50 font-mono text-xs ${subBg} ${food !== 0 ? 'text-slate-900 dark:text-white font-bold' : 'text-slate-400 dark:text-zinc-600'}`}>
-                                {food !== 0 ? fmtMoney(food) : '-'}
-                              </td>
-                                <td className={`px-3.5 py-3 text-left border-l border-slate-200/50 dark:border-zinc-800/50 font-mono text-xs ${subBg} ${bev !== 0 ? 'text-slate-900 dark:text-white font-bold' : 'text-slate-400 dark:text-zinc-600'}`}>
-                                  {bev !== 0 ? fmtMoney(bev) : '-'}
-                                </td>
-                                  <td className={`px-3.5 py-3 text-left border-l border-slate-200/50 dark:border-zinc-800/50 font-mono text-xs ${subBg} ${other !== 0 ? 'text-slate-900 dark:text-white font-bold' : 'text-slate-400 dark:text-zinc-600'}`}>
-                                    {other !== 0 ? fmtMoney(other) : '-'}
-                                  </td>
-                                    <td className={`px-3.5 py-3 text-left border-l-2 border-slate-300 dark:border-slate-600 font-mono text-xs ${totBg} ${total !== 0 ? 'text-slate-900 dark:text-white' : 'text-slate-400 dark:text-zinc-600'}`}>
-                                      {total !== 0 ? fmtMoney(total) : '-'}
-                                    </td>
-                                  </React.Fragment>
-                                  );
-                    })}
-                                    <td className="px-4 py-3 text-left border-l-2 border-r-2 border-rose-400/60 dark:border-rose-600/60 font-extrabold text-rose-900 dark:text-rose-100 bg-rose-600/15 dark:bg-rose-500/30 font-mono text-[15px]">
-                                      {fmtMoney(restaurantData.grandTotal)}
-                                    </td>
-                                    {calcMode !== 'vat' && (
-                      <>
-                                          <td className="px-3.5 py-3 text-left border-l border-slate-200/60 dark:border-zinc-800/60 text-slate-800 dark:text-zinc-200 font-bold font-mono text-xs">
-                                            {fmtMoney(restaurantData.grandCash)}
-                                          </td>
-                                            <td className="px-3.5 py-3 text-left border-l border-slate-200/60 dark:border-zinc-800/60 text-slate-800 dark:text-zinc-200 font-bold font-mono text-xs">
-                                              {fmtMoney(restaurantData.grandVisa)}
-                                            </td>
-                                              <td className="px-3.5 py-3 text-left text-slate-800 dark:text-zinc-200 font-bold font-mono text-xs">
-                                                {fmtMoney(restaurantData.grandCL)}
-                                              </td>
-                                            </>
-                    )}
-                                          </tr>
+                            <td className={`px-4 py-3.5 text-left border-l border-slate-200/50 dark:border-zinc-800/50 font-mono text-[15px] font-semibold tabular-nums whitespace-nowrap min-w-[115px] ${subBg} ${food !== 0 ? 'text-slate-900 dark:text-white' : 'text-slate-400 dark:text-zinc-600'}`}>
+                              {food !== 0 ? fmtMoney(food) : '-'}
+                            </td>
+                            <td className={`px-4 py-3.5 text-left border-l border-slate-200/50 dark:border-zinc-800/50 font-mono text-[15px] font-semibold tabular-nums whitespace-nowrap min-w-[115px] ${subBg} ${bev !== 0 ? 'text-slate-900 dark:text-white' : 'text-slate-400 dark:text-zinc-600'}`}>
+                              {bev !== 0 ? fmtMoney(bev) : '-'}
+                            </td>
+                            <td className={`px-4 py-3.5 text-left border-l border-slate-200/50 dark:border-zinc-800/50 font-mono text-[15px] font-semibold tabular-nums whitespace-nowrap min-w-[115px] ${subBg} ${other !== 0 ? 'text-slate-900 dark:text-white' : 'text-slate-400 dark:text-zinc-600'}`}>
+                              {other !== 0 ? fmtMoney(other) : '-'}
+                            </td>
+                            <td className={`px-4 py-3.5 text-left border-l-2 border-slate-300 dark:border-slate-600 font-mono text-base font-bold tabular-nums whitespace-nowrap min-w-[125px] ${totBg} ${total !== 0 ? 'text-slate-900 dark:text-white' : 'text-slate-400 dark:text-zinc-600'}`}>
+                              {total !== 0 ? fmtMoney(total) : '-'}
+                            </td>
+                          </React.Fragment>
+                        );
+                      })}
+                      <td className="px-4 py-3.5 text-left border-l-2 border-r-2 border-rose-400/60 dark:border-rose-600/60 font-extrabold text-rose-950 dark:text-rose-100 bg-rose-600/15 dark:bg-rose-500/30 font-mono text-[17px] tabular-nums whitespace-nowrap min-w-[145px]">
+                        {fmtMoney(restaurantData.grandTotal)}
+                      </td>
+                      {calcMode !== 'vat' && (
+                        <>
+                          <td className="px-4 py-3.5 text-left border-l border-slate-200/60 dark:border-zinc-800/60 border-r-2 border-r-slate-300 dark:border-r-slate-600 text-emerald-800 dark:text-emerald-300 bg-emerald-50/60 dark:bg-emerald-950/25 font-bold font-mono text-[15px] tabular-nums whitespace-nowrap min-w-[125px]">
+                            {fmtMoney(restaurantData.grandCash)}
+                          </td>
+                          <td className="px-4 py-3.5 text-left border-l border-slate-200/60 dark:border-zinc-800/60 text-blue-800 dark:text-blue-300 bg-blue-50/60 dark:bg-blue-950/25 font-bold font-mono text-[15px] tabular-nums whitespace-nowrap min-w-[125px]">
+                            {fmtMoney(restaurantData.grandVisa)}
+                          </td>
+                          <td className="px-4 py-3.5 text-left text-amber-800 dark:text-amber-300 bg-amber-50/60 dark:bg-amber-950/25 font-bold font-mono text-[15px] tabular-nums whitespace-nowrap min-w-[125px]">
+                            {fmtMoney(restaurantData.grandCL)}
+                          </td>
+                        </>
+                      )}
+                    </tr>
                                           )
                                           ) : effectiveGranularity === 'month' ? (
                                           // 2. Month Granularity: Flat Horizontal Rows per Month

@@ -66,6 +66,15 @@ export interface LocalBranchStat {
 export type ItemRow = { name: string; qty?: number; revenue?: number;[k: string]: any };
 export type OutletRow = { name: string;[k: string]: any };
 
+export const getCairoDate = (): Date => {
+  try {
+    const str = new Date().toLocaleString('en-US', { timeZone: 'Africa/Cairo' });
+    return new Date(str);
+  } catch {
+    return new Date();
+  }
+};
+
 export const ymd = (d: Date): string => {
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, '0');
@@ -85,7 +94,7 @@ export const parseYmd = (s: string): Date => {
 };
 
 export function presetRange(id: Exclude<PresetId, 'custom'>): { start: string; end: string } {
-  const now = new Date();
+  const now = getCairoDate();
   switch (id) {
     case 'today':
       return { start: ymd(now), end: ymd(now) };
@@ -105,6 +114,17 @@ export function presetRange(id: Exclude<PresetId, 'custom'>): { start: string; e
     default:
       return { start: ymd(now), end: ymd(now) };
   }
+}
+
+export function matchPreset(s: string, e: string): PresetId {
+  const presets: Exclude<PresetId, 'custom'>[] = ['today', 'yesterday', 'month', 'quarter', 'year'];
+  for (const p of presets) {
+    const r = presetRange(p);
+    if (r.start === s && r.end === e) {
+      return p;
+    }
+  }
+  return 'custom';
 }
 
 export function getComparisonPresetDates(id: Exclude<CompPresetId, 'custom'>): {
@@ -312,6 +332,9 @@ export function useSectorDashboard(sector: SectorConfig = DEFAULT_SECTOR) {
   const [end, setEnd] = useState(initial.end);
   const [granularity, setGranularity] = useState<Granularity>('day');
 
+  // Hydration protection gate: prevents premature fetches with default dates when URL has custom filters
+  const [isUrlInitialized, setIsUrlInitialized] = useState(false);
+
   // Period Comparison State
   const initialComp = useMemo(() => getComparisonPresetDates('month_vs_last'), []);
   const [compPreset, setCompPreset] = useState<CompPresetId>('month_vs_last');
@@ -460,6 +483,102 @@ export function useSectorDashboard(sector: SectorConfig = DEFAULT_SECTOR) {
     setSpendPerGuest(0);
   }, []);
 
+  // 1. Initial URL hydration on client mount & popstate listener
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const readAndApplyUrl = () => {
+      const params = new URLSearchParams(window.location.search);
+      const urlPreset = params.get('preset') as PresetId | null;
+      const urlStart = params.get('start');
+      const urlEnd = params.get('end');
+      const urlGran = params.get('granularity') as Granularity | null;
+      const urlBranches = params.get('branches');
+      const urlFacility = params.get('facility') as FacilityType | null;
+
+      let targetPreset: PresetId = 'yesterday';
+      let targetStart = '';
+      let targetEnd = '';
+
+      if (urlPreset && ['today', 'yesterday', 'month', 'quarter', 'year'].includes(urlPreset)) {
+        targetPreset = urlPreset;
+        const r = presetRange(urlPreset as Exclude<PresetId, 'custom'>);
+        targetStart = urlStart || r.start;
+        targetEnd = urlEnd || r.end;
+      } else if (urlStart && urlEnd) {
+        targetStart = urlStart;
+        targetEnd = urlEnd;
+        targetPreset = urlPreset === 'custom' ? 'custom' : matchPreset(urlStart, urlEnd);
+      } else {
+        const r = presetRange('yesterday');
+        targetPreset = 'yesterday';
+        targetStart = r.start;
+        targetEnd = r.end;
+      }
+
+      setPreset(targetPreset);
+      setStart(targetStart);
+      setEnd(targetEnd);
+
+      if (urlGran && ['day', 'month', 'summary'].includes(urlGran)) {
+        setGranularity(urlGran);
+      }
+
+      if (urlBranches !== null) {
+        const bList = urlBranches ? urlBranches.split(',').filter(Boolean) : [];
+        setSelected(bList);
+      }
+
+      if (sector.type === 4 && urlFacility && ['all', 'caravans', 'shops'].includes(urlFacility)) {
+        setFacilityType(urlFacility);
+      }
+
+      setIsUrlInitialized(true);
+    };
+
+    readAndApplyUrl();
+
+    const handlePopState = () => {
+      readAndApplyUrl();
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [sector.type]);
+
+  // 2. URL Sync: Keep URL query params in lockstep with dashboard state (preserving other params like adj)
+  useEffect(() => {
+    if (!isUrlInitialized || typeof window === 'undefined') return;
+
+    const currentParams = new URLSearchParams(window.location.search);
+    const newParams = new URLSearchParams(currentParams);
+
+    newParams.set('preset', preset);
+    newParams.set('start', start);
+    newParams.set('end', end);
+    newParams.set('granularity', granularity);
+
+    if (selected.length > 0) {
+      newParams.set('branches', selected.join(','));
+    } else {
+      newParams.delete('branches');
+    }
+
+    if (sector.type === 4 && facilityType !== 'all') {
+      newParams.set('facility', facilityType);
+    } else {
+      newParams.delete('facility');
+    }
+
+    const newSearch = newParams.toString();
+    const currentSearch = currentParams.toString();
+
+    if (newSearch !== currentSearch) {
+      const newUrl = `${window.location.pathname}${newSearch ? `?${newSearch}` : ''}`;
+      window.history.replaceState(null, '', newUrl);
+    }
+  }, [isUrlInitialized, preset, start, end, granularity, selected, facilityType, sector.type]);
+
   // Reset selection, facilityType, and branch options ONLY when sector changes (not on every date change)
   useEffect(() => {
     setSelected([]);
@@ -484,16 +603,27 @@ export function useSectorDashboard(sector: SectorConfig = DEFAULT_SECTOR) {
     };
   }, [sector.type, resetStaleData]);
 
-const applyPreset = useCallback(
-  (id: Exclude<PresetId, 'custom'>) => {
-    resetStaleData();
-    const r = presetRange(id);
-    setPreset(id);
-    setStart(r.start);
-    setEnd(r.end);
-  },
-  [resetStaleData]
-);
+  const applyPreset = useCallback(
+    (id: Exclude<PresetId, 'custom'>) => {
+      resetStaleData();
+      const r = presetRange(id);
+      setPreset(id);
+      setStart(r.start);
+      setEnd(r.end);
+    },
+    [resetStaleData]
+  );
+
+  const handleDateChange = useCallback(
+    (newStart: string, newEnd: string) => {
+      resetStaleData();
+      setStart(newStart);
+      setEnd(newEnd);
+      const matched = matchPreset(newStart, newEnd);
+      setPreset(matched);
+    },
+    [resetStaleData]
+  );
 
 const applyCompPreset = useCallback((id: Exclude<CompPresetId, 'custom'>) => {
   const dates = getComparisonPresetDates(id);
@@ -567,12 +697,14 @@ const load = useCallback(async () => {
 }, [start, end, granularity, effectiveSelectedKey, sector.type]);
 
 useEffect(() => {
+  if (!isUrlInitialized) return;
   void load();
   return () => abortRef.current?.abort();
-}, [load, refreshTick]);
+}, [load, refreshTick, isUrlInitialized]);
 
 // Operational items & outlets summary
 useEffect(() => {
+  if (!isUrlInitialized) return;
   const ctrl = new AbortController();
   setItemsLoading(true);
   setItemsError(null);
@@ -632,7 +764,7 @@ useEffect(() => {
     });
 
   return () => ctrl.abort();
-}, [start, end, effectiveSelectedKey, itemMetric, itemMode, refreshTick, sector.type]);
+}, [start, end, effectiveSelectedKey, itemMetric, itemMode, refreshTick, sector.type, isUrlInitialized]);
 
 // Period-over-Period comparison loader
 const loadComparison = useCallback(async () => {
@@ -664,10 +796,11 @@ const loadComparison = useCallback(async () => {
 }, [compStartA, compEndA, compStartB, compEndB, effectiveSelectedKey, sector.type]);
 
 useEffect(() => {
+  if (!isUrlInitialized) return;
   if (viewMode === 'comparison') {
     void loadComparison();
   }
-}, [viewMode, loadComparison, refreshTick]);
+}, [viewMode, loadComparison, refreshTick, isUrlInitialized]);
 
 // Map click toggle: single branch filter (click again to clear)
 const selectFromMap = useCallback((code: string) => {
@@ -792,6 +925,8 @@ return {
   granularity,
   setGranularity,
   applyPreset,
+  handleDateChange,
+  isUrlInitialized,
   resetStaleData,
 
   // Comparison Filters & State

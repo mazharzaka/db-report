@@ -318,12 +318,7 @@ export function SectorDashboard({ sector }: SectorDashboardProps) {
             onApplyPreset={dash.applyPreset}
             startDate={dash.start}
             endDate={dash.end}
-            onDateChange={(newStart, newEnd) => {
-              dash.resetStaleData();
-              dash.setStart(newStart);
-              dash.setEnd(newEnd);
-              dash.setPreset("custom");
-            }}
+            onDateChange={dash.handleDateChange}
             isLoading={dash.isLoading}
             compPreset={dash.compPreset}
             onApplyCompPreset={dash.applyCompPreset}
