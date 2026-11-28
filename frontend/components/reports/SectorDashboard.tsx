@@ -425,10 +425,7 @@ export function SectorDashboard({ sector }: SectorDashboardProps) {
             <div className="grid grid-cols-1 gap-4 md:grid-cols-3 break-inside-avoid">
               {/* Card 1: Total Revenue (شامل الضريبة) */}
               <div
-                className={`flex flex-col justify-between rounded-xl p-5 shadow-sm backdrop-blur-md transition border-t-2 ${sector.type === 6
-                  ? 'border border-slate-200/80 bg-slate-50/50 ring-1 ring-slate-500/10 hover:border-slate-300 dark:border-slate-800 dark:bg-slate-900/40 dark:ring-slate-400/10 border-t-slate-700 dark:border-t-slate-500'
-                  : `border ${sector.theme.kpiCard.cardBorder} ${sector.theme.kpiCard.cardBg} ring-1 ${sector.theme.kpiCard.cardRing} ${sector.theme.kpiCard.cardHover} ${sector.theme.borderAccent}`
-                  }`}
+                className={`flex flex-col justify-between rounded-xl p-5 shadow-sm backdrop-blur-md transition border-t-2 border ${sector.theme.kpiCard.cardBorder} ${sector.theme.kpiCard.cardBg} ring-1 ${sector.theme.kpiCard.cardRing} ${sector.theme.kpiCard.cardHover} ${sector.theme.borderAccent}`}
               >
                 <div className="flex items-start justify-between">
                   <div>
@@ -440,10 +437,7 @@ export function SectorDashboard({ sector }: SectorDashboardProps) {
                     </p>
                   </div>
                   <div
-                    className={`flex h-11 w-11 items-center justify-center rounded-xl shadow-2xs ${sector.type === 6
-                      ? 'bg-slate-200 text-slate-800 dark:bg-slate-800 dark:text-slate-200'
-                      : sector.theme.iconBox
-                      }`}
+                    className={`flex h-11 w-11 items-center justify-center rounded-xl shadow-2xs ${sector.theme.iconBox}`}
                   >
                     <DollarSign className="h-5 w-5" />
                   </div>
@@ -460,20 +454,14 @@ export function SectorDashboard({ sector }: SectorDashboardProps) {
                     />
                   </div>
                   <span
-                    className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${sector.type === 6
-                      ? 'bg-slate-200 text-slate-800 dark:bg-slate-800 dark:text-slate-200'
-                      : sector.theme.kpiCard.badge
-                      }`}
+                    className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${sector.theme.kpiCard.badge}`}
                   >
                     الإجمالي
                   </span>
                 </div>
 
                 <div
-                  className={`mt-3 flex items-center justify-between border-t pt-2.5 text-xs text-slate-500 dark:text-zinc-400 ${sector.type === 6
-                    ? 'border-slate-200 dark:border-slate-800'
-                    : sector.theme.kpiCard.divider
-                    }`}
+                  className={`mt-3 flex items-center justify-between border-t pt-2.5 text-xs text-slate-500 dark:text-zinc-400 ${sector.theme.kpiCard.divider}`}
                 >
                   <span>محسوب وفق المنافذ المعروضة</span>
                   <span className="font-mono tabular-nums">
@@ -483,399 +471,379 @@ export function SectorDashboard({ sector }: SectorDashboardProps) {
               </div>
 
               {/* Card 2: Net Sales (الصافي) */}
-              <div className={`flex flex-col justify-between rounded-xl p-5 shadow-sm backdrop-blur-md transition border-t-2 ${sector.type === 6
-                ? 'border border-slate-200/80 bg-slate-50/50 ring-1 ring-slate-500/10 hover:border-slate-300 dark:border-slate-800 dark:bg-slate-900/40 dark:ring-slate-400/10 border-t-slate-700 dark:border-t-slate-500'
-                : 'border border-emerald-200/80 bg-emerald-50/50 ring-1 ring-emerald-500/10 hover:border-emerald-300 dark:border-emerald-900/40 dark:bg-emerald-950/20 dark:ring-emerald-400/10 border-t-emerald-500 dark:border-t-emerald-400'
-                }`}>
-                <div className="flex items-start justify-between">
-                  <div>
-                    <span className="text-sm font-bold text-slate-800 dark:text-zinc-100">
-                      الصافي (Net Sales)
-                    </span>
-                    <p className="mt-0.5 text-xs text-slate-500 dark:text-zinc-400">
-                      Retail (Total / 1.14)
-                    </p>
-                  </div>
-                  <div className={`flex h-11 w-11 items-center justify-center rounded-xl shadow-2xs ${sector.type === 6
-                    ? 'bg-slate-200 text-slate-800 dark:bg-slate-800 dark:text-slate-200'
-                    : 'bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400'
-                    }`}>
-                    <Receipt className="h-5 w-5" />
-                  </div>
-                </div>
-
-                <div className="mt-4 flex items-baseline justify-between gap-2">
-                  <div
-                    className="text-3xl font-extrabold tracking-tight font-mono tabular-nums text-zinc-900 dark:text-white"
-                    dir="ltr"
-                  >
-                    <Money
-                      value={financialTotals.retail}
-                      symbolClassName="text-sm opacity-60 font-normal mr-1.5 select-none"
-                    />
-                  </div>
-                  <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${sector.type === 6
-                    ? 'bg-slate-200 text-slate-800 dark:bg-slate-800 dark:text-slate-200'
-                    : 'bg-emerald-100/80 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300'
-                    }`}>
-                    قبل الضريبة
-                  </span>
-                </div>
-
-                <div className={`mt-3 flex items-center justify-between border-t pt-2.5 text-xs text-slate-500 dark:text-zinc-400 ${sector.type === 6 ? 'border-slate-200 dark:border-slate-800' : 'border-emerald-100/80 dark:border-emerald-900/30'
-                  }`}>
-                  <span>صافي الدخل التشغيلي للمبيعات</span>
-                  <span className="font-mono tabular-nums">87.7%</span>
-                </div>
-              </div>
-
-              {/* Card 3: VAT 14% (ضريبة القيمة المضافة) */}
-              <div className={`flex flex-col justify-between rounded-xl p-5 shadow-sm backdrop-blur-md transition border-t-2 ${sector.type === 6
-                ? 'border border-slate-200/80 bg-slate-50/50 ring-1 ring-slate-500/10 hover:border-slate-300 dark:border-slate-800 dark:bg-slate-900/40 dark:ring-slate-400/10 border-t-slate-700 dark:border-t-slate-500'
-                : 'border border-amber-200/80 bg-amber-50/50 ring-1 ring-amber-500/10 hover:border-amber-300 dark:border-amber-900/40 dark:bg-amber-950/20 dark:ring-amber-400/10 border-t-amber-500 dark:border-t-amber-400'
-                }`}>
-                <div className="flex items-start justify-between">
-                  <div>
-                    <span className="text-sm font-bold text-slate-800 dark:text-zinc-100">
-                      ضريبة القيمة المضافة (VAT 14%)
-                    </span>
-                    <p className="mt-0.5 text-xs text-slate-500 dark:text-zinc-400">
-                      Total - Net
-                    </p>
-                  </div>
-                  <div className={`flex h-11 w-11 items-center justify-center rounded-xl shadow-2xs ${sector.type === 6
-                    ? 'bg-slate-200 text-slate-800 dark:bg-slate-800 dark:text-slate-200'
-                    : 'bg-amber-500/10 text-amber-600 dark:bg-amber-500/20 dark:text-amber-400'
-                    }`}>
-                    <Percent className="h-5 w-5" />
-                  </div>
-                </div>
-
-                <div className="mt-4 flex items-baseline justify-between gap-2">
-                  <div
-                    className="text-3xl font-extrabold tracking-tight font-mono tabular-nums text-zinc-900 dark:text-white"
-                    dir="ltr"
-                  >
-                    <Money
-                      value={financialTotals.vat}
-                      symbolClassName="text-sm opacity-60 font-normal mr-1.5 select-none"
-                    />
-                  </div>
-                  <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${sector.type === 6
-                    ? 'bg-slate-200 text-slate-800 dark:bg-slate-800 dark:text-slate-200'
-                    : 'bg-amber-100/80 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300'
-                    }`}>
-                    14% مستحقة
-                  </span>
-                </div>
-
-                <div className={`mt-3 flex items-center justify-between border-t pt-2.5 text-xs text-slate-500 dark:text-zinc-400 ${sector.type === 6 ? 'border-slate-200 dark:border-slate-800' : 'border-amber-100/80 dark:border-amber-900/30'
-                  }`}>
-                  <span>الضريبة المحصلة للإقرار المالي</span>
-                  <span className="font-mono tabular-nums">14%</span>
-                </div>
-              </div>
-            </div>
-
-            {/* --------------------------------------------------------------------- */}
-            {/* DAILY REVENUE MATRIX (Excel-Like Dynamic Pivot)                       */}
-            {/* --------------------------------------------------------------------- */}
-            <div className="break-inside-avoid">
-              <DailyRevenueMatrix
-                rows={dash.records}
-                loading={dash.loading}
-                facilityType={dash.facilityType}
-                onFacilityTypeChange={dash.setFacilityType}
-                rideStatusFilter={rideStatusFilter}
-                onRideStatusFilterChange={setRideStatusFilter}
-                startDate={dash.start}
-                endDate={dash.end}
-                sectorType={sector.type}
-                sectorLabel={sector.label}
-                sectorId={sector.id}
-                sectorTheme={sector.theme}
-                granularity={dash.granularity}
-              />
-            </div>
-
-            {/* --------------------------------------------------------------------- */}
-            {/* ROW 1: DYNAMICS (Branch Comparison & Conditional Revenue Trend)       */}
-            {/* --------------------------------------------------------------------- */}
-            {(() => {
-              const isSingleDay = dash.start === dash.end;
-
-              return (
-                <div
-                  className={`grid grid-cols-1 gap-4 transition-opacity lg:grid-cols-12 break-inside-avoid ${dash.loading ? "opacity-60" : ""
-                    } ${!dash.printConfig.charts ? "print:hidden" : ""}`}
-                >
-                  <Card
-                    className={
-                      isSingleDay
-                        ? "col-span-full lg:col-span-12"
-                        : "col-span-12 lg:col-span-6"
-                    }
-                    title={`مقارنة أداء منافذ ${sector.label}`}
-                    subtitle={
-                      isSingleDay
-                        ? `جميع منافذ القطاع (${dash.comparisonStats.length} منفذ) مرتبة حسب ${dash.barMetric === "revenue"
-                          ? "الإجمالي الشامل"
-                          : "عدد العمليات"
-                        }`
-                        : `أعلى ${Math.min(
-                          dash.comparisonStats.length,
-                          10,
-                        )} منافذ مرتبة حسب ${dash.barMetric === "revenue"
-                          ? "الإجمالي الشامل"
-                          : "عدد العمليات"
-                        }`
-                    }
-                    action={
-                      <Segmented
-                        options={[
-                          { id: "revenue", label: "الإجمالي الشامل" },
-                          { id: "orders", label: "عدد الشيكات" },
-                        ]}
-                        value={dash.barMetric}
-                        onChange={dash.setBarMetric}
-                      />
-                    }
-                  >
-                    <div className="h-[360px]" dir="ltr">
-                      {dash.comparisonStats.length > 0 ? (
-                        <BranchComparisonChart
-                          stats={dash.comparisonStats}
-                          metric={dash.barMetric}
-                          isSingleDay={isSingleDay}
-                          chartHex={sector.theme.chartHex}
-                        />
-                      ) : (
-                        <div className="flex h-full items-center justify-center text-sm text-zinc-400">
-                          لا توجد بيانات
-                        </div>
-                      )}
+                <div className="flex flex-col justify-between rounded-xl p-5 shadow-sm backdrop-blur-md transition border-t-2 border border-emerald-200/80 bg-emerald-50/50 ring-1 ring-emerald-500/10 hover:border-emerald-300 dark:border-emerald-900/40 dark:bg-emerald-950/20 dark:ring-emerald-400/10 border-t-emerald-500 dark:border-t-emerald-400">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <span className="text-sm font-bold text-slate-800 dark:text-zinc-100">
+                        الصافي (Net Sales)
+                      </span>
+                      <p className="mt-0.5 text-xs text-slate-500 dark:text-zinc-400">
+                        Retail (Total / 1.14)
+                      </p>
                     </div>
-                  </Card>
+                      <div className="flex h-11 w-11 items-center justify-center rounded-xl shadow-2xs bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400">
+                        <Receipt className="h-5 w-5" />
+                      </div>
+                    </div>
 
-                  {!isSingleDay && (
-                    <Card
-                      className="col-span-12 lg:col-span-6"
-                      title="اتجاه الإيرادات عبر الوقت"
-                      subtitle="مسار المبيعات مقسّماً (الإجمالي الشامل، النقدية، الفيزا)"
-                    >
-                      <div className="h-[360px]" dir="ltr">
-                        <RevenueTrendChart
-                          points={dash.trend}
-                          startDate={dash.start}
-                          endDate={dash.end}
+                    <div className="mt-4 flex items-baseline justify-between gap-2">
+                      <div
+                        className="text-3xl font-extrabold tracking-tight font-mono tabular-nums text-zinc-900 dark:text-white"
+                        dir="ltr"
+                      >
+                        <Money
+                          value={financialTotals.retail}
+                          symbolClassName="text-sm opacity-60 font-normal mr-1.5 select-none"
                         />
                       </div>
-                    </Card>
-                  )}
-                </div>
-              );
-            })()}
-
-            {/* --------------------------------------------------------------------- */}
-            {/* ROW 3: FINANCIAL CONTROL (Active Voids Alert & Master Ledger)         */}
-            {/* --------------------------------------------------------------------- */}
-            {sector.type !== 5 && (
-              <div
-                className={`space-y-4 print:space-y-3 print:break-inside-auto ${!dash.printConfig.table ? "print:hidden" : ""
-                  }`}
-              >
-                {/* Active Voids Alert Widget */}
-                <VoidsAlertWidget rows={dash.records} />
-
-                {/* Master Financial Ledger */}
-                <CaravanGrid
-                  rows={dash.records}
-                  showPeriod={dash.granularity !== "summary"}
-                  loading={dash.loading}
-                  singularLabel={sector.singularLabel}
-                  pluralLabel={sector.pluralLabel}
-                  sectorType={sector.type}
-                />
-              </div>
-            )}
-
-            {/* --------------------------------------------------------------------- */}
-            {/* ROW 4: COLLAPSIBLE ANALYTICAL DRAWER (Lazy-Mounted on Open)           */}
-            {/* --------------------------------------------------------------------- */}
-            <div className="rounded-xl border border-slate-200/80 bg-white p-6 shadow-sm ring-1 ring-slate-900/5 backdrop-blur-md transition-all duration-200 dark:border-zinc-800/80 dark:bg-zinc-900/60 dark:ring-white/10 print:hidden">
-              <button
-                type="button"
-                onClick={() => setDrawerOpen((o) => !o)}
-                aria-expanded={drawerOpen}
-                className="flex w-full cursor-pointer items-center justify-between text-right text-base font-bold text-slate-800 dark:text-zinc-200 select-none"
-              >
-                <div className="flex items-center gap-3">
-                  <div
-                    className={`flex h-9 w-9 items-center justify-center rounded-lg ${sector.theme.iconBox}`}
-                  >
-                    <Sparkles className="h-4 w-4" />
-                  </div>
-                  <div>
-                    <span className="text-base font-bold text-slate-900 dark:text-white">
-                      تحليلات إضافية وتركيبية
-                    </span>
-                    <p className="text-xs font-normal text-slate-500 dark:text-zinc-400 mt-0.5">
-                      تتضمن: سلوك الإنفاق، كفاءة التشغيل، الأفضل مبيعاً والراكد،
-                      تحليل مبيعات الأصناف، والمزيد
-                    </p>
-                  </div>
-                </div>
-                <div
-                  className={`flex items-center gap-2 text-xs font-semibold text-slate-500 group-open:${sector.theme.accentText} dark:text-zinc-400`}
-                >
-                  <span className="hidden sm:inline">عرض / إخفاء</span>
-                  <ChevronDown className="h-5 w-5 transition-transform duration-300 group-open:rotate-180" />
-                </div>
-              </button>
-
-              {drawerOpen && (
-                <div className="mt-6 space-y-6 border-t border-slate-100 pt-6 dark:border-zinc-800/80">
-                  {/* 1. Top Macro KPIs (إجمالي الإيرادات، الكميات، الزوار، والمرتجعات) */}
-                  <div className="break-inside-avoid">
-                    <Suspense fallback={<KPIsSkeleton />}>
-                      <ExecutiveKpisSection
-                        startDate={dash.start}
-                        endDate={dash.end}
-                        selectedBranches={dash.effectiveBranches}
-                        summary={dash.summary}
-                        trend={dash.trend}
-                        records={dash.records}
-                        guests={dash.guests}
-                        refreshTick={dash.refreshTick}
-                      />
-                    </Suspense>
-                  </div>
-
-                  {/* 2. Spend Behavior & Operational Efficiency (سلوك الإنفاق وكفاءة التشغيل) */}
-                  <div className="break-inside-avoid">
-                    <VisitorOutletPerformanceRow
-                      totalRevenue={dash.summary?.totalSales ?? 0}
-                      records={dash.records}
-                      guests={dash.guests}
-                      spendPerGuest={dash.spendPerGuest}
-                      summary={dash.summary}
-                      loading={dash.loading}
-                    />
-                  </div>
-
-                  {dash.itemsError && (
-                    <div
-                      role="alert"
-                      className="flex items-center gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm font-medium text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300"
-                    >
-                      <AlertCircle className="h-5 w-5 shrink-0" />
-                      تحليلات الأصناف غير متاحة: {dash.itemsError}
+                        <span className="rounded-full px-2.5 py-0.5 text-xs font-semibold bg-emerald-100/80 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">
+                          قبل الضريبة
+                        </span>
                     </div>
-                  )}
 
-                  {/* 2. Best & Worst Sellers (الأفضل مبيعاً والراكد) */}
-                  <div className="break-inside-avoid">
-                    <TopItemsWidget
-                      items={
-                        dash.topItems.length > 0
-                          ? dash.topItems
-                          : (dash.itemsData?.topItems ?? [])
-                      }
-                      slowItems={
-                        dash.slowItems.length > 0
-                          ? dash.slowItems
-                          : (dash.itemsData?.slowItems ?? [])
-                      }
-                      mode={dash.itemMode}
-                      onModeChange={dash.setItemMode}
-                      metric={dash.itemMetric}
-                      onMetricChange={dash.setItemMetric}
-                      scopeLabel={dash.topScopeLabel}
-                      loading={dash.itemsLoading}
-                    />
-                  </div>
-
-                  {/* 3. Item Sales Analysis (تحليل مبيعات الأصناف - ABC Classification) */}
-                  <div className="break-inside-avoid">
-                    <ItemSalesPerformance
-                      startDate={dash.start}
-                      endDate={dash.end}
-                      selectedBranches={dash.effectiveBranches}
-                    />
-                  </div>
-
-                  {/* 4. Duel Card & 2D Interactive Map */}
-                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-                    <div className="lg:col-span-12 xl:col-span-5">
-                      <DuelCard
-                        duel={dash.itemsData?.duel ?? null}
-                        loading={dash.itemsLoading}
-                      />
+                      <div className="mt-3 flex items-center justify-between border-t pt-2.5 text-xs text-slate-500 dark:text-zinc-400 border-emerald-100/80 dark:border-emerald-900/30">
+                        <span>صافي الدخل التشغيلي للمبيعات</span>
+                        <span className="font-mono tabular-nums">87.7%</span>
+                      </div>
                     </div>
-                    <div className="lg:col-span-12 xl:col-span-7">
-                      <section className="rounded-xl border border-slate-200/80 bg-slate-50/50 p-5 shadow-2xs ring-1 ring-slate-900/5 backdrop-blur-md dark:border-zinc-800/80 dark:bg-zinc-900/40 dark:ring-white/10">
-                        <div className="mb-4">
-                          <h3 className="text-base font-bold text-slate-900 dark:text-white">
-                            خريطة المحلات ونشاط المبيعات
-                          </h3>
-                          <p className="mt-0.5 text-xs text-slate-500 dark:text-zinc-400">
-                            اللون يعبّر عن سرعة المبيعات — انقر على منفذ لتصفية
-                            البيانات
-                          </p>
+
+                    {/* Card 3: VAT 14% (ضريبة القيمة المضافة) */}
+                      <div className="flex flex-col justify-between rounded-xl p-5 shadow-sm backdrop-blur-md transition border-t-2 border border-amber-200/80 bg-amber-50/50 ring-1 ring-amber-500/10 hover:border-amber-300 dark:border-amber-900/40 dark:bg-amber-950/20 dark:ring-amber-400/10 border-t-amber-500 dark:border-t-amber-400">
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <span className="text-sm font-bold text-slate-800 dark:text-zinc-100">
+                              ضريبة القيمة المضافة (VAT 14%)
+                            </span>
+                            <p className="mt-0.5 text-xs text-slate-500 dark:text-zinc-400">
+                              Total - Net
+                            </p>
+                          </div>
+                            <div className="flex h-11 w-11 items-center justify-center rounded-xl shadow-2xs bg-amber-500/10 text-amber-600 dark:bg-amber-500/20 dark:text-amber-400">
+                              <Percent className="h-5 w-5" />
+                            </div>
+                          </div>
+
+                          <div className="mt-4 flex items-baseline justify-between gap-2">
+                            <div
+                              className="text-3xl font-extrabold tracking-tight font-mono tabular-nums text-zinc-900 dark:text-white"
+                              dir="ltr"
+                            >
+                              <Money
+                                value={financialTotals.vat}
+                                symbolClassName="text-sm opacity-60 font-normal mr-1.5 select-none"
+                              />
+                            </div>
+                              <span className="rounded-full px-2.5 py-0.5 text-xs font-semibold bg-amber-100/80 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
+                                14% مستحقة
+                              </span>
+                          </div>
+
+                            <div className="mt-3 flex items-center justify-between border-t pt-2.5 text-xs text-slate-500 dark:text-zinc-400 border-amber-100/80 dark:border-amber-900/30">
+                              <span>الضريبة المحصلة للإقرار المالي</span>
+                              <span className="font-mono tabular-nums">14%</span>
+                            </div>
+                          </div>
                         </div>
-                        <ParkMap
-                          outlets={
-                            dash.outlets.length > 0
-                              ? dash.outlets
-                              : (dash.itemsData?.allOutlets ??
-                                dash.itemsData?.outlets ??
-                                [])
-                          }
-                          selected={dash.selected}
-                          onSelect={dash.selectFromMap}
-                        />
-                      </section>
-                    </div>
-                  </div>
 
-                  {/* 5. Invoices Ledger */}
-                  <div className="break-inside-avoid">
-                    <InvoicesTable
-                      invoices={
-                        dash.invoicesData.length > 0
-                          ? dash.invoicesData
-                          : undefined
-                      }
-                      loading={dash.loading}
-                    />
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
+                        {/* --------------------------------------------------------------------- */}
+                        {/* DAILY REVENUE MATRIX (Excel-Like Dynamic Pivot)                       */}
+                        {/* --------------------------------------------------------------------- */}
+                        <div className="break-inside-avoid">
+                          <DailyRevenueMatrix
+                            rows={dash.records}
+                            loading={dash.loading}
+                            facilityType={dash.facilityType}
+                            onFacilityTypeChange={dash.setFacilityType}
+                            rideStatusFilter={rideStatusFilter}
+                            onRideStatusFilterChange={setRideStatusFilter}
+                            startDate={dash.start}
+                            endDate={dash.end}
+                            sectorType={sector.type}
+                            sectorLabel={sector.label}
+                            sectorId={sector.id}
+                            sectorTheme={sector.theme}
+                            granularity={dash.granularity}
+                          />
+                        </div>
+
+                        {/* --------------------------------------------------------------------- */}
+                        {/* ROW 1: DYNAMICS (Branch Comparison & Conditional Revenue Trend)       */}
+                        {/* --------------------------------------------------------------------- */}
+                        {(() => {
+                          const isSingleDay = dash.start === dash.end;
+
+                          return (
+                            <div
+                              className={`grid grid-cols-1 gap-4 transition-opacity lg:grid-cols-12 break-inside-avoid ${dash.loading ? "opacity-60" : ""
+                                } ${!dash.printConfig.charts ? "print:hidden" : ""}`}
+                            >
+                              <Card
+                                className={
+                                  isSingleDay
+                                    ? "col-span-full lg:col-span-12"
+                                    : "col-span-12 lg:col-span-6"
+                                }
+                                title={`مقارنة أداء منافذ ${sector.label}`}
+                                subtitle={
+                                  isSingleDay
+                                    ? `جميع منافذ القطاع (${dash.comparisonStats.length} منفذ) مرتبة حسب ${dash.barMetric === "revenue"
+                                      ? "الإجمالي الشامل"
+                                      : "عدد العمليات"
+                                    }`
+                                    : `أعلى ${Math.min(
+                                      dash.comparisonStats.length,
+                                      10,
+                                    )} منافذ مرتبة حسب ${dash.barMetric === "revenue"
+                                      ? "الإجمالي الشامل"
+                                      : "عدد العمليات"
+                                    }`
+                                }
+                                action={
+                                  <Segmented
+                                    options={[
+                                      { id: "revenue", label: "الإجمالي الشامل" },
+                                      { id: "orders", label: "عدد الشيكات" },
+                                    ]}
+                                    value={dash.barMetric}
+                                    onChange={dash.setBarMetric}
+                                  />
+                                }
+                              >
+                                <div className="h-[360px]" dir="ltr">
+                                  {dash.comparisonStats.length > 0 ? (
+                                    <BranchComparisonChart
+                                      stats={dash.comparisonStats}
+                                      metric={dash.barMetric}
+                                      isSingleDay={isSingleDay}
+                                      chartHex={sector.theme.chartHex}
+                                    />
+                                  ) : (
+                                    <div className="flex h-full items-center justify-center text-sm text-zinc-400">
+                                      لا توجد بيانات
+                                    </div>
+                                  )}
+                                </div>
+                              </Card>
+
+                              {!isSingleDay && (
+                                <Card
+                                  className="col-span-12 lg:col-span-6"
+                                  title="اتجاه الإيرادات عبر الوقت"
+                                  subtitle="مسار المبيعات مقسّماً (الإجمالي الشامل، النقدية، الفيزا)"
+                                >
+                                  <div className="h-[360px]" dir="ltr">
+                                    <RevenueTrendChart
+                                      points={dash.trend}
+                                      startDate={dash.start}
+                                      endDate={dash.end}
+                                    />
+                                  </div>
+                                </Card>
+                              )}
+                            </div>
+                          );
+                        })()}
+
+                        {/* --------------------------------------------------------------------- */}
+                        {/* ROW 3: FINANCIAL CONTROL (Active Voids Alert & Master Ledger)         */}
+                        {/* --------------------------------------------------------------------- */}
+                        {sector.type !== 5 && (
+                          <div
+                            className={`space-y-4 print:space-y-3 print:break-inside-auto ${!dash.printConfig.table ? "print:hidden" : ""
+                              }`}
+                          >
+                            {/* Active Voids Alert Widget */}
+                            <VoidsAlertWidget rows={dash.records} />
+
+                            {/* Master Financial Ledger */}
+                            <CaravanGrid
+                              rows={dash.records}
+                              showPeriod={dash.granularity !== "summary"}
+                              loading={dash.loading}
+                              singularLabel={sector.singularLabel}
+                              pluralLabel={sector.pluralLabel}
+                              sectorType={sector.type}
+                            />
+                          </div>
+                        )}
+
+                        {/* --------------------------------------------------------------------- */}
+                        {/* ROW 4: COLLAPSIBLE ANALYTICAL DRAWER (Lazy-Mounted on Open)           */}
+                        {/* --------------------------------------------------------------------- */}
+                        <div className="rounded-xl border border-slate-200/80 bg-white p-6 shadow-sm ring-1 ring-slate-900/5 backdrop-blur-md transition-all duration-200 dark:border-zinc-800/80 dark:bg-zinc-900/60 dark:ring-white/10 print:hidden">
+                          <button
+                            type="button"
+                            onClick={() => setDrawerOpen((o) => !o)}
+                            aria-expanded={drawerOpen}
+                            className="flex w-full cursor-pointer items-center justify-between text-right text-base font-bold text-slate-800 dark:text-zinc-200 select-none"
+                          >
+                            <div className="flex items-center gap-3">
+                              <div
+                                className={`flex h-9 w-9 items-center justify-center rounded-lg ${sector.theme.iconBox}`}
+                              >
+                                <Sparkles className="h-4 w-4" />
+                              </div>
+                              <div>
+                                <span className="text-base font-bold text-slate-900 dark:text-white">
+                                  تحليلات إضافية وتركيبية
+                                </span>
+                                <p className="text-xs font-normal text-slate-500 dark:text-zinc-400 mt-0.5">
+                                  تتضمن: سلوك الإنفاق، كفاءة التشغيل، الأفضل مبيعاً والراكد،
+                                  تحليل مبيعات الأصناف، والمزيد
+                                </p>
+                              </div>
+                            </div>
+                            <div
+                              className={`flex items-center gap-2 text-xs font-semibold text-slate-500 group-open:${sector.theme.accentText} dark:text-zinc-400`}
+                            >
+                              <span className="hidden sm:inline">عرض / إخفاء</span>
+                              <ChevronDown className="h-5 w-5 transition-transform duration-300 group-open:rotate-180" />
+                            </div>
+                          </button>
+
+                          {drawerOpen && (
+                            <div className="mt-6 space-y-6 border-t border-slate-100 pt-6 dark:border-zinc-800/80">
+                              {/* 1. Top Macro KPIs (إجمالي الإيرادات، الكميات، الزوار، والمرتجعات) */}
+                              <div className="break-inside-avoid">
+                                <Suspense fallback={<KPIsSkeleton />}>
+                                  <ExecutiveKpisSection
+                                    startDate={dash.start}
+                                    endDate={dash.end}
+                                    selectedBranches={dash.effectiveBranches}
+                                    summary={dash.summary}
+                                    trend={dash.trend}
+                                    records={dash.records}
+                                    guests={dash.guests}
+                                    refreshTick={dash.refreshTick}
+                                  />
+                                </Suspense>
+                              </div>
+
+                              {/* 2. Spend Behavior & Operational Efficiency (سلوك الإنفاق وكفاءة التشغيل) */}
+                              <div className="break-inside-avoid">
+                                <VisitorOutletPerformanceRow
+                                  totalRevenue={dash.summary?.totalSales ?? 0}
+                                  records={dash.records}
+                                  guests={dash.guests}
+                                  spendPerGuest={dash.spendPerGuest}
+                                  summary={dash.summary}
+                                  loading={dash.loading}
+                                />
+                              </div>
+
+                              {dash.itemsError && (
+                                <div
+                                  role="alert"
+                                  className="flex items-center gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm font-medium text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300"
+                                >
+                                  <AlertCircle className="h-5 w-5 shrink-0" />
+                                  تحليلات الأصناف غير متاحة: {dash.itemsError}
+                                </div>
+                              )}
+
+                              {/* 2. Best & Worst Sellers (الأفضل مبيعاً والراكد) */}
+                              <div className="break-inside-avoid">
+                                <TopItemsWidget
+                                  items={
+                                    dash.topItems.length > 0
+                                      ? dash.topItems
+                                      : (dash.itemsData?.topItems ?? [])
+                                  }
+                                  slowItems={
+                                    dash.slowItems.length > 0
+                                      ? dash.slowItems
+                                      : (dash.itemsData?.slowItems ?? [])
+                                  }
+                                  mode={dash.itemMode}
+                                  onModeChange={dash.setItemMode}
+                                  metric={dash.itemMetric}
+                                  onMetricChange={dash.setItemMetric}
+                                  scopeLabel={dash.topScopeLabel}
+                                  loading={dash.itemsLoading}
+                                />
+                              </div>
+
+                              {/* 3. Item Sales Analysis (تحليل مبيعات الأصناف - ABC Classification) */}
+                              <div className="break-inside-avoid">
+                                <ItemSalesPerformance
+                                  startDate={dash.start}
+                                  endDate={dash.end}
+                                  selectedBranches={dash.effectiveBranches}
+                                />
+                              </div>
+
+                              {/* 4. Duel Card & 2D Interactive Map */}
+                              <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+                                <div className="lg:col-span-12 xl:col-span-5">
+                                  <DuelCard
+                                    duel={dash.itemsData?.duel ?? null}
+                                    loading={dash.itemsLoading}
+                                  />
+                                </div>
+                                <div className="lg:col-span-12 xl:col-span-7">
+                                  <section className="rounded-xl border border-slate-200/80 bg-slate-50/50 p-5 shadow-2xs ring-1 ring-slate-900/5 backdrop-blur-md dark:border-zinc-800/80 dark:bg-zinc-900/40 dark:ring-white/10">
+                                    <div className="mb-4">
+                                      <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                                        خريطة المحلات ونشاط المبيعات
+                                      </h3>
+                                      <p className="mt-0.5 text-xs text-slate-500 dark:text-zinc-400">
+                                        اللون يعبّر عن سرعة المبيعات — انقر على منفذ لتصفية
+                                        البيانات
+                                      </p>
+                                    </div>
+                                    <ParkMap
+                                      outlets={
+                                        dash.outlets.length > 0
+                                          ? dash.outlets
+                                          : (dash.itemsData?.allOutlets ??
+                                            dash.itemsData?.outlets ??
+                                            [])
+                                      }
+                                      selected={dash.selected}
+                                      onSelect={dash.selectFromMap}
+                                    />
+                                  </section>
+                                </div>
+                              </div>
+
+                              {/* 5. Invoices Ledger */}
+                              <div className="break-inside-avoid">
+                                <InvoicesTable
+                                  invoices={
+                                    dash.invoicesData.length > 0
+                                      ? dash.invoicesData
+                                      : undefined
+                                  }
+                                  loading={dash.loading}
+                                />
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
         )}
-      </div>
+                    </div>
 
-      {/* Modular Print Configuration Modal */}
-      <PrintConfigModal
-        isOpen={dash.printModalOpen}
-        onClose={() => dash.setPrintModalOpen(false)}
-        config={dash.printConfig}
-        onChange={dash.setPrintConfig}
-        onPrint={dash.handlePrint}
-      />
+                    {/* Modular Print Configuration Modal */}
+                    <PrintConfigModal
+                      isOpen={dash.printModalOpen}
+                      onClose={() => dash.setPrintModalOpen(false)}
+                      config={dash.printConfig}
+                      onChange={dash.setPrintConfig}
+                      onPrint={dash.handlePrint}
+                    />
 
-      {/* External Gate Sales Adjustments Modal (SectorType = 5) */}
-      {sector.type === 5 && (
-        <GateAdjustmentsModal
-          isOpen={isGateAdjustmentsOpen}
-          onClose={() => setIsGateAdjustmentsOpen(false)}
-          onSaved={() => dash.triggerRefresh()}
-          currentDate={dash.start}
-        />
-      )}
-    </div>
-  );
+                    {/* External Gate Sales Adjustments Modal (SectorType = 5) */}
+                    {sector.type === 5 && (
+                      <GateAdjustmentsModal
+                        isOpen={isGateAdjustmentsOpen}
+                        onClose={() => setIsGateAdjustmentsOpen(false)}
+                        onSaved={() => dash.triggerRefresh()}
+                        currentDate={dash.start}
+                      />
+                    )}
+                  </div>
+                  );
 }
 
-export default SectorDashboard;
+                  export default SectorDashboard;

@@ -20,6 +20,43 @@ import {
 } from 'lucide-react';
 import { SECTORS_LIST, SectorConfig, SECTOR_ICONS } from '@/config/sectorsConfig';
 
+const SECTOR_SIDEBAR_STYLES: Record<string, {
+  activeContainer: string;
+  activeIcon: string;
+  activeBadge: string;
+}> = {
+  caravans: {
+    activeContainer: 'bg-blue-600 text-white shadow-md shadow-blue-600/20 font-bold',
+    activeIcon: 'bg-white/20 text-white',
+    activeBadge: 'bg-white/20 text-white',
+  },
+  vr: {
+    activeContainer: 'bg-purple-600 text-white shadow-md shadow-purple-600/20 font-bold',
+    activeIcon: 'bg-white/20 text-white',
+    activeBadge: 'bg-white/20 text-white',
+  },
+  rides: {
+    activeContainer: 'bg-orange-600 text-white shadow-md shadow-orange-600/20 font-bold',
+    activeIcon: 'bg-white/20 text-white',
+    activeBadge: 'bg-white/20 text-white',
+  },
+  gates: {
+    activeContainer: 'bg-emerald-600 text-white shadow-md shadow-emerald-600/20 font-bold',
+    activeIcon: 'bg-white/20 text-white',
+    activeBadge: 'bg-white/20 text-white',
+  },
+  parking: {
+    activeContainer: 'bg-yellow-600 text-white dark:bg-yellow-500 dark:text-slate-950 shadow-md shadow-yellow-600/20 font-bold',
+    activeIcon: 'bg-white/20 text-white dark:bg-black/20 dark:text-slate-950',
+    activeBadge: 'bg-white/20 text-white dark:bg-black/20 dark:text-slate-950',
+  },
+  restaurants: {
+    activeContainer: 'bg-rose-600 text-white shadow-md shadow-rose-600/20 font-bold',
+    activeIcon: 'bg-white/20 text-white',
+    activeBadge: 'bg-white/20 text-white',
+  },
+};
+
 export function Sidebar() {
   const pathname = usePathname();
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -62,9 +99,8 @@ export function Sidebar() {
 
       {/* Sidebar Container */}
       <aside
-        className={`fixed inset-y-0 right-0 z-40 flex flex-col border-l border-slate-200/80 bg-white/95 transition-all duration-300 ease-in-out backdrop-blur-md dark:border-zinc-800/80 dark:bg-[#0c0c0e]/95 print:hidden lg:static ${
-          isCollapsed ? 'w-20' : 'w-72'
-        } ${mobileOpen ? 'translate-x-0' : 'translate-x-full lg:translate-x-0'}`}
+        className={`fixed inset-y-0 right-0 z-40 flex flex-col border-l border-slate-200/80 bg-white/95 transition-all duration-300 ease-in-out backdrop-blur-md dark:border-zinc-800/80 dark:bg-[#0c0c0e]/95 print:hidden lg:static ${isCollapsed ? 'w-20' : 'w-72'
+          } ${mobileOpen ? 'translate-x-0' : 'translate-x-full lg:translate-x-0'}`}
       >
         {/* Brand Header */}
         <div className="flex h-20 items-center justify-between border-b border-slate-200/80 px-4 dark:border-zinc-800/80">
@@ -125,23 +161,27 @@ export function Sidebar() {
           {SECTORS_LIST.map((sector) => {
             const Icon = SECTOR_ICONS[sector.iconName] || Caravan;
             const isActive = getIsActive(sector);
+            const activeStyle = SECTOR_SIDEBAR_STYLES[sector.id] || {
+              activeContainer: 'bg-blue-600 text-white font-bold',
+              activeIcon: 'bg-white/20 text-white',
+              activeBadge: 'bg-white/20 text-white',
+            };
 
             return (
               <Link
                 key={sector.id}
                 href={sector.path}
                 title={`${sector.label} (${sector.badge})`}
-                className={`group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition-all duration-150 ${
-                  isActive
-                    ? sector.theme.activeBg
-                    : 'text-slate-600 hover:bg-slate-100/80 hover:text-slate-900 dark:text-zinc-400 dark:hover:bg-zinc-900/60 dark:hover:text-zinc-100'
-                }`}
+                    } ${isActive
+                        ? activeStyle.activeContainer
+                        : 'font-semibold text-slate-600 hover:bg-slate-100/80 hover:text-slate-900 dark:text-zinc-400 dark:hover:bg-zinc-900/60 dark:hover:text-zinc-100'
+                    }`}
               >
                 <div
                   className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg transition-colors ${
                     isActive
-                      ? sector.theme.activeIconBg
-                      : 'bg-slate-100 text-slate-500 group-hover:bg-slate-200/80 group-hover:text-slate-800 dark:bg-zinc-800/80 dark:text-zinc-400 dark:group-hover:bg-zinc-800 dark:group-hover:text-zinc-200'
+                    ? activeStyle.activeIcon
+                    : 'bg-slate-100 text-slate-500 group-hover:bg-slate-200/80 group-hover:text-slate-800 dark:bg-zinc-800/80 dark:text-zinc-400 dark:group-hover:bg-zinc-800 dark:group-hover:text-zinc-200'
                   }`}
                 >
                   <Icon className="h-4.5 w-4.5" />
@@ -151,11 +191,11 @@ export function Sidebar() {
                   <div className="flex flex-1 items-center justify-between overflow-hidden">
                     <span className="truncate text-sm font-bold">{sector.label}</span>
                     <span
-                      className={`font-mono text-[10px] font-semibold rounded-md px-1.5 py-0.5 tracking-tight ${
-                        isActive
-                          ? sector.theme.activeBadge
-                          : 'bg-slate-100 text-slate-500 dark:bg-zinc-800/80 dark:text-zinc-400'
-                      }`}
+                      className={`font - mono text - [10px] font - semibold rounded - md px - 1.5 py - 0.5 tracking - tight ${
+              isActive
+                  ? activeStyle.activeBadge
+                  : 'bg-slate-100 text-slate-500 dark:bg-zinc-800/80 dark:text-zinc-400'
+                      } `}
                     >
                       {sector.badge}
                     </span>

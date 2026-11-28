@@ -584,17 +584,21 @@ export function CaravanFiltersToolbar({
               />
             )}
 
-            {sectorType === 6 && (
-              <Segmented
-                options={[
-                  { id: 'all', label: 'الكل' },
-                  { id: 'active', label: 'النشطة' },
-                ]}
-                value={rideStatusFilter === 'active' ? 'active' : 'all'}
-                onChange={(val) => onRideStatusFilterChange?.(val as 'active' | 'inactive' | 'all')}
-                activeClassName="bg-[#1e293b] text-white shadow-xs font-bold"
-              />
-            )}
+              {(sectorType === 6 || sectorType === 1) && (
+                <Segmented
+                  options={[
+                    { id: 'all', label: 'الكل' },
+                    { id: 'active', label: 'النشطة' },
+                  ]}
+                  value={rideStatusFilter === 'active' ? 'active' : 'all'}
+                  onChange={(val) => onRideStatusFilterChange?.(val as 'active' | 'inactive' | 'all')}
+                  activeClassName={
+                    sectorType === 1
+                      ? 'bg-rose-600 text-white shadow-xs font-bold'
+                      : 'bg-yellow-600 dark:bg-yellow-500 text-white dark:text-slate-950 shadow-xs font-bold'
+                  }
+                />
+              )}
 
             {sectorType === 5 && (
               <button
@@ -690,17 +694,21 @@ export function CaravanFiltersToolbar({
             onChange={onSelectedBranchesChange}
           />
 
-          {sectorType === 6 && (
-            <Segmented
-              options={[
-                { id: 'all', label: 'الكل' },
-                { id: 'active', label: 'النشطة' },
-              ]}
-              value={rideStatusFilter === 'active' ? 'active' : 'all'}
-              onChange={(val) => onRideStatusFilterChange?.(val as 'active' | 'inactive' | 'all')}
-              activeClassName="bg-[#1e293b] text-white shadow-xs font-bold"
-            />
-          )}
+            {(sectorType === 6 || sectorType === 1) && (
+              <Segmented
+                options={[
+                  { id: 'all', label: 'الكل' },
+                  { id: 'active', label: 'النشطة' },
+                ]}
+                value={rideStatusFilter === 'active' ? 'active' : 'all'}
+                onChange={(val) => onRideStatusFilterChange?.(val as 'active' | 'inactive' | 'all')}
+                activeClassName={
+                  sectorType === 1
+                    ? 'bg-rose-600 text-white shadow-xs font-bold'
+                    : 'bg-yellow-600 dark:bg-yellow-500 text-white dark:text-slate-950 shadow-xs font-bold'
+                }
+              />
+            )}
         </div>
       </div>
 

@@ -47,7 +47,7 @@ async function getRawDbTotal(pool, secType) {
       FROM [dbo].[POS_Post] p WITH (NOLOCK)
       INNER JOIN [dbo].[Branchs] b WITH (NOLOCK) ON b.[Code] = p.[Branch_Code]
       WHERE b.[Type] = @t
-        AND b.[Code] NOT IN (12, 13, 1019, 1020, 1026, 1028)
+        AND b.[Code] NOT IN (12, 13, 14, 1019, 1020, 1026, 1028)
         AND p.[Doc_Date] >= @s AND p.[Doc_Date] < @e
         AND (p.[Void] = 0 OR p.[Void] IS NULL);
     `);

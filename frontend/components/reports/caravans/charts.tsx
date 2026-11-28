@@ -298,11 +298,10 @@ export function TopCaravansBars({
             <div className="mb-1.5 flex items-center justify-between gap-3 text-sm">
               <div className="flex min-w-0 items-center gap-2">
                 <span
-                  className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold tabular-nums ${
-                    idx === 0
-                      ? 'bg-slate-900 text-white dark:bg-white dark:text-black font-medium'
-                      : 'bg-slate-100 text-slate-700 dark:bg-white/5 dark:text-zinc-300 border border-slate-200 dark:border-white/5'
-                  }`}
+                  className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold tabular-nums ${idx === 0
+                    ? 'bg-slate-900 text-white dark:bg-white dark:text-black font-medium'
+                    : 'bg-slate-100 text-slate-700 dark:bg-white/5 dark:text-zinc-300 border border-slate-200 dark:border-white/5'
+                    }`}
                 >
                   {idx + 1}
                 </span>
@@ -324,19 +323,18 @@ export function TopCaravansBars({
             </div>
             <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-zinc-950">
               <div
-                className={`h-full rounded-full transition-all duration-700 ease-out ${
-                  dark
-                    ? idx === 0
-                      ? 'bg-[#c4b5fd]'
-                      : idx === 1
-                        ? 'bg-[#86efac]'
-                        : 'bg-[#fde047]'
-                    : idx === 0
-                      ? 'bg-[#f97316]'
-                      : idx === 1
-                        ? 'bg-[#2563eb]'
-                        : 'bg-[#f59e0b]'
-                }`}
+                className={`h-full rounded-full transition-all duration-700 ease-out ${dark
+                  ? idx === 0
+                    ? 'bg-[#c4b5fd]'
+                    : idx === 1
+                      ? 'bg-[#86efac]'
+                      : 'bg-[#fde047]'
+                  : idx === 0
+                    ? 'bg-[#f97316]'
+                    : idx === 1
+                      ? 'bg-[#2563eb]'
+                      : 'bg-[#f59e0b]'
+                  }`}
                 style={{ width: `${(item.total / max) * 100}%` }}
               />
             </div>

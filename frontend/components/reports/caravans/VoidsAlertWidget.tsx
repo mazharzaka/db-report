@@ -119,11 +119,10 @@ export function VoidsAlertWidget({ rows, className = '' }: VoidsAlertWidgetProps
                   </td>
                   <td className="py-2 px-3 text-center font-mono font-semibold">
                     <span
-                      className={`inline-block px-1.5 py-0.5 rounded text-[11px] ${
-                        bRatio >= 5
-                          ? 'bg-rose-200/80 text-rose-900 dark:bg-rose-900/60 dark:text-rose-200 print:border print:border-black print:bg-transparent'
-                          : 'bg-rose-100/60 text-rose-800 dark:bg-rose-950/40 dark:text-rose-300 print:bg-transparent'
-                      }`}
+                      className={`inline-block px-1.5 py-0.5 rounded text-[11px] ${bRatio >= 5
+                        ? 'bg-rose-200/80 text-rose-900 dark:bg-rose-900/60 dark:text-rose-200 print:border print:border-black print:bg-transparent'
+                        : 'bg-rose-100/60 text-rose-800 dark:bg-rose-950/40 dark:text-rose-300 print:bg-transparent'
+                        }`}
                     >
                       {(Number(bRatio) || 0).toFixed(1)}%
                     </span>

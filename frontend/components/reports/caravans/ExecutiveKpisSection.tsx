@@ -93,18 +93,18 @@ function KpiCard({
   }
 
   return (
-        < div
+    < div
       className={`flex flex-col justify-between rounded-xl border p-5 shadow-sm backdrop-blur-md transition ${isAuditTone
-          ? 'border-amber-500/30 bg-amber-500/5 ring-1 ring-amber-500/20 dark:border-amber-500/30 dark:bg-amber-950/20 dark:ring-amber-500/20'
-          : 'border-slate-200/80 bg-white ring-1 ring-slate-900/5 hover:border-slate-300 dark:border-zinc-800/80 dark:bg-zinc-900/60 dark:ring-white/10 dark:hover:border-zinc-700'
+        ? 'border-amber-500/30 bg-amber-500/5 ring-1 ring-amber-500/20 dark:border-amber-500/30 dark:bg-amber-950/20 dark:ring-amber-500/20'
+        : 'border-slate-200/80 bg-white ring-1 ring-slate-900/5 hover:border-slate-300 dark:border-zinc-800/80 dark:bg-zinc-900/60 dark:ring-white/10 dark:hover:border-zinc-700'
         }`}
     >
       <div className="flex items-start justify-between">
         <span className="text-sm font-bold text-slate-700 dark:text-zinc-200">{title}</span>
         <div
           className={`flex h-10 w-10 items-center justify-center rounded-lg border ${isAuditTone
-              ? 'border-amber-500/30 bg-amber-500/10 text-amber-600 dark:border-amber-500/30 dark:bg-amber-950/40 dark:text-amber-400'
-              : 'border-slate-200/80 bg-slate-100 text-slate-700 dark:border-zinc-700/60 dark:bg-zinc-800/80 dark:text-zinc-300'
+            ? 'border-amber-500/30 bg-amber-500/10 text-amber-600 dark:border-amber-500/30 dark:bg-amber-950/40 dark:text-amber-400'
+            : 'border-slate-200/80 bg-slate-100 text-slate-700 dark:border-zinc-700/60 dark:bg-zinc-800/80 dark:text-zinc-300'
             }`}
         >
           <Icon className="h-5 w-5" />
@@ -117,9 +117,8 @@ function KpiCard({
         ) : (
           <div className="flex items-end gap-2">
             <div
-              className={`text-3xl sm:text-4xl font-extrabold tracking-tight font-mono tabular-nums ${
-                isAuditTone ? 'text-amber-600 dark:text-amber-400' : 'text-zinc-900 dark:text-white'
-              }`}
+              className={`text-3xl sm:text-4xl font-extrabold tracking-tight font-mono tabular-nums ${isAuditTone ? 'text-amber-600 dark:text-amber-400' : 'text-zinc-900 dark:text-white'
+                }`}
               dir="ltr"
             >
               {value}
@@ -144,11 +143,10 @@ function KpiCard({
           </span>
         ) : delta != null ? (
           <span
-            className={`inline-flex items-center gap-0.5 rounded-full px-2.5 py-1 text-xs font-semibold tabular-nums tracking-tight border ${
-              isPositive
-                ? 'text-emerald-700 bg-emerald-50 border-emerald-200/80 dark:text-emerald-400 dark:bg-emerald-500/10 dark:border-emerald-500/20'
-                : 'text-amber-700 bg-amber-50 border-amber-200/80 dark:text-amber-300 dark:bg-amber-500/10 dark:border-amber-500/20'
-            }`}
+            className={`inline-flex items-center gap-0.5 rounded-full px-2.5 py-1 text-xs font-semibold tabular-nums tracking-tight border ${isPositive
+              ? 'text-emerald-700 bg-emerald-50 border-emerald-200/80 dark:text-emerald-400 dark:bg-emerald-500/10 dark:border-emerald-500/20'
+              : 'text-amber-700 bg-amber-50 border-amber-200/80 dark:text-amber-300 dark:bg-amber-500/10 dark:border-amber-500/20'
+              }`}
             dir="ltr"
           >
             {isPositive ? <ArrowUpRight className="h-3.5 w-3.5" /> : <ArrowDownRight className="h-3.5 w-3.5" />}
@@ -164,65 +162,65 @@ function KpiCard({
         {footnote}
       </p>
     </div>
-      );
+  );
 }
 
-      /* ------------------------------ Executive KPIs Section ------------------------------ */
+/* ------------------------------ Executive KPIs Section ------------------------------ */
 
-      interface ExecutiveKpisSectionProps {
-        startDate: string;
-      endDate: string;
-      selectedBranches: string[];
-      summary?: ReportSummary | null;
-      trend?: TrendPoint[];
-      records?: CaravanRecord[];
-      guests?: number;
-      refreshTick?: number;
+interface ExecutiveKpisSectionProps {
+  startDate: string;
+  endDate: string;
+  selectedBranches: string[];
+  summary?: ReportSummary | null;
+  trend?: TrendPoint[];
+  records?: CaravanRecord[];
+  guests?: number;
+  refreshTick?: number;
 }
 
 export function ExecutiveKpisSection({
-        startDate,
-        endDate,
-        selectedBranches,
-        summary,
-        trend = [],
-        records = [],
-        guests = 0,
-        refreshTick = 0,
+  startDate,
+  endDate,
+  selectedBranches,
+  summary,
+  trend = [],
+  records = [],
+  guests = 0,
+  refreshTick = 0,
 }: ExecutiveKpisSectionProps) {
   const [kpisData, setKpisData] = useState<ExecutiveKpis | null>(null);
-        const [totalUnits, setTotalUnits] = useState<number>(0);
-          const [unitsGrowthPct, setUnitsGrowthPct] = useState<number | null>(null);
-          const [loading, setLoading] = useState(false);
+  const [totalUnits, setTotalUnits] = useState<number>(0);
+  const [unitsGrowthPct, setUnitsGrowthPct] = useState<number | null>(null);
+  const [loading, setLoading] = useState(false);
 
-          const selectedKey = selectedBranches.join(',');
+  const selectedKey = selectedBranches.join(',');
 
   useEffect(() => {
     const ctrl = new AbortController();
-          setLoading(true);
+    setLoading(true);
 
     const kpiParams = new URLSearchParams({
-            startDate,
-            endDate,
+      startDate,
+      endDate,
     });
-          if (selectedKey) kpiParams.set('branchCode', selectedKey);
+    if (selectedKey) kpiParams.set('branchCode', selectedKey);
 
-          const itemsParams = new URLSearchParams({
-            startDate,
-            endDate,
-            limit: '1',
+    const itemsParams = new URLSearchParams({
+      startDate,
+      endDate,
+      limit: '1',
     });
-          if (selectedKey) itemsParams.set('branchCode', selectedKey);
+    if (selectedKey) itemsParams.set('branchCode', selectedKey);
 
-          // Fetch Executive KPIs and Units sold in parallel without blocking main page
-          Promise.all([
-          fetch(`/api/reports/caravans/executive-kpis?${kpiParams.toString()}`, {signal: ctrl.signal })
+    // Fetch Executive KPIs and Units sold in parallel without blocking main page
+    Promise.all([
+      fetch(`/api/reports/caravans/executive-kpis?${kpiParams.toString()}`, { signal: ctrl.signal })
         .then((res) => (res.ok ? res.json() : null))
         .catch(() => null),
-          fetch(`/api/reports/caravans/items-performance?${itemsParams.toString()}`, {signal: ctrl.signal })
+      fetch(`/api/reports/caravans/items-performance?${itemsParams.toString()}`, { signal: ctrl.signal })
         .then((res) => (res.ok ? res.json() : null))
         .catch(() => null),
-          ])
+    ])
       .then(([kpiRes, itemsRes]) => {
         if (kpiRes && kpiRes.status === 'success' && kpiRes.kpis) {
           setKpisData(kpiRes.kpis);
@@ -232,9 +230,9 @@ export function ExecutiveKpisSection({
           const prevQty = Number(itemsRes.summary.prevQuantity) || 0;
           setTotalUnits(currQty);
           if (prevQty > 0) {
-          setUnitsGrowthPct(Math.round(((currQty - prevQty) / prevQty) * 1000) / 10);
+            setUnitsGrowthPct(Math.round(((currQty - prevQty) / prevQty) * 1000) / 10);
           } else {
-          setUnitsGrowthPct(null);
+            setUnitsGrowthPct(null);
           }
         }
       })
@@ -245,105 +243,105 @@ export function ExecutiveKpisSection({
     return () => ctrl.abort();
   }, [startDate, endDate, selectedKey, refreshTick]);
 
-          const totalRev = kpisData ? kpisData.revenue.current : (summary?.totalSales ?? 0);
-          const revGrowth = kpisData ? kpisData.revenue.growthPct : null;
+  const totalRev = kpisData ? kpisData.revenue.current : (summary?.totalSales ?? 0);
+  const revGrowth = kpisData ? kpisData.revenue.growthPct : null;
 
-          // Active Outlets count: distinct outlets with sales > 0
-          const activeOutletsCount =
+  // Active Outlets count: distinct outlets with sales > 0
+  const activeOutletsCount =
     records && records.length > 0
       ? records.filter((r) => (Number(r.total) || 0) > 0).length
-          : 0;
+      : 0;
 
-          // 4th Card: Total Voids (إجمالي المرتجعات)
-          const totalVoids =
-          summary?.totalVoids !== undefined
-          ? Number(summary.totalVoids)
+  // 4th Card: Total Voids (إجمالي المرتجعات)
+  const totalVoids =
+    summary?.totalVoids !== undefined
+      ? Number(summary.totalVoids)
       : records && records.length > 0
-      ? records.reduce((acc, r) => acc + (Number(r.totalVoids) || 0), 0)
-          : 0;
+        ? records.reduce((acc, r) => acc + (Number(r.totalVoids) || 0), 0)
+        : 0;
   const hasVoids = totalVoids > 0;
 
-            return (
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
-              {/* 1. Total Revenue (Inclusive of Tax) */}
-              <KpiCard
-                title="إجمالي الإيرادات (شامل الضريبة)"
-                value={<Money value={totalRev} symbolClassName="text-xs opacity-60 font-normal mr-1 select-none" />}
-                icon={TrendingUp}
-                sparkColor="violet"
-                spark={trend.map((p) => p.total)}
-                delta={revGrowth}
-                badge="شامل الضريبة"
-                footnote={
-                  kpisData?.selsTax?.current !== undefined && kpisData.selsTax.current > 0
-                    ? `ضريبة المبيعات: ${fmtMoney(kpisData.selsTax.current)} | السابقة: ${fmtMoney(kpisData.revenue.previous)}`
-                    : `الفترة السابقة: ${fmtMoney(kpisData?.revenue.previous ?? 0)}`
-                }
-                loading={loading}
-              />
+  return (
+    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+      {/* 1. Total Revenue (Inclusive of Tax) */}
+      <KpiCard
+        title="إجمالي الإيرادات (شامل الضريبة)"
+        value={<Money value={totalRev} symbolClassName="text-xs opacity-60 font-normal mr-1 select-none" />}
+        icon={TrendingUp}
+        sparkColor="violet"
+        spark={trend.map((p) => p.total)}
+        delta={revGrowth}
+        badge="شامل الضريبة"
+        footnote={
+          kpisData?.selsTax?.current !== undefined && kpisData.selsTax.current > 0
+            ? `ضريبة المبيعات: ${fmtMoney(kpisData.selsTax.current)} | السابقة: ${fmtMoney(kpisData.revenue.previous)}`
+            : `الفترة السابقة: ${fmtMoney(kpisData?.revenue.previous ?? 0)}`
+        }
+        loading={loading}
+      />
 
-              {/* 2. Units Sold (Volume & Velocity) */}
-              <KpiCard
-                title="إجمالي الكميات المباعة"
-                value={totalUnits > 0 ? `${fmtInt(totalUnits)} قطعة` : `${fmtInt(summary?.totalQuantity || summary?.totalCover || 0)} قطعة`}
-                icon={Boxes}
-                sparkColor="violet"
-                spark={trend.map((p) => p.total)}
-                delta={unitsGrowthPct}
-                badge="الكمية الإجمالية"
-                footnote="إجمالي الوحدات والأصناف المباعة عبر كافة المنافذ"
-                loading={loading}
-              />
+      {/* 2. Units Sold (Volume & Velocity) */}
+      <KpiCard
+        title="إجمالي الكميات المباعة"
+        value={totalUnits > 0 ? `${fmtInt(totalUnits)} قطعة` : `${fmtInt(summary?.totalQuantity || summary?.totalCover || 0)} قطعة`}
+        icon={Boxes}
+        sparkColor="violet"
+        spark={trend.map((p) => p.total)}
+        delta={unitsGrowthPct}
+        badge="الكمية الإجمالية"
+        footnote="إجمالي الوحدات والأصناف المباعة عبر كافة المنافذ"
+        loading={loading}
+      />
 
-              {/* 3. Total Visitors or Operational Outlets (إجمالي الزوار / المنافذ النشطة) */}
-              {guests > 0 ? (
-                <KpiCard
-                  title="إجمالي الزوار (Dream Park)"
-                  value={`${fmtInt(guests)} زائر`}
-                  icon={Users}
-                  sparkColor="violet"
-                  spark={trend.map((p) => p.total)}
-                  delta={null}
-                  badge="بوابات الحديقة"
-                  badgeTone="success"
-                  footnote="العدد الفعلي لرواد الحديقة وفقاً لتذاكر الدخول"
-                  loading={loading}
-                />
-              ) : (
-                <KpiCard
-                  title="المنافذ النشطة بالتشغيل"
-                  value={`${fmtInt(activeOutletsCount)} منفذ`}
-                  icon={Store}
-                  sparkColor="violet"
-                  spark={trend.map((p) => p.total)}
-                  delta={null}
-                  badge="تشغيل فعلي"
-                  badgeTone="neutral"
-                  footnote={`من أصل ${records.length} منفذ مسجل بالنظام`}
-                  loading={loading}
-                />
-              )}
+      {/* 3. Total Visitors or Operational Outlets (إجمالي الزوار / المنافذ النشطة) */}
+      {guests > 0 ? (
+        <KpiCard
+          title="إجمالي الزوار (Dream Park)"
+          value={`${fmtInt(guests)} زائر`}
+          icon={Users}
+          sparkColor="violet"
+          spark={trend.map((p) => p.total)}
+          delta={null}
+          badge="بوابات الحديقة"
+          badgeTone="success"
+          footnote="العدد الفعلي لرواد الحديقة وفقاً لتذاكر الدخول"
+          loading={loading}
+        />
+      ) : (
+        <KpiCard
+          title="المنافذ النشطة بالتشغيل"
+          value={`${fmtInt(activeOutletsCount)} منفذ`}
+          icon={Store}
+          sparkColor="violet"
+          spark={trend.map((p) => p.total)}
+          delta={null}
+          badge="تشغيل فعلي"
+          badgeTone="neutral"
+          footnote={`من أصل ${records.length} منفذ مسجل بالنظام`}
+          loading={loading}
+        />
+      )}
 
-                  {/* 4. Total Voids (إجمالي المرتجعات) - Strict Financial Audit Aesthetic */ }
-                  < KpiCard
+      {/* 4. Total Voids (إجمالي المرتجعات) - Strict Financial Audit Aesthetic */}
+      < KpiCard
         title="إجمالي المرتجعات"
-                value={<Money value={totalVoids} symbolClassName="text-xs opacity-60 font-normal mr-1 select-none" />}
-                icon={RotateCcw}
-                sparkColor="violet"
-                spark={trend.map((p) => p.total)}
-                delta={null}
-                badge={hasVoids ? 'رصد مرتجعات' : 'سليم 100%'}
-                badgeTone={hasVoids ? 'danger' : 'success'}
-                footnote={
-                  hasVoids
-                    ? 'إجمالي مبالغ الإلغاءات المسترجعة من المبيعات'
+        value={<Money value={totalVoids} symbolClassName="text-xs opacity-60 font-normal mr-1 select-none" />}
+        icon={RotateCcw}
+        sparkColor="violet"
+        spark={trend.map((p) => p.total)}
+        delta={null}
+        badge={hasVoids ? 'رصد مرتجعات' : 'سليم 100%'}
+        badgeTone={hasVoids ? 'danger' : 'success'}
+        footnote={
+          hasVoids
+            ? 'إجمالي مبالغ الإلغاءات المسترجعة من المبيعات'
             : 'كافة الفواتير والعمليات معتمدة بدون إلغاءات'
         }
-              loading={loading}
-              isAuditTone={hasVoids}
+        loading={loading}
+        isAuditTone={hasVoids}
       />
-          </div>
-          );
+    </div>
+  );
 }
 
-          export default ExecutiveKpisSection;
+export default ExecutiveKpisSection;

@@ -6,7 +6,7 @@
 
 import { createRequest } from "../db/sqlPool.js";
 
-export const EXCLUDED_NON_REVENUE_BRANCHES = [12, 13, 1019, 1020, 1026, 1028];
+export const EXCLUDED_NON_REVENUE_BRANCHES = [12, 13, 14, 1019, 1020, 1026, 1028];
 export const EXCLUDED_BRANCHES_SET = new Set(EXCLUDED_NON_REVENUE_BRANCHES);
 
 const BRANCH_MAP_TTL_MS = 10 * 60 * 1000;
